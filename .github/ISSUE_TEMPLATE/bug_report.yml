@@ -1,0 +1,33 @@
+name: Bug report
+description: Something isn't working
+labels: [bug]
+body:
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened?
+      description: A clear description of the bug, including expected vs actual.
+    validations:
+      required: true
+  - type: dropdown
+    id: package
+    attributes:
+      label: Package
+      options: [adhera, supafone_labs, both, not sure]
+    validations:
+      required: true
+  - type: input
+    id: provider
+    attributes:
+      label: Voice provider / framework
+      placeholder: ultravox, vapi, retell, pipecat, gpt_realtime, grok, ...
+  - type: textarea
+    id: repro
+    attributes:
+      label: Minimal reproduction
+      render: python
+  - type: input
+    id: versions
+    attributes:
+      label: Versions
+      placeholder: supafone_labs x.y.z, adhera x.y.z, Python 3.12

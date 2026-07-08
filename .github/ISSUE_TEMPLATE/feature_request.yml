@@ -1,0 +1,19 @@
+name: Feature request
+description: Suggest an idea or a new provider adapter
+labels: [enhancement]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: What problem does this solve?
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed solution
+  - type: input
+    id: provider
+    attributes:
+      label: Provider/framework (if requesting an adapter)
+      placeholder: e.g. Telnyx, Deepgram Voice Agent, Twilio ConversationRelay

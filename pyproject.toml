@@ -1,0 +1,51 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "supafone-labs"
+version = "0.3.0"
+description = "Give any voice agent a second mind — in one line."
+readme = "README.md"
+license = "MIT"
+requires-python = ">=3.11"
+authors = [{ name = "Sam Savage", email = "samatcrispy@gmail.com" }]
+keywords = ["voice-ai", "agents", "ultravox", "vapi", "gpt-realtime", "oracle", "prompt-optimization"]
+dependencies = ["pydantic>=2.0.0"]
+
+[project.urls]
+Homepage = "https://labs.supafone.ai"
+Documentation = "https://labs.supafone.ai/docs.html"
+Repository = "https://github.com/samthedataman/supafone-labs"
+Issues = "https://github.com/samthedataman/supafone-labs/issues"
+
+[project.optional-dependencies]
+anthropic = ["anthropic>=0.40.0"]
+openai = ["openai>=1.0.0"]
+server = ["fastapi>=0.115.0", "uvicorn>=0.30.0", "email-validator>=2.0.0", "stripe>=10.0.0"]
+http = ["httpx>=0.27.0"]
+stt = ["websockets>=12.0"]
+dev = ["pytest>=8.0.0", "pytest-asyncio>=0.23.0", "ruff>=0.3.0"]
+all = ["anthropic>=0.40.0", "openai>=1.0.0", "fastapi>=0.115.0", "uvicorn>=0.30.0", "httpx>=0.27.0", "websockets>=12.0", "email-validator>=2.0.0", "stripe>=10.0.0"]
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/supafone_labs"]
+
+[tool.hatch.build.targets.sdist]
+include = [
+    "/LICENSE",
+    "/README.md",
+    "/pyproject.toml",
+    "/src/supafone_labs",
+]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+asyncio_mode = "auto"
+markers = [
+    "live: hits real provider APIs; needs keys + network (deselect with -m 'not live')",
+]
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"

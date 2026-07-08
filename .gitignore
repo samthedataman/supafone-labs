@@ -1,0 +1,30 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.eggs/
+build/
+dist/
+.venv/
+venv/
+.env
+
+# Tooling
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+.coverage
+htmlcov/
+
+# Docs
+site/
+
+# OS / editor
+.DS_Store
+.idea/
+.vscode/
+
+# LaTeX build artifacts
+paper/*.aux
+paper/*.log
+paper/*.out

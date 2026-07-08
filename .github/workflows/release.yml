@@ -1,0 +1,35 @@
+name: Release
+
+# Publish a GitHub Release (or run manually) to ship `supafone_labs` to PyPI via
+# Trusted Publishing (OIDC — no API tokens). Configure a Trusted Publisher at:
+# https://pypi.org/manage/project/supafone-labs/settings/publishing/
+on:
+  release:
+    types: [published]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  id-token: write   # required for PyPI Trusted Publishing
+
+jobs:
+  build-and-publish:
+    runs-on: ubuntu-latest
+    environment:
+      name: pypi
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Build
+        run: |
+          python -m pip install --upgrade build
+          python -m build --outdir dist
+
+      - name: Publish to PyPI
+        uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          packages-dir: dist

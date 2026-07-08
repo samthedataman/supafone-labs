@@ -1,0 +1,38 @@
+name: CI
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+    branches: [main, master]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.11", "3.12"]
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+          cache: pip
+
+      - name: Install
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e .[all]
+          pip install pytest pytest-asyncio ruff
+
+      - name: Lint
+        run: ruff check src
+
+      - name: Import smoke test (must import with zero LLM extras)
+        run: python -c "import supafone_labs, supafone_labs.runtime; print('ok')"
+
+      - name: Test
+        run: pytest tests -q -m "not live"

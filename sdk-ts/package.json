@@ -1,0 +1,67 @@
+{
+  "name": "@supafone/labs",
+  "version": "0.3.0",
+  "description": "The Supafone agent framework: create hosted voice/web/campaign agents with managed numbers, stages, tools, artifacts, and Supafone Pro watcher built in.",
+  "type": "module",
+  "main": "./dist/cjs/index.js",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": {
+        "types": "./dist/index.d.ts",
+        "default": "./dist/index.js"
+      },
+      "require": {
+        "types": "./dist/cjs/index.d.ts",
+        "default": "./dist/cjs/index.js"
+      },
+      "default": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist",
+    "src",
+    "README.md",
+    "LICENSE"
+  ],
+  "sideEffects": false,
+  "scripts": {
+    "build": "tsc -p tsconfig.json && tsc -p tsconfig.cjs.json && node -e \"require('fs').writeFileSync('dist/cjs/package.json','{\\\"type\\\":\\\"commonjs\\\"}')\"",
+    "prepublishOnly": "npm run build"
+  },
+  "keywords": [
+    "voice-ai",
+    "voice-agents",
+    "agent-framework",
+    "phone-numbers",
+    "sales-dialer",
+    "ultravox",
+    "vapi",
+    "retell",
+    "elevenlabs",
+    "deepgram",
+    "gpt-realtime",
+    "oracle",
+    "supervisor",
+    "prompt-optimization",
+    "transcription"
+  ],
+  "author": "Sam Savage <samatcrispy@gmail.com>",
+  "license": "MIT",
+  "homepage": "https://labs.supafone.ai",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/samthedataman/supafone-labs.git",
+    "directory": "sdk-ts"
+  },
+  "bugs": {
+    "url": "https://github.com/samthedataman/supafone-labs/issues"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "devDependencies": {
+    "typescript": "^5.6.0"
+  }
+}

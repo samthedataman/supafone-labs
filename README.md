@@ -1,0 +1,428 @@
+<div align="center">
+
+# Supafone Labs
+
+**The voice-agent framework behind Supafone.** Create complete inbound and
+outbound agents with managed numbers, voices, stages, tools, artifacts, and
+Supafone Pro watcher built in — or attach the same second mind to any platform.
+
+[![CI](https://github.com/samthedataman/supafone-labs/actions/workflows/ci.yml/badge.svg)](https://github.com/samthedataman/supafone-labs/actions/workflows/ci.yml)
+[![PyPI](https://img.shields.io/pypi/v/supafone-labs)](https://pypi.org/project/supafone-labs/)
+[![Python](https://img.shields.io/badge/python-3.11%2B-blue)](https://pypi.org/project/supafone-labs/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+[![API](https://img.shields.io/badge/cloud%20API-live-3fd0c9)](https://api.labs.supafone.ai/healthz)
+
+[**Website**](https://labs.supafone.ai) ·
+[**Docs**](https://labs.supafone.ai/docs.html) ·
+[**Console**](https://labs.supafone.ai/console.html) ·
+[**Get a free API key**](https://labs.supafone.ai/get-key.html) ·
+[**API reference**](https://api.labs.supafone.ai/docs)
+
+</div>
+
+---
+
+```python
+import supafone_labs
+
+brain = supafone_labs.supercharge(my_agent)   # that's the whole integration
+```
+
+```ts
+import { Supafone } from "@supafone/labs";
+
+const supafone = new Supafone({ apiKey: process.env.SUPAFONE_API_KEY! });
+
+const agent = await supafone.labs.agents.createInboundWithNumber({
+  agentKey: "northline-intake",
+  name: "Northline intake",
+  assistantName: "Maya",
+  websiteUrl: "https://northline.example",
+  number: { search: { areaCode: "415" } },
+  labs: { enabled: true, model: "gemma" },
+});
+```
+
+The TypeScript package is also the canonical client for the Supafone hosted
+agent API at `https://api.supafone.ai/api/v1/labs`. The default path buys and
+routes Supafone-managed numbers, so developers do not need to create Twilio,
+Ultravox, Cartesia, Inworld, ElevenLabs, or Deepgram accounts just to ship an
+agent. BYOK remains available when a team already owns those provider accounts.
+
+## Why this exists
+
+**A voice agent is one mind on a stopwatch.** To sound human it must answer in
+well under a second — which means the model that *talks* can never afford to
+*think*. And everything that decides whether a call succeeds is thinking:
+reading distress in a caller's voice, noticing they just switched to Spanish,
+catching the agent about to promise something the API failed to do, remembering
+that this firm never quotes fees on the phone. The latency budget forbids all
+of it. That's not a prompt-engineering problem; it's an architecture problem.
+
+**Humans solved this decades ago.** Every great call floor has a supervisor
+with a headset — listening to the call, saying nothing to the customer, sliding
+a note across the desk: *"she's scared, slow down"*, *"stop — don't quote the
+fee"*, *"the booking didn't go through, don't say it did."* The agent keeps
+talking; the note changes the call. Nobody expects the person speaking to also
+be the person supervising. Yet that's exactly what we ask of every voice agent
+shipped today.
+
+**Supafone Labs is the supervisor.** A second, slower mind that runs *beside* the
+call instead of inside its latency budget: it taps every turn, maintains a
+live belief state — who's calling, what they want, how they feel, what language
+they're speaking — and slides its note across the desk through your platform's
+native silent channel. The caller never hears it. The agent reads it mid-call.
+
+**Why silent injection, not a better prompt?** Because prompts are frozen at
+call-start and calls are alive. The moment that matters — the caller starts
+crying, the summary contradicts the tool result, the language flips — is by
+definition the moment your prompt didn't anticipate.
+
+**Why every platform?** Because teams switch voice stacks constantly, and the
+coaching layer is exactly the part you can't afford to rewrite. One canonical
+contract in, one whisper out, compiled to whatever you run this quarter.
+
+**Why open source with a cloud?** Because a system that whispers into your
+calls must be inspectable — every directive is in the audit log, and the whole
+brain is MIT. The cloud exists for one reason: one key that runs the models,
+the voices, and the transcription is more convenient than five vendor accounts.
+
+**And when the second mind fails?** Nothing happens. It runs behind a timeout,
+off the hot path; a stalled oracle yields no note and the call proceeds exactly
+as it would have without us. Degrade-safety is tested, not promised.
+
+## Every platform, one whisper
+
+<div align="center">
+<table>
+<tr>
+<td align="center" width="110"><img src="https://www.google.com/s2/favicons?domain=vapi.ai&sz=128" width="36" alt="Vapi"><br><sub><b>Vapi</b></sub></td>
+<td align="center" width="110"><img src="https://www.google.com/s2/favicons?domain=retellai.com&sz=128" width="36" alt="Retell"><br><sub><b>Retell AI</b></sub></td>
+<td align="center" width="110"><img src="https://www.google.com/s2/favicons?domain=elevenlabs.io&sz=128" width="36" alt="ElevenLabs"><br><sub><b>ElevenLabs</b></sub></td>
+<td align="center" width="110"><img src="https://www.google.com/s2/favicons?domain=ultravox.ai&sz=128" width="36" alt="Ultravox"><br><sub><b>Ultravox</b></sub></td>
+<td align="center" width="110"><img src="https://www.google.com/s2/favicons?domain=openai.com&sz=128" width="36" alt="OpenAI"><br><sub><b>GPT-Realtime</b></sub></td>
+<td align="center" width="110"><img src="https://www.google.com/s2/favicons?domain=x.ai&sz=128" width="36" alt="xAI"><br><sub><b>Grok Voice</b></sub></td>
+<td align="center" width="110"><img src="https://www.google.com/s2/favicons?domain=deepgram.com&sz=128" width="36" alt="Deepgram"><br><sub><b>Deepgram</b></sub></td>
+</tr>
+<tr>
+<td align="center"><img src="https://www.google.com/s2/favicons?domain=bland.ai&sz=128" width="36" alt="Bland"><br><sub><b>Bland</b></sub></td>
+<td align="center"><img src="https://www.google.com/s2/favicons?domain=pipecat.ai&sz=128" width="36" alt="Pipecat"><br><sub><b>Pipecat</b></sub></td>
+<td align="center"><img src="https://www.google.com/s2/favicons?domain=livekit.io&sz=128" width="36" alt="LiveKit"><br><sub><b>LiveKit</b></sub></td>
+<td align="center"><img src="https://www.google.com/s2/favicons?domain=cartesia.ai&sz=128" width="36" alt="Cartesia"><br><sub><b>Cartesia</b></sub></td>
+<td align="center"><img src="https://www.google.com/s2/favicons?domain=inworld.ai&sz=128" width="36" alt="Inworld"><br><sub><b>Inworld</b></sub></td>
+<td align="center"><img src="https://www.google.com/s2/favicons?domain=anthropic.com&sz=128" width="36" alt="Anthropic"><br><sub><b>Claude</b></sub></td>
+<td align="center"><img src="https://www.google.com/s2/favicons?domain=twilio.com&sz=128" width="36" alt="Twilio"><br><sub><b>Twilio</b></sub></td>
+</tr>
+<tr>
+<td align="center"><img src="https://www.google.com/s2/favicons?domain=telnyx.com&sz=128" width="36" alt="Telnyx"><br><sub><b>Telnyx</b></sub></td>
+<td align="center"><img src="https://www.google.com/s2/favicons?domain=signalwire.com&sz=128" width="36" alt="SignalWire"><br><sub><b>SignalWire</b></sub></td>
+<td align="center"><img src="https://www.google.com/s2/favicons?domain=vonage.com&sz=128" width="36" alt="Vonage"><br><sub><b>Vonage</b></sub></td>
+<td align="center"><img src="https://www.google.com/s2/favicons?domain=plivo.com&sz=128" width="36" alt="Plivo"><br><sub><b>Plivo</b></sub></td>
+<td align="center"><img src="https://www.google.com/s2/favicons?domain=jambonz.org&sz=128" width="36" alt="Jambonz"><br><sub><b>Jambonz</b></sub></td>
+<td align="center"><img src="https://www.google.com/s2/favicons?domain=freeswitch.com&sz=128" width="36" alt="FreeSWITCH"><br><sub><b>FreeSWITCH</b></sub></td>
+<td align="center"><img src="https://www.google.com/s2/favicons?domain=asterisk.org&sz=128" width="36" alt="Asterisk"><br><sub><b>Asterisk</b></sub></td>
+</tr>
+</table>
+</div>
+
+## Get started in 60 seconds
+
+**1 — Get a key** (5 free minutes, no card):
+
+```bash
+curl -X POST https://api.labs.supafone.ai/v1/signup \
+  -H "Content-Type: application/json" -d '{"email": "you@company.com"}'
+# -> { "key": "sl_live_…", "free_minutes": 5.0 }   (also emailed to you)
+
+export SUPAFONE_LABS_API_KEY=sl_live_…
+```
+
+**2 — Install and supercharge:**
+
+```bash
+pip install supafone-labs[all]
+```
+
+```python
+import supafone_labs
+
+brain = supafone_labs.supercharge(my_agent, scenario="legal_intake")
+result = await brain.observe(raw_event)     # feed your platform's events
+# result.actions -> the compiled native whisper (or [] if the oracle is quiet)
+```
+
+With the key set, the oracle, TTS, and live multilingual STT all run on
+Supafone Labs' hosted infrastructure. Without it, everything runs on **your own
+vendor keys** — or fully offline on deterministic fakes. Same code, all three
+modes.
+
+**3 — Watch it work** in the [console](https://labs.supafone.ai/console.html):
+your balance, usage, and an auditable log of every instruction your second
+mind whispered.
+
+## Hosted Supafone agents
+
+Use `@supafone/labs` when you want Supafone to host the whole agent:
+
+```ts
+const inbound = await supafone.labs.agents.createInboundWithNumber({
+  agentKey: "northline-intake",
+  name: "Northline intake",
+  assistantName: "Maya",
+  websiteUrl: "https://northline.example",
+  number: { search: { areaCode: "415" } },
+  tools: { callRouting: true, scheduling: true, sms: true, voicemail: true },
+  labs: { enabled: true, model: "gemma" },
+});
+
+const outbound = await supafone.labs.agents.createOutboundWithNumber({
+  agentKey: "northline-sales",
+  name: "Northline sales team",
+  number: { search: { areaCode: "415" } },
+  labs: { enabled: true, model: "gemma" },
+});
+```
+
+What Supafone handles in the default path:
+
+- Supafone-managed phone number search, purchase, assignment, and routing.
+- Managed voice provider accounts for Cartesia, Inworld, ElevenLabs-compatible,
+  Ultravox, and Deepgram-backed paths.
+- Multistage inbound and outbound presets instead of one flat prompt.
+- Built-in tools for routing, scheduling, SMS, email, voicemail, knowledge,
+  escalation, transcripts, recordings, and summaries.
+- Supafone Pro live watcher/call coach.
+
+BYOK is advanced, not required:
+
+```ts
+await supafone.labs.telephony.configure({
+  mode: "byok",
+  provider: "twilio",
+  credentials: {
+    accountSid: process.env.TWILIO_ACCOUNT_SID!,
+    authToken: process.env.TWILIO_AUTH_TOKEN!,
+    fromNumber: "+14155550123",
+  },
+});
+```
+
+## How it works
+
+```
+                      ┌─────────────────────────────────────────────┐
+  your live call ────▶│  TAP        13 platform adapters +          │
+  (any platform)      │             Deepgram nova-3 multilingual    │
+                      │             STT for audio-only stacks       │
+                      ├─────────────────────────────────────────────┤
+                      │  THINK      belief state + coaching oracle  │
+                      │             (off the latency path, timeout- │
+                      │             bounded, degrade-safe)          │
+                      ├─────────────────────────────────────────────┤
+  silent whisper ◀────│  WHISPER    compiled to the platform's      │
+  (native channel)    │             native control — never spoken   │
+                      └─────────────────────────────────────────────┘
+```
+
+## The Cloud API
+
+One key fronts the whole stack — hosted oracle models, four TTS engines under
+one voice namespace, and live multilingual transcription. Billed by the
+minute; every request itemized.
+
+| Endpoint | What it does |
+|---|---|
+| `POST /v1/signup` | Self-serve key — 5 free minutes, no card |
+| `POST /v1/oracle/complete` | Hosted LLM completion (Claude / GPT / Grok, prefix-routed) |
+| `GET  /v1/models` | Live model catalog, fetched hourly from vendors — **never stale** |
+| `POST /v1/tts` | Hosted TTS: Deepgram Aura, Cartesia, ElevenLabs, Inworld |
+| `GET  /v1/voices` | The hosted voice catalog |
+| `POST /v1/stt` | Prerecorded transcription (nova-3, 10-language code-switching) |
+| `WS   /v1/stt/live` | Live streaming STT — the multilingual tap, zero Deepgram account |
+| `GET  /v1/usage` | Today's request counts |
+| `GET  /v1/billing/balance` | Minutes remaining + top-up links |
+| `GET  /v1/logs` | The audit trail: every whisper, timestamped and billed |
+
+<details>
+<summary><b>Python</b></summary>
+
+```python
+import httpx
+
+API, KEY = "https://api.labs.supafone.ai", os.environ["SUPAFONE_LABS_API_KEY"]
+
+r = httpx.post(f"{API}/v1/oracle/complete",
+    headers={"Authorization": f"Bearer {KEY}"},
+    json={"model": "supafone-labs-oracle", "messages": [...]})
+directive = r.json()["text"]                     # the silent coaching line
+
+audio = httpx.post(f"{API}/v1/tts",
+    headers={"Authorization": f"Bearer {KEY}"},
+    json={"voice": "supafone-labs-calm-en", "text": "Right away."}).content
+```
+</details>
+
+<details>
+<summary><b>TypeScript</b></summary>
+
+```ts
+const API = "https://api.labs.supafone.ai";
+const auth = { Authorization: `Bearer ${process.env.SUPAFONE_LABS_API_KEY}` };
+
+const { text } = await fetch(`${API}/v1/oracle/complete`, {
+  method: "POST",
+  headers: { ...auth, "Content-Type": "application/json" },
+  body: JSON.stringify({ model: "supafone-labs-oracle", messages: [...] }),
+}).then(r => r.json());
+
+// live multilingual STT — language-tagged Results, 10 languages, code-switching
+const ws = new WebSocket(`${API.replace("https","wss")}/v1/stt/live` +
+  `?api_key=${KEY}&language=multi&encoding=linear16&sample_rate=16000`);
+```
+</details>
+
+Full reference with every endpoint, WebSocket framing, and error shapes:
+[**docs**](https://labs.supafone.ai/docs.html) · interactive
+[OpenAPI](https://api.labs.supafone.ai/docs).
+
+## Pricing
+
+| | |
+|---|---|
+| **Signup** | 5 free minutes, no card |
+| **Pay as you go** | [$10 → 400 minutes](https://buy.stripe.com/7sY00d4Mz4yoaiF9003VC01) |
+| **Subscription** | [$49/mo → 2,000 minutes](https://buy.stripe.com/14A28l6UH4yo3Uh4JK3VC00) |
+| **Metering** | oracle call = 1s · TTS ≈ seconds of speech · live STT = session time |
+| **Self-host** | free forever — the gateway (`cloud/`) is in this repo, MIT |
+
+Every billed second is itemized in [`/v1/logs`](https://labs.supafone.ai/console.html).
+BYO vendor keys always win when present — leaving the cloud is deleting one
+environment variable.
+
+## Works with every voice platform
+
+Speech-to-speech models, STT→LLM→TTS pipelines, frameworks, and raw speech
+engines each get the injection channel they actually have:
+
+| Platform | Kind | Whisper delivery |
+|---|---|---|
+| Ultravox | S2S agent | `inject_message` |
+| OpenAI GPT-Realtime · xAI Grok | S2S agents | `session.update` prompt patch |
+| Vapi | pipeline agent | `assistant_override` |
+| Retell | custom-LLM WS | system message into your LLM turn |
+| ElevenLabs Agents | pipeline agent | `contextual_update` |
+| Deepgram Voice Agent | pipeline agent | `UpdatePrompt` |
+| Pipecat · LiveKit Agents | frameworks | context frame / chat-context append |
+| Bland · Cartesia · Inworld | tap-only | observed, honestly not injectable |
+| Anything else | webhook | `GenericWebhookAdapter`, configurable |
+
+Five providers are verified against **live APIs** in the repeatable test suite
+(`pytest -m live`); the rest are built to current official docs with citations
+— [docs/providers.md](docs/providers.md) marks which is which. Telephony is
+transport-agnostic: Twilio, Telnyx, SignalWire, Vonage, Plivo, LiveKit SIP,
+Jambonz, FreeSWITCH/Asterisk, and SIPREC forks all feed the same tap
+([SIP matrix](https://labs.supafone.ai/docs.html#sip)).
+
+Runnable integrations for every permutation live in [`examples/`](examples/).
+
+## Live multilingual transcription
+
+Callers switch languages mid-sentence; the tap keeps up. Deepgram nova-3
+`language=multi` code-switches live across en/es/fr/de/hi/ru/pt/ja/it/nl,
+every utterance arrives language-tagged, and the coaching comes back in the
+caller's language — Spanish callers get Spanish guardrails, silently, mid-call.
+
+```python
+from supafone_labs.stt import MultilingualCallTap, recommended_setup
+
+recommended_setup("vapi")                       # -> use Vapi's transcripts, skip the tap
+recommended_setup("ultravox", multilingual=True)  # -> tap becomes the language authority
+
+tap = MultilingualCallTap(brain, session_id=call_sid)   # any SIP/audio fork
+await tap.feed(track="inbound", payload_b64=frame)
+```
+
+One rule prevents every bad combination: **exactly one transcript source per
+call** — `recommended_setup()` picks it, so you never double-ingest or
+double-pay. With `SUPAFONE_LABS_API_KEY` set and no Deepgram account, the tap
+routes through the hosted proxy automatically.
+
+## Pick your model. Write your prompts.
+
+```python
+brain = supafone_labs.SupafoneLabs(
+    provider="ultravox",
+    oracle_model="claude-sonnet-4-6",     # provider auto-inferred (Anthropic/OpenAI/xAI/hosted)
+    oracle_instructions="Coach for a bilingual intake desk. Empathy before logistics.",
+)
+
+models = await supafone_labs.discover_oracle_models()   # live vendor catalogs, cached hourly
+```
+
+Model routing is prefix-based and the catalogs are fetched from vendor APIs at
+runtime — **a model released tomorrow works today**, no package update. The
+static table in `config.py` is an offline fallback only.
+
+## Built for production
+
+- **Degrade-safe by construction** — the oracle runs behind a timeout off the
+  hot path; a stalled LLM, a dead STT socket, or a failed TTS backend can never
+  take down the call it's shadowing. The TTS chain fails downward
+  (hosted → your keys → offline audio); the tap no-ops without credentials.
+- **Auditable** — every whispered instruction is in `/v1/logs` with a
+  timestamp and its exact cost. No black box.
+- **Tested like infrastructure** — 200+ offline tests (every adapter's parse,
+  injection compile, and capability honesty; end-to-end facade runs per
+  provider; billing; tiering) plus live contract checks against Deepgram,
+  Ultravox, ElevenLabs, Cartesia, and Inworld.
+- **No lock-in** — MIT package, MIT gateway. Self-host the whole cloud:
+  `cd cloud && uvicorn app:app`.
+
+## The research behind it
+
+The architecture is an assembly of five peer-reviewed threads — dual-process
+talker/reasoner agents (DeepMind's [Talker-Reasoner](https://arxiv.org/abs/2410.08328)),
+the evidence that models [can't reliably self-correct](https://arxiv.org/abs/2310.01798)
+(hence an *external* supervisor), generator/verifier splits
+([Cobbe 2021](https://arxiv.org/abs/2110.14168), [Lightman 2023](https://arxiv.org/abs/2305.20050),
+[Baker 2025](https://arxiv.org/abs/2503.11926)), inference-time multi-model oversight
+(Sakana AI's [AB-MCTS](https://arxiv.org/abs/2503.04412)), and feedback-driven prompt
+optimization ([OPRO](https://arxiv.org/abs/2309.03409), [DSPy](https://arxiv.org/abs/2310.03714),
+[TextGrad](https://arxiv.org/abs/2406.07496)). All 22 citations, verified and annotated:
+[**the research page**](https://labs.supafone.ai/research.html), and the full synthesis —
+meta-analysis plus the formal runtime treatment — is the
+[**whitepaper (PDF)**](https://labs.supafone.ai/whitepaper.pdf)
+([LaTeX source](paper/whitepaper.tex)).
+
+## Repo layout
+
+```
+src/supafone_labs/     the package — facade, oracle, runtime + 13 adapters, tts, stt, tiers
+cloud/              Supafone Labs Cloud — the hosted gateway (FastAPI)
+landing/            the website (landing, get-key, console, docs)
+examples/           one runnable integration per platform + TypeScript client
+tests/              200+ offline tests · live contract checks (pytest -m live)
+docs/               provider capability matrix + quickstart
+```
+
+## Development
+
+```bash
+make install                  # editable install + dev tools
+make test                     # offline suite (live tests skip without keys)
+pytest -m live                # live provider contract checks
+make lint                     # ruff
+cd cloud && uvicorn app:app --reload    # run the gateway locally
+```
+
+## Security
+
+Keys are bearer credentials — treat `sl_live_…` like a password. The gateway
+stores no call audio; logs keep a 240-char excerpt per request (last 1,000 per
+key) for your own auditability. Report vulnerabilities via
+[SECURITY.md](SECURITY.md).
+
+## License
+
+MIT © 2026 Sam Savage. Free tier is free forever; the cloud exists because one
+key that runs everything is more convenient than five vendor accounts.

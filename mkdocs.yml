@@ -1,0 +1,31 @@
+site_name: Supafone Labs
+site_description: Build hosted Supafone agents with managed numbers, stages, tools, and Supafone Pro watcher built in.
+site_url: https://labs.supafone.ai/
+repo_url: https://github.com/samthedataman/supafone-labs
+repo_name: supafone/labs
+
+theme:
+  name: material
+  palette:
+    - scheme: default
+      primary: deep purple
+      toggle: { icon: material/weather-night, name: Dark mode }
+    - scheme: slate
+      primary: deep purple
+      toggle: { icon: material/weather-sunny, name: Light mode }
+  features:
+    - content.code.copy
+    - navigation.sections
+    - navigation.top
+
+nav:
+  - Home: index.md
+  - Quickstart: quickstart.md
+  - Hosted Agents API: hosted-agents-api.md
+  - Providers & frameworks: providers.md
+
+markdown_extensions:
+  - admonition
+  - pymdownx.highlight
+  - pymdownx.superfences
+  - tables
