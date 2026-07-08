@@ -24,17 +24,25 @@ recordings, transcripts, and optional Supafone Pro watcher. You do not need
 Ultravox, Twilio, Cartesia, Inworld, ElevenLabs, or Deepgram keys in the default
 path.
 
+There are two main features:
+
+- **Agent Factory** creates a complete hosted agent with managed defaults, so
+  developers do not need their own agent-platform, telephony, TTS, STT, or LLM
+  keys to get started.
+- **Self-healing watcher** attaches Supafone Labs to a hosted or existing agent
+  and sends silent corrective directives only when `labs.enabled` is on.
+
 Think of this as the full agent-building framework path: choose the voice you
 like, pick a built-in stage preset, turn on tools, and Supafone generates the
 durable agent profile and phone line that sync to the normal Supafone account.
 
 ```bash
-npm i @supafone/labs
+npm i supafone-labs
 export SUPAFONE_API_KEY=sf_live_...
 ```
 
 ```ts
-import { Supafone } from "@supafone/labs";
+import { Supafone } from "supafone-labs";
 
 const supafone = new Supafone({
   apiKey: process.env.SUPAFONE_LABS_API_KEY || process.env.SUPAFONE_API_KEY!,
@@ -76,7 +84,8 @@ const salesAgent = await supafone.labs.agents.createOutboundWithNumber({
 });
 ```
 
-Teams that already own telephony can configure BYOK later:
+Teams that already own provider accounts can configure BYOK later. Keep the
+three lanes separate: agent/provider stack, telephony, and TTS.
 
 ```ts
 await supafone.labs.telephony.configure({
@@ -87,6 +96,23 @@ await supafone.labs.telephony.configure({
     authToken: process.env.TWILIO_AUTH_TOKEN!,
     fromNumber: "+14155550123",
   },
+});
+```
+
+```ts
+await supafone.labs.agents.createOutbound({
+  agentKey: "byok-speed-to-lead",
+  name: "BYOK speed to lead",
+  byok: {
+    agentProvider: { provider: "ultravox", apiKey: process.env.ULTRAVOX_API_KEY },
+    telephony: {
+      mode: "byok",
+      provider: "telnyx",
+      credentials: { apiKey: process.env.TELNYX_API_KEY }
+    },
+    tts: { provider: "cartesia", apiKey: process.env.CARTESIA_API_KEY }
+  },
+  labs: { enabled: true, mode: "byok", managedInfrastructure: false }
 });
 ```
 

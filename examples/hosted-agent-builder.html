@@ -1,0 +1,1741 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="icon" type="image/png" sizes="192x192" href="/brand/icon-192.png">
+<link rel="apple-touch-icon" href="/brand/icon-192.png">
+<title>Agent Builder - Supafone Labs</title>
+<script>document.documentElement.dataset.theme = localStorage.getItem("sl_theme") || "light";</script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400..700&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg:#f6f7fb; --bg2:#eef1f7; --panel:#ffffff; --panel2:#f9fafc; --line:#dfe5ef;
+    --text:#111827; --muted:#5f6b7f; --dim:#97a1b3;
+    --brand:#635bff; --brand2:#0e9f8f; --gold:#b7791f; --hot:#d94f38;
+    --navbg:rgba(246,247,251,.88); --codebg:#0d1322; --codetext:#dbe7ff;
+    --shadow:0 22px 70px -46px rgba(17,24,39,.45);
+    --mono:"SF Mono",ui-monospace,Menlo,Monaco,Consolas,monospace;
+  }
+  html[data-theme="dark"] {
+    --bg:#070a12; --bg2:#0e1421; --panel:#111827; --panel2:#0c1220; --line:#20293b;
+    --text:#eef2f8; --muted:#a0aabd; --dim:#697386;
+    --brand:#8b7bff; --brand2:#42d6c8; --gold:#f5b74d; --hot:#ff7d6b;
+    --navbg:rgba(7,10,18,.82); --codebg:#070b13; --codetext:#dbe7ff;
+    --shadow:0 24px 80px -44px rgba(0,0,0,.78);
+  }
+  * { box-sizing:border-box; margin:0; padding:0; }
+  html, body { max-width:100%; overflow-x:hidden; }
+  body { min-height:100vh; background:var(--bg); color:var(--text); font:14.5px/1.55 Inter,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif; }
+  a { color:inherit; text-decoration:none; }
+  button, input, textarea, select { font:inherit; }
+  button { cursor:pointer; }
+  h1,h2,h3,.logo { font-family:"Space Grotesk",Inter,sans-serif; letter-spacing:0; }
+  nav { position:sticky; top:0; z-index:30; border-bottom:1px solid var(--line); background:var(--navbg); backdrop-filter:blur(14px); -webkit-backdrop-filter:blur(14px); }
+  nav .wrap { width:min(1240px,calc(100% - 40px)); height:62px; margin:0 auto; display:flex; align-items:center; gap:22px; }
+  .logo { display:inline-flex; align-items:baseline; gap:4px; font-size:19px; font-weight:800; color:var(--text); }
+  .logo span { color:var(--brand); }
+  .logo em { color:var(--brand2); font-style:normal; font-size:12px; letter-spacing:.04em; text-transform:uppercase; }
+  nav .links { margin-left:auto; display:flex; align-items:center; gap:18px; color:var(--muted); font-size:13.5px; font-weight:650; }
+  nav .links a:hover { color:var(--text); }
+  .theme-btn { min-height:32px; padding:0 11px; border-radius:8px; border:1px solid var(--line); background:var(--bg2); color:var(--muted); font-size:12px; font-weight:700; }
+  .navtoggle { display:none; margin-left:auto; width:42px; height:38px; align-items:center; justify-content:center; border:1px solid var(--line); border-radius:8px; background:var(--bg2); }
+  .navtoggle span, .navtoggle span:before, .navtoggle span:after { display:block; width:18px; height:2px; background:var(--text); position:relative; transition:.16s; content:""; }
+  .navtoggle span:before { position:absolute; top:-6px; left:0; }
+  .navtoggle span:after { position:absolute; top:6px; left:0; }
+  .navtoggle.open span { background:transparent; }
+  .navtoggle.open span:before { top:0; transform:rotate(45deg); }
+  .navtoggle.open span:after { top:0; transform:rotate(-45deg); }
+
+  main { width:min(1440px,calc(100% - 28px)); margin:0 auto; padding:16px 0 56px; }
+  .hero { display:grid; grid-template-columns:minmax(0,1fr) 300px; gap:12px; align-items:stretch; margin-bottom:12px; }
+  .hero-copy { padding:18px; border:1px solid var(--line); border-radius:8px; background:linear-gradient(180deg,rgba(255,255,255,.88),rgba(255,255,255,.68)); box-shadow:var(--shadow); }
+  html[data-theme="dark"] .hero-copy { background:linear-gradient(180deg,rgba(17,24,39,.92),rgba(12,18,32,.74)); }
+  .eyebrow { display:inline-flex; align-items:center; gap:8px; color:var(--brand2); font-family:var(--mono); font-size:11px; font-weight:800; letter-spacing:.08em; text-transform:uppercase; }
+  .eyebrow:before { content:""; width:8px; height:8px; border-radius:99px; background:var(--brand2); box-shadow:0 0 0 4px rgba(14,159,143,.13); }
+  h1 { margin-top:8px; font-size:36px; line-height:1.04; max-width:820px; }
+  .hero-copy p { max-width:840px; margin-top:9px; color:var(--muted); font-size:14px; line-height:1.5; }
+  .sdk-card { border:1px solid var(--line); border-radius:8px; background:var(--panel); box-shadow:var(--shadow); padding:13px; display:grid; gap:9px; align-content:start; }
+  .sdk-card .k { color:var(--dim); font-family:var(--mono); font-size:10.5px; font-weight:800; letter-spacing:.08em; text-transform:uppercase; }
+  .sdk-card .v { color:var(--text); font-weight:800; font-size:18px; }
+  .sdk-card .mini { display:grid; grid-template-columns:1fr 1fr; gap:8px; }
+  .metric { min-width:0; padding:10px; border:1px solid var(--line); border-radius:8px; background:var(--panel2); }
+  .metric strong { display:block; color:var(--text); font-size:15px; }
+  .metric span { color:var(--muted); font-size:12px; }
+
+  .builder-shell { display:grid; grid-template-columns:1fr; gap:12px; align-items:start; }
+  .panel, .workspace-panel { border:1px solid var(--line); border-radius:8px; background:rgba(255,255,255,.88); box-shadow:var(--shadow); }
+  html[data-theme="dark"] .panel, html[data-theme="dark"] .workspace-panel { background:rgba(17,24,39,.9); }
+  .panel { padding:12px; position:relative; top:auto; max-height:none; overflow:visible; display:grid; grid-template-columns:1.08fr 1fr 1fr 1.2fr 1.45fr; gap:10px; align-items:start; }
+  .section-title { grid-column:1/-1; display:flex; align-items:center; justify-content:space-between; gap:12px; margin:0; }
+  .section-title h2, .section-title h3 { font-size:15px; font-weight:800; }
+  .step { display:inline-flex; align-items:center; justify-content:center; width:22px; height:22px; border-radius:999px; background:var(--bg2); border:1px solid var(--line); color:var(--muted); font-family:var(--mono); font-size:11px; font-weight:900; }
+  .group { min-width:0; padding:10px; border:1px solid var(--line); border-radius:8px; background:var(--panel2); }
+  .group:first-of-type { border-top:1px solid var(--line); padding-top:10px; }
+  label { display:block; margin:7px 0 4px; color:var(--dim); font-family:var(--mono); font-size:10px; font-weight:800; letter-spacing:.08em; text-transform:uppercase; }
+  input, textarea, select { width:100%; min-height:34px; padding:8px 9px; border:1px solid var(--line); border-radius:8px; background:var(--bg2); color:var(--text); outline:none; }
+  textarea { min-height:62px; line-height:1.42; resize:vertical; }
+  input:focus, textarea:focus, select:focus { border-color:var(--brand); box-shadow:0 0 0 3px rgba(99,91,255,.12); }
+  .row { display:grid; grid-template-columns:1fr 1fr; gap:6px; }
+  .seg { display:flex; flex-wrap:wrap; gap:5px; }
+  .seg button, .chip { min-height:30px; padding:6px 8px; border:1px solid var(--line); border-radius:8px; background:var(--bg2); color:var(--muted); font-size:11px; font-weight:800; }
+  .seg button:hover, .chip:hover { border-color:var(--brand); color:var(--text); }
+  .seg button.on { border-color:var(--brand); background:rgba(99,91,255,.09); color:var(--brand); }
+  .seg button.hot.on { border-color:var(--hot); color:var(--hot); background:rgba(217,79,56,.08); }
+  .seg button.gold.on { border-color:var(--gold); color:var(--gold); background:rgba(183,121,31,.08); }
+  .tool-grid { display:grid; grid-template-columns:1fr 1fr; gap:5px; }
+  .chip { width:100%; display:flex; align-items:center; justify-content:space-between; gap:8px; text-align:left; }
+  .chip:after { content:""; width:9px; height:9px; border-radius:99px; background:var(--dim); opacity:.45; flex:0 0 auto; }
+  .chip.on { border-color:rgba(14,159,143,.45); background:rgba(14,159,143,.08); color:var(--brand2); }
+  .chip.on:after { background:var(--brand2); opacity:1; box-shadow:0 0 0 4px rgba(14,159,143,.12); }
+  .switch-row { display:flex; align-items:center; justify-content:space-between; gap:10px; padding:8px 9px; border:1px solid var(--line); border-radius:8px; background:var(--bg2); }
+  .switch-row span { color:var(--text); font-weight:800; font-size:13px; }
+  .switch-row small { display:block; color:var(--muted); font-size:12px; font-weight:500; margin-top:2px; }
+  .switch { position:relative; width:48px; height:28px; border:0; border-radius:999px; background:var(--line); flex:0 0 auto; }
+  .switch:after { content:""; position:absolute; top:4px; left:4px; width:20px; height:20px; border-radius:999px; background:#fff; transition:.16s; box-shadow:0 4px 10px rgba(0,0,0,.16); }
+  .switch.on { background:var(--brand2); }
+  .switch.on:after { transform:translateX(20px); }
+
+  .workspace { display:grid; gap:12px; min-width:0; }
+  .top-grid { display:grid; grid-template-columns:1.15fr .85fr; gap:12px; }
+  .workspace-panel { overflow:hidden; }
+  .panel-head { min-height:54px; display:flex; align-items:center; justify-content:space-between; gap:12px; padding:15px 16px; border-bottom:1px solid var(--line); background:linear-gradient(180deg,rgba(249,250,252,.88),rgba(255,255,255,.66)); }
+  html[data-theme="dark"] .panel-head { background:linear-gradient(180deg,rgba(15,23,42,.9),rgba(12,18,32,.65)); }
+  .panel-head h2, .panel-head h3 { font-size:15px; }
+  .panel-head span { color:var(--muted); font-size:12.5px; }
+  .panel-body { padding:12px; }
+  .summary-grid { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:10px; }
+  .summary-item { min-width:0; padding:12px; border:1px solid var(--line); border-radius:8px; background:var(--panel2); }
+  .summary-item b { display:block; color:var(--text); font-size:16px; line-height:1.15; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .summary-item span { display:block; color:var(--muted); font-size:12px; margin-top:4px; }
+  .flow { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:8px; margin-top:12px; }
+  .flow div { padding:10px; border:1px solid var(--line); border-radius:8px; background:var(--panel2); min-height:76px; }
+  .flow b { display:block; color:var(--text); font-size:12.5px; }
+  .flow span { display:block; color:var(--muted); font-size:11.5px; line-height:1.35; margin-top:3px; }
+  .checks { display:grid; gap:8px; }
+  .check { display:flex; gap:9px; align-items:flex-start; padding:10px; border:1px solid var(--line); border-radius:8px; background:var(--panel2); color:var(--muted); font-size:12.5px; }
+  .check i { width:10px; height:10px; border-radius:99px; background:var(--dim); margin-top:4px; flex:0 0 auto; }
+  .check.ok { color:var(--text); }
+  .check.ok i { background:var(--brand2); box-shadow:0 0 0 4px rgba(14,159,143,.12); }
+  .check.warn i { background:var(--gold); box-shadow:0 0 0 4px rgba(183,121,31,.12); }
+  .check.err i { background:var(--hot); box-shadow:0 0 0 4px rgba(217,79,56,.12); }
+
+  .tabs { display:flex; gap:6px; flex-wrap:wrap; }
+  .tabs button { min-height:32px; padding:0 10px; border:1px solid var(--line); border-radius:8px; background:var(--bg2); color:var(--muted); font-size:12px; font-weight:800; }
+  .tabs button.on { border-color:var(--brand); color:var(--brand); background:rgba(99,91,255,.09); }
+  .code-toolbar { display:flex; align-items:center; gap:8px; flex-wrap:wrap; }
+  .code-editor { display:block; width:100%; min-height:320px; padding:14px; border:0; border-radius:0; background:var(--codebg); color:var(--codetext); font:12.5px/1.58 var(--mono); resize:vertical; tab-size:2; }
+  .code-editor:focus { box-shadow:inset 0 0 0 2px rgba(66,214,200,.36); border:0; }
+  .btn { min-height:40px; padding:0 14px; border:1px solid var(--line); border-radius:8px; background:var(--bg2); color:var(--text); font-size:13px; font-weight:850; }
+  .btn.primary { border-color:transparent; background:linear-gradient(135deg,var(--brand),#5548e8); color:#fff; box-shadow:0 16px 34px -24px rgba(99,91,255,.78); }
+  .btn.green { border-color:transparent; background:linear-gradient(135deg,var(--brand2),#087c73); color:#fff; box-shadow:0 16px 34px -24px rgba(14,159,143,.7); }
+  .btn.danger { border-color:rgba(217,79,56,.32); color:var(--hot); background:rgba(217,79,56,.06); }
+  .btn:disabled { opacity:.58; cursor:wait; }
+  .actions { display:flex; flex-wrap:wrap; gap:9px; align-items:center; padding:13px 16px; border-top:1px solid var(--line); background:var(--panel2); }
+  .key-grid { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+  .advanced-drawers { margin-top:12px; display:grid; gap:8px; }
+  .advanced-drawers details { border:1px solid var(--line); border-radius:8px; background:var(--panel2); overflow:hidden; }
+  .advanced-drawers summary { min-height:38px; padding:9px 11px; color:var(--text); font-weight:850; cursor:pointer; list-style:none; }
+  .advanced-drawers summary::-webkit-details-marker { display:none; }
+  .drawer-body { padding:0 11px 11px; border-top:1px solid var(--line); }
+  .drawer-grid { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:8px; }
+  .voice-preview-row { display:grid; grid-template-columns:minmax(0,1fr) auto; gap:6px; align-items:end; }
+  .voice-preview-row audio { width:100%; min-width:0; height:36px; }
+  .log-controls { display:flex; flex-wrap:wrap; gap:8px; align-items:center; }
+  .log-view { display:block; min-height:170px; max-height:280px; overflow:auto; padding:12px; border-radius:8px; background:var(--codebg); color:var(--codetext); font:12px/1.55 var(--mono); white-space:pre-wrap; }
+  .manager-grid { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+  .list-view { display:grid; gap:8px; max-height:360px; overflow:auto; }
+  .list-item { display:grid; gap:8px; padding:10px; border:1px solid var(--line); border-radius:8px; background:var(--panel2); }
+  .list-item b { color:var(--text); font-size:13px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .list-item span { color:var(--muted); font-size:12px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .item-actions { display:flex; flex-wrap:wrap; gap:6px; }
+  .item-actions .btn { min-height:32px; padding:0 10px; font-size:12px; }
+  .status-line { min-height:24px; color:var(--muted); font-size:12.5px; }
+  .status-line.ok { color:var(--brand2); }
+  .status-line.err { color:var(--hot); }
+  .result-log { display:none; margin-top:12px; max-height:340px; overflow:auto; padding:13px; border-radius:8px; background:var(--codebg); color:var(--codetext); font:12px/1.55 var(--mono); white-space:pre-wrap; }
+  .powered-by { position:fixed; right:14px; bottom:12px; z-index:20; color:var(--dim); font-size:11.5px; background:rgba(255,255,255,.82); border:1px solid var(--line); border-radius:8px; padding:6px 9px; backdrop-filter:blur(10px); }
+  html[data-theme="dark"] .powered-by { background:rgba(17,24,39,.82); }
+
+  @media (max-width:1180px) {
+    .panel { grid-template-columns:repeat(3,minmax(0,1fr)); }
+  }
+  @media (max-width:1040px) {
+    .hero, .top-grid { grid-template-columns:1fr; }
+  }
+  @media (max-width:760px) {
+    nav { top:10px; padding:0 12px; border:0; background:transparent; }
+    nav .wrap { width:100%; height:56px; padding:0 12px; border:1px solid var(--line); border-radius:8px; background:var(--navbg); position:relative; }
+    .navtoggle { display:inline-flex; }
+    nav .links { display:none; position:absolute; top:calc(100% + 8px); left:0; right:0; margin:0; padding:8px; flex-direction:column; align-items:stretch; gap:2px; border:1px solid var(--line); border-radius:8px; background:var(--panel); box-shadow:var(--shadow); }
+    nav .links.open { display:flex; }
+    nav .links a, nav .links .theme-btn { width:100%; text-align:left; padding:12px; border-radius:8px; }
+    main { width:calc(100% - 28px); padding-top:22px; }
+    .hero-copy, .panel, .workspace-panel { box-shadow:none; }
+    .panel { display:grid; grid-template-columns:1fr; }
+    .summary-grid, .flow, .key-grid, .row, .manager-grid { grid-template-columns:1fr; }
+    .drawer-grid, .voice-preview-row { grid-template-columns:1fr; }
+    .tool-grid { grid-template-columns:1fr; }
+    h1 { font-size:32px; }
+    .powered-by { display:none; }
+  }
+</style>
+</head>
+<body>
+<div class="supafone-ghost-scene" aria-hidden="true"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></div>
+<nav><div class="wrap">
+  <a class="logo" href="../README.md">supafone <span>ai</span><em>Labs</em></a>
+  <div class="links"><button class="theme-btn" id="themeBtn" type="button">Dark</button><a href="../gitbook/README.md">GitBook</a><a href="../docs/index.md">Docs</a><a href="../sdk-ts/README.md">TypeScript</a><a href="../mcp/README.md">MCP</a><a href="https://github.com/samthedataman/supafone-labs">GitHub</a></div>
+</div></nav>
+
+<main>
+  <section class="hero">
+    <div class="hero-copy">
+      <div class="eyebrow">SDK native builder</div>
+      <h1>Build the agent in the UI, ship the same config in code.</h1>
+      <p>Configure a hosted Supafone voice agent, edit the generated TypeScript, export the SDK call, and provision through <code>supafone-labs</code>. Shared number pool is the default path.</p>
+    </div>
+    <aside class="sdk-card" aria-label="SDK contract">
+      <div>
+        <div class="k">Package</div>
+        <div class="v">supafone-labs@0.3.1</div>
+      </div>
+      <div class="mini">
+        <div class="metric"><strong>SDK</strong><span>createInbound / createOutbound</span></div>
+        <div class="metric"><strong>API</strong><span>/api/v1/labs/agents</span></div>
+      </div>
+      <div class="metric"><strong>Default number</strong><span>Shared pool, $0/month until you reserve a line.</span></div>
+    </aside>
+  </section>
+
+  <section class="builder-shell" aria-label="Agent builder">
+    <form class="panel" id="builderForm">
+      <div class="section-title"><h2>Agent controls</h2><span class="step">1</span></div>
+
+      <div class="group identity-group">
+        <label for="businessName">Business</label>
+        <input id="businessName" autocomplete="organization" value="Acme Health">
+        <div class="row">
+          <div>
+            <label for="agentName">Agent name</label>
+            <input id="agentName" value="Maya">
+          </div>
+          <div>
+            <label for="agentKey">Agent key</label>
+            <input id="agentKey" class="mono" value="acme-health-inbound-receptionist">
+          </div>
+        </div>
+        <label for="websiteUrl">Website</label>
+        <input id="websiteUrl" placeholder="https://example.com">
+      </div>
+
+      <div class="group recipe-group">
+        <label>Direction</label>
+        <input id="direction" type="hidden" value="inbound">
+        <div class="seg" data-bind="direction">
+          <button type="button" class="on" data-value="inbound">Inbound</button>
+          <button type="button" data-value="outbound">Outbound</button>
+        </div>
+        <label>Agent recipe</label>
+        <input id="agentRecipe" type="hidden" value="receptionist">
+        <div class="seg" data-bind="agentRecipe">
+          <button type="button" class="on" data-value="receptionist">Receptionist</button>
+          <button type="button" data-value="sales">Sales</button>
+          <button type="button" data-value="intake">Intake</button>
+          <button type="button" data-value="support">Support</button>
+          <button type="button" data-value="scheduler">Scheduler</button>
+          <button type="button" data-value="custom">Custom</button>
+        </div>
+        <label>Runtime</label>
+        <input id="runtime" type="hidden" value="phone">
+        <div class="seg" data-bind="runtime">
+          <button type="button" class="on" data-value="phone">Phone</button>
+          <button type="button" data-value="web">Web widget</button>
+          <button type="button" data-value="campaign">Campaign</button>
+        </div>
+      </div>
+
+      <div class="group voice-group">
+        <label>Phone number</label>
+        <input id="numberStrategy" type="hidden" value="default_pool">
+        <div class="seg" data-bind="numberStrategy">
+          <button type="button" class="on" data-value="default_pool">Shared pool - $0</button>
+          <button type="button" class="gold" data-value="dedicated">Dedicated - $1.50/mo</button>
+          <button type="button" class="hot" data-value="premium">Premium - $3/mo</button>
+          <button type="button" data-value="byok">Bring carrier</button>
+        </div>
+        <label>BYOK carrier</label>
+        <input id="telephonyProvider" type="hidden" value="twilio">
+        <div class="seg" data-bind="telephonyProvider">
+          <button type="button" class="on" data-value="twilio">Twilio</button>
+          <button type="button" data-value="telnyx">Telnyx</button>
+          <button type="button" data-value="plivo">Plivo</button>
+          <button type="button" data-value="signalwire">SignalWire</button>
+          <button type="button" data-value="sip">SIP</button>
+        </div>
+        <label>Voice provider</label>
+        <input id="voiceProvider" type="hidden" value="ultravox">
+        <div class="seg" data-bind="voiceProvider">
+          <button type="button" class="on" data-value="ultravox">Ultravox</button>
+          <button type="button" data-value="cartesia">Cartesia</button>
+          <button type="button" data-value="elevenlabs">ElevenLabs</button>
+          <button type="button" data-value="deepgram">Deepgram</button>
+          <button type="button" data-value="inworld">Inworld</button>
+        </div>
+        <label for="voiceId">Voice id</label>
+        <input id="voiceId" placeholder="optional provider voice id">
+        <label for="voiceCatalog">Voice catalog</label>
+        <div class="voice-preview-row">
+          <select id="voiceCatalog"><option value="">Loading voices...</option></select>
+          <button class="btn" id="previewVoice" type="button">Preview</button>
+        </div>
+        <audio id="voiceAudio" controls preload="none"></audio>
+      </div>
+
+      <div class="group labs-group">
+        <label>Supafone Pro</label>
+        <div class="switch-row">
+          <div><span>Self-healing watcher</span><small>Live whispers, QA, scoring, optimizer.</small></div>
+          <button class="switch on" id="selfHealingSwitch" type="button" aria-pressed="true"></button>
+        </div>
+        <label>Labs infrastructure</label>
+        <input id="labsMode" type="hidden" value="supafone_managed">
+        <div class="seg" data-bind="labsMode">
+          <button type="button" class="on" data-value="supafone_managed">Supafone key</button>
+          <button type="button" data-value="byok">BYO stack</button>
+        </div>
+        <label>Tools</label>
+        <div class="tool-grid" id="toolGrid">
+          <button type="button" class="chip on" data-tool="callRouting">Routing</button>
+          <button type="button" class="chip on" data-tool="scheduling">Scheduling</button>
+          <button type="button" class="chip on" data-tool="sms">SMS</button>
+          <button type="button" class="chip on" data-tool="email">Email</button>
+          <button type="button" class="chip on" data-tool="firmKnowledge">Knowledge</button>
+          <button type="button" class="chip" data-tool="voicemail">Voicemail</button>
+          <button type="button" class="chip" data-tool="emergencyEscalation">Escalation</button>
+          <button type="button" class="chip" data-tool="intakeForms">Forms</button>
+        </div>
+        <label>Call artifacts</label>
+        <div class="switch-row">
+          <div><span>Record calls</span><small>Store audio artifacts when allowed.</small></div>
+          <button class="switch on" id="recordingSwitch" type="button" aria-pressed="true"></button>
+        </div>
+        <div class="switch-row" style="margin-top:6px">
+          <div><span>Transcribe calls</span><small>Generate searchable transcripts.</small></div>
+          <button class="switch on" id="transcriptionSwitch" type="button" aria-pressed="true"></button>
+        </div>
+        <div class="row">
+          <div>
+            <label for="retentionDays">Retention days</label>
+            <input id="retentionDays" type="number" min="1" max="3650" value="30">
+          </div>
+          <div>
+            <label for="consentAnnouncement">Consent line</label>
+            <input id="consentAnnouncement" value="This call may be recorded for quality and training.">
+          </div>
+        </div>
+      </div>
+
+      <div class="group prompt-group">
+        <label for="goal">Goal</label>
+        <textarea id="goal">Greet callers, understand their need, answer approved questions, book the right next step, and never invent a confirmation.</textarea>
+        <label for="greeting">Greeting</label>
+        <input id="greeting" value="Hi, thanks for calling. How can I help today?">
+        <label for="systemPrompt">System prompt</label>
+        <textarea id="systemPrompt"></textarea>
+      </div>
+    </form>
+
+    <div class="workspace">
+      <div class="top-grid">
+        <section class="workspace-panel">
+          <div class="panel-head">
+            <div><h2>Launch summary</h2><span id="summarySub">Generated from the controls.</span></div>
+            <button class="btn" id="refreshCode" type="button">Refresh from UI</button>
+          </div>
+          <div class="panel-body">
+            <div class="summary-grid">
+              <div class="summary-item"><b id="summaryAgent">acme-health-inbound-receptionist</b><span>Agent key</span></div>
+              <div class="summary-item"><b id="summaryRoute">Inbound phone</b><span>Route</span></div>
+              <div class="summary-item"><b id="summaryCost">$0/mo</b><span>Number add-on</span></div>
+            </div>
+            <div class="flow">
+              <div><b>1. Configure</b><span>Recipe, direction, number, voice, and tools.</span></div>
+              <div><b>2. Export</b><span>SDK code, REST JSON, or curl.</span></div>
+              <div><b>3. Provision</b><span>Runs the published TypeScript SDK.</span></div>
+              <div><b>4. Iterate</b><span>Edit code or controls and rebuild.</span></div>
+            </div>
+          </div>
+        </section>
+
+        <section class="workspace-panel">
+          <div class="panel-head">
+            <div><h3>Readiness</h3><span id="readySub">Client-side validation.</span></div>
+          </div>
+          <div class="panel-body">
+            <div class="checks" id="checks"></div>
+          </div>
+        </section>
+      </div>
+
+      <section class="workspace-panel">
+        <div class="panel-head">
+          <div>
+            <h2>Exportable SDK code</h2>
+            <span>Editable. Copy it into your app or provision from this page.</span>
+          </div>
+          <div class="tabs" id="exportTabs">
+            <button type="button" class="on" data-tab="sdk">TypeScript SDK</button>
+            <button type="button" data-tab="python">Python SDK</button>
+            <button type="button" data-tab="json">REST JSON</button>
+            <button type="button" data-tab="curl">curl</button>
+          </div>
+        </div>
+        <textarea id="codeEditor" class="code-editor" spellcheck="false"></textarea>
+        <div class="actions">
+          <button class="btn primary" id="copyCode" type="button">Copy code</button>
+          <button class="btn" id="downloadCode" type="button">Download file</button>
+          <button class="btn" id="copyPayload" type="button">Copy JSON payload</button>
+          <span class="status-line" id="codeStatus">Generated from current UI state.</span>
+        </div>
+      </section>
+
+      <section class="workspace-panel">
+        <div class="panel-head">
+          <div>
+            <h2>Provision with the SDK</h2>
+            <span>Keys stay in this browser session and are never stored in localStorage.</span>
+          </div>
+        </div>
+        <div class="panel-body">
+          <div class="key-grid">
+            <div>
+              <label for="hostedKey">Supafone API key</label>
+              <input id="hostedKey" class="mono" type="password" placeholder="sf_live_...">
+            </div>
+            <div>
+              <label for="labsKey">Optional Labs override</label>
+              <input id="labsKey" class="mono" type="password" placeholder="leave blank to use Supafone key">
+            </div>
+          </div>
+          <div class="advanced-drawers" aria-label="Advanced BYOK credentials">
+            <details>
+              <summary>BYOK agent/provider stack</summary>
+              <div class="drawer-body">
+                <div class="drawer-grid">
+                  <div>
+                    <label for="byokAgentProvider">Provider</label>
+                    <select id="byokAgentProvider">
+                      <option value="ultravox">Ultravox</option>
+                      <option value="retell">Retell</option>
+                      <option value="vapi">Vapi</option>
+                      <option value="bland">Bland</option>
+                      <option value="livekit">LiveKit</option>
+                      <option value="pipecat">Pipecat</option>
+                      <option value="openai_realtime">GPT Realtime</option>
+                      <option value="grok">Grok</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label for="byokAgentKey">Provider key</label>
+                    <input id="byokAgentKey" class="mono" type="password" placeholder="provider key">
+                  </div>
+                  <div>
+                    <label for="byokAgentModel">Model/runtime</label>
+                    <input id="byokAgentModel" placeholder="optional model or runtime id">
+                  </div>
+                </div>
+              </div>
+            </details>
+            <details>
+              <summary>BYOK telephony</summary>
+              <div class="drawer-body">
+                <div class="drawer-grid">
+                  <div>
+                    <label for="telephonyAccountSid">Account/project id</label>
+                    <input id="telephonyAccountSid" class="mono" placeholder="AC..., project id, auth id">
+                  </div>
+                  <div>
+                    <label for="telephonyApiKey">API key/token</label>
+                    <input id="telephonyApiKey" class="mono" type="password" placeholder="carrier API key">
+                  </div>
+                  <div>
+                    <label for="telephonyApiSecret">Secret/auth token</label>
+                    <input id="telephonyApiSecret" class="mono" type="password" placeholder="carrier secret">
+                  </div>
+                  <div>
+                    <label for="telephonyFromNumber">From number</label>
+                    <input id="telephonyFromNumber" placeholder="+14155550123">
+                  </div>
+                  <div>
+                    <label for="sipTrunkUri">SIP trunk URI</label>
+                    <input id="sipTrunkUri" class="mono" placeholder="sip:trunk.example.com">
+                  </div>
+                  <div>
+                    <label for="sipUsername">SIP username</label>
+                    <input id="sipUsername" class="mono" placeholder="optional">
+                  </div>
+                </div>
+              </div>
+            </details>
+            <details>
+              <summary>BYOK TTS</summary>
+              <div class="drawer-body">
+                <div class="drawer-grid">
+                  <div>
+                    <label for="byokTtsProvider">TTS provider</label>
+                    <select id="byokTtsProvider">
+                      <option value="cartesia">Cartesia</option>
+                      <option value="elevenlabs">ElevenLabs</option>
+                      <option value="inworld">Inworld</option>
+                      <option value="deepgram">Deepgram</option>
+                      <option value="custom">Custom TTS</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label for="byokTtsKey">TTS key</label>
+                    <input id="byokTtsKey" class="mono" type="password" placeholder="TTS provider key">
+                  </div>
+                  <div>
+                    <label for="byokTtsVoice">Voice id</label>
+                    <input id="byokTtsVoice" placeholder="optional voice id">
+                  </div>
+                </div>
+              </div>
+            </details>
+          </div>
+          <div class="actions" style="padding:13px 0 0;border-top:0;background:transparent">
+            <button class="btn green" id="provisionSdk" type="button">Provision with supafone-labs SDK</button>
+            <button class="btn" id="dryRun" type="button">Validate config</button>
+            <button class="btn danger" id="clearKeys" type="button">Clear session keys</button>
+            <span class="status-line" id="provisionStatus">Ready to generate. Paste your Supafone key only when provisioning.</span>
+          </div>
+          <pre class="result-log" id="resultLog"></pre>
+        </div>
+      </section>
+
+      <section class="workspace-panel">
+        <div class="panel-head">
+          <div>
+            <h2>Live logs</h2>
+            <span>Streams Labs calls, whispers, TTS, STT, QA, and billing rows for the active key.</span>
+          </div>
+          <div class="log-controls">
+            <button class="btn" id="refreshLogs" type="button">Refresh</button>
+            <button class="btn" id="startLogs" type="button">Stream</button>
+            <button class="btn danger" id="stopLogs" type="button">Stop</button>
+          </div>
+        </div>
+        <div class="panel-body">
+          <pre class="log-view" id="logView">Paste a Supafone/Labs key, then refresh or stream logs.</pre>
+          <span class="status-line" id="logStatus">Logs are session-only in this browser.</span>
+        </div>
+      </section>
+
+      <section class="workspace-panel">
+        <div class="panel-head">
+          <div>
+            <h2>Agents and numbers</h2>
+            <span>Manage what this Supafone API key has already created.</span>
+          </div>
+          <div class="log-controls">
+            <button class="btn" id="refreshAssets" type="button">Refresh</button>
+            <button class="btn" id="searchNumbers" type="button">Search numbers</button>
+          </div>
+        </div>
+        <div class="panel-body">
+          <div class="key-grid">
+            <div>
+              <label for="numberAreaCode">Area code</label>
+              <input id="numberAreaCode" inputmode="numeric" maxlength="3" placeholder="415">
+            </div>
+            <div>
+              <label for="assignAgentKey">Assign number to agent</label>
+              <input id="assignAgentKey" class="mono" placeholder="agent key">
+            </div>
+          </div>
+          <div class="actions" style="padding:13px 0;border-top:0;background:transparent">
+            <button class="btn primary" id="createMoreAgent" type="button">Create from current config</button>
+            <button class="btn" id="buyFirstNumber" type="button">Buy first search result</button>
+            <button class="btn" id="assignSelectedNumber" type="button">Assign selected number</button>
+            <span class="status-line" id="assetStatus">Use Refresh after pasting a Supafone key.</span>
+          </div>
+          <div class="manager-grid">
+            <div>
+              <label>Existing agents</label>
+              <div class="list-view" id="agentList"></div>
+            </div>
+            <div>
+              <label>Phone numbers</label>
+              <div class="list-view" id="numberList"></div>
+            </div>
+            <div>
+              <label>Recent calls</label>
+              <div class="list-view" id="callList"></div>
+            </div>
+            <div>
+              <label>Recordings and transcripts</label>
+              <div class="list-view" id="artifactList"></div>
+            </div>
+          </div>
+        </div>
+      </section>
+    </div>
+  </section>
+</main>
+
+<div class="powered-by">Powered by <strong>Supafone Labs</strong></div>
+
+<script>
+const SDK_VERSION = "0.3.1";
+const SDK_CDN = "https://esm.sh/supafone-labs@" + SDK_VERSION;
+const HOSTED_API_BASE = "https://api.supafone.ai";
+const LABS_API_BASE = "https://api.labs.supafone.ai";
+const $ = (id) => document.getElementById(id);
+let activeTab = "sdk";
+let selfHealing = true;
+let recordingEnabled = true;
+let transcriptionEnabled = true;
+let agentKeyTouched = false;
+let sdkModulePromise = null;
+let logAbort = null;
+let latestNumberSearch = [];
+let selectedNumberId = "";
+let selectedPhoneNumber = "";
+
+const RECIPES = {
+  receptionist: {
+    label: "Receptionist",
+    goal: "Greet callers, answer approved questions, route urgent issues, and book appointments without inventing policies.",
+    preset: "general_intake_receptionist",
+  },
+  sales: {
+    label: "Sales",
+    goal: "Qualify leads, explain the offer clearly, handle objections, and book the next step while honoring opt-outs.",
+    preset: "speed_to_lead_caller",
+  },
+  intake: {
+    label: "Intake",
+    goal: "Collect the caller's need, timeline, urgency, contact details, and consent for follow-up without quoting fees.",
+    preset: "general_intake_receptionist",
+  },
+  support: {
+    label: "Support",
+    goal: "Resolve common issues, gather evidence, escalate edge cases, and never claim an action succeeded unless a tool confirms it.",
+    preset: "support_triage_agent",
+  },
+  scheduler: {
+    label: "Scheduler",
+    goal: "Find the right appointment path, confirm availability, collect contact details, and send a clear confirmation.",
+    preset: "appointment_scheduler",
+  },
+  custom: {
+    label: "Custom",
+    goal: "Complete the caller's goal accurately, warmly, and without unsupported claims.",
+    preset: "general_intake_receptionist",
+  },
+};
+
+const NUMBER_STRATEGIES = {
+  default_pool: { label: "Shared pool", cost: "$0/mo", mode: "supafone_managed", provider: "supafone", pool: "default", premium: false },
+  dedicated: { label: "Dedicated", cost: "$1.50/mo", mode: "supafone_managed", provider: "supafone", pool: "reserved", premium: false },
+  premium: { label: "Premium", cost: "$3/mo", mode: "supafone_managed", provider: "supafone", pool: "premium", premium: true },
+  byok: { label: "Bring carrier", cost: "$0/mo", mode: "byok", provider: "twilio", pool: "", premium: false },
+};
+
+function slugify(value) {
+  return String(value || "")
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "")
+    .slice(0, 72);
+}
+
+function clean(value) {
+  if (Array.isArray(value)) return value.map(clean).filter((v) => v !== undefined);
+  if (value && typeof value === "object") {
+    const out = {};
+    Object.entries(value).forEach(([key, val]) => {
+      const next = clean(val);
+      if (next !== undefined && next !== "" && !(Array.isArray(next) && !next.length)) out[key] = next;
+    });
+    return Object.keys(out).length ? out : undefined;
+  }
+  return value === undefined || value === null || value === "" ? undefined : value;
+}
+
+function selected(id) {
+  return $(id).value;
+}
+
+function recipe() {
+  return RECIPES[selected("agentRecipe")] || RECIPES.custom;
+}
+
+function numberPlan() {
+  return NUMBER_STRATEGIES[selected("numberStrategy")] || NUMBER_STRATEGIES.default_pool;
+}
+
+function envName(value, suffix = "API_KEY") {
+  return String(value || "provider").toUpperCase().replace(/[^A-Z0-9]+/g, "_") + "_" + suffix;
+}
+
+function envPlaceholder(name) {
+  return "${" + name + "}";
+}
+
+function secretValue(id, env, includeSecrets) {
+  const value = $(id).value.trim();
+  if (includeSecrets) return value || undefined;
+  return envPlaceholder(env);
+}
+
+function selectedVoiceName() {
+  const catalog = $("voiceCatalog").value;
+  if (catalog) return catalog;
+  const provider = selected("voiceProvider");
+  const voiceId = $("voiceId").value.trim();
+  return voiceId ? `${provider}:${voiceId}` : "supafone-labs-calm-en";
+}
+
+function customSipConfig(includeSecrets) {
+  const sipTrunkUri = $("sipTrunkUri").value.trim();
+  const username = $("sipUsername").value.trim();
+  if (!sipTrunkUri && !username) return undefined;
+  return clean({
+    sipTrunkUri: sipTrunkUri || (includeSecrets ? undefined : envPlaceholder("SIP_TRUNK_URI")),
+    username: username || (includeSecrets ? undefined : envPlaceholder("SIP_USERNAME")),
+    password: secretValue("telephonyApiSecret", "SIP_PASSWORD", includeSecrets),
+  });
+}
+
+function telephonyCredentials(includeSecrets) {
+  const provider = selected("telephonyProvider");
+  const account = $("telephonyAccountSid").value.trim();
+  const apiKey = $("telephonyApiKey").value.trim();
+  const secret = $("telephonyApiSecret").value.trim();
+  const fromNumber = $("telephonyFromNumber").value.trim();
+  if (provider === "twilio") {
+    return clean({
+      accountSid: includeSecrets ? account : envPlaceholder("TWILIO_ACCOUNT_SID"),
+      apiKey: includeSecrets ? apiKey : envPlaceholder("TWILIO_API_KEY_SID"),
+      apiSecret: includeSecrets ? secret : envPlaceholder("TWILIO_API_KEY_SECRET"),
+      fromNumber: fromNumber || envPlaceholder("TWILIO_FROM_NUMBER"),
+    });
+  }
+  if (provider === "telnyx") {
+    return clean({
+      apiKey: includeSecrets ? apiKey : envPlaceholder("TELNYX_API_KEY"),
+      connectionId: includeSecrets ? account : envPlaceholder("TELNYX_CONNECTION_ID"),
+      fromNumber: fromNumber || envPlaceholder("TELNYX_FROM_NUMBER"),
+    });
+  }
+  if (provider === "plivo") {
+    return clean({
+      authId: includeSecrets ? account : envPlaceholder("PLIVO_AUTH_ID"),
+      authToken: includeSecrets ? secret : envPlaceholder("PLIVO_AUTH_TOKEN"),
+      fromNumber: fromNumber || envPlaceholder("PLIVO_FROM_NUMBER"),
+    });
+  }
+  if (provider === "signalwire") {
+    return clean({
+      projectId: includeSecrets ? account : envPlaceholder("SIGNALWIRE_PROJECT_ID"),
+      token: includeSecrets ? apiKey || secret : envPlaceholder("SIGNALWIRE_TOKEN"),
+      fromNumber: fromNumber || envPlaceholder("SIGNALWIRE_FROM_NUMBER"),
+    });
+  }
+  return clean({
+    apiKey: includeSecrets ? apiKey : envPlaceholder(envName(provider)),
+    secret: includeSecrets ? secret : envPlaceholder(envName(provider, "SECRET")),
+    fromNumber,
+    customSip: customSipConfig(includeSecrets),
+  });
+}
+
+function byokConfig(includeSecrets = false) {
+  if (selected("labsMode") !== "byok" && selected("numberStrategy") !== "byok") return undefined;
+  const agentProvider = selected("byokAgentProvider");
+  const ttsProvider = selected("byokTtsProvider") || selected("voiceProvider");
+  return clean({
+    agentProvider: {
+      provider: agentProvider,
+      apiKey: secretValue("byokAgentKey", envName(agentProvider), includeSecrets),
+      model: $("byokAgentModel").value.trim(),
+    },
+    telephony: {
+      mode: "byok",
+      provider: selected("telephonyProvider"),
+      credentials: telephonyCredentials(includeSecrets),
+      customSip: customSipConfig(includeSecrets),
+    },
+    tts: {
+      provider: ttsProvider,
+      apiKey: secretValue("byokTtsKey", envName(ttsProvider), includeSecrets),
+      voiceId: $("byokTtsVoice").value.trim() || $("voiceId").value.trim(),
+    },
+  });
+}
+
+function defaultAgentKey() {
+  return slugify([
+    $("businessName").value || "supafone",
+    selected("direction"),
+    selected("agentRecipe"),
+  ].join("-")) || "supafone-agent";
+}
+
+function maybeRefreshAgentKey() {
+  if (!agentKeyTouched) $("agentKey").value = defaultAgentKey();
+}
+
+function buildSystemPrompt() {
+  const direction = selected("direction");
+  const recipeLabel = recipe().label.toLowerCase();
+  const goal = $("goal").value.trim() || recipe().goal;
+  const rules = [
+    "Speak in short, natural turns.",
+    "Ask one question at a time.",
+    "Never invent prices, bookings, policies, availability, or outcomes.",
+    "Only say an action succeeded after a tool or system confirms it.",
+    "Escalate to a human for legal, medical, financial, safety, or angry-caller edge cases.",
+  ];
+  if (direction === "outbound") rules.push("State who you are, why you are calling, and offer a quick opt-out immediately.");
+  if (selfHealing) rules.push("Read Supafone self-healing whispers silently and adjust the next response without saying the whisper aloud.");
+  return `You are a ${direction} ${recipeLabel} voice agent.\n\nGoal:\n${goal}\n\nRules:\n- ${rules.join("\n- ")}`;
+}
+
+function toolsConfig() {
+  const out = {};
+  document.querySelectorAll("#toolGrid [data-tool]").forEach((btn) => {
+    out[btn.dataset.tool] = btn.classList.contains("on");
+  });
+  return out;
+}
+
+function artifactConfig() {
+  const retentionDays = Math.max(1, Math.min(3650, Number($("retentionDays").value || 30)));
+  return clean({
+    recording: {
+      enabled: recordingEnabled,
+      recordAudio: recordingEnabled,
+      consentRequired: recordingEnabled,
+      announcement: recordingEnabled ? $("consentAnnouncement").value.trim() : undefined,
+      retentionDays,
+      storage: "supafone_managed",
+      redactPii: true,
+    },
+    transcription: {
+      enabled: transcriptionEnabled,
+      provider: "supafone_managed",
+      language: "multi",
+      redactPii: true,
+      diarization: true,
+      timestamps: true,
+    },
+    artifacts: {
+      recordings: recordingEnabled,
+      transcripts: transcriptionEnabled,
+      summaries: true,
+      qaReports: selfHealing,
+      logs: true,
+      retentionDays,
+    },
+    compliance: {
+      consent_required: recordingEnabled,
+      announcement: recordingEnabled ? $("consentAnnouncement").value.trim() : undefined,
+    },
+  });
+}
+
+function sdkConfig(includeSecrets = false) {
+  const direction = selected("direction");
+  const runtime = selected("runtime");
+  const number = numberPlan();
+  const agentKey = $("agentKey").value.trim() || defaultAgentKey();
+  const prompt = $("systemPrompt").value.trim() || buildSystemPrompt();
+  const managedNumber = number.mode === "supafone_managed";
+  const byok = byokConfig(includeSecrets);
+  const liveVoice = selectedVoiceName();
+  const voiceProvider = liveVoice.includes(":") ? liveVoice.split(":")[0] : selected("voiceProvider");
+  const voiceId = liveVoice.includes(":") ? liveVoice.split(":").slice(1).join(":") : $("voiceId").value.trim();
+  return clean({
+    agentKey,
+    agentType: runtime,
+    style: direction,
+    direction,
+    name: `${$("businessName").value.trim() || "Supafone customer"} ${recipe().label}`,
+    assistantName: $("agentName").value.trim() || recipe().label,
+    businessName: $("businessName").value.trim(),
+    websiteUrl: $("websiteUrl").value.trim(),
+    numberStrategy: selected("numberStrategy"),
+    numberPool: selected("numberStrategy") === "default_pool" ? "default" : number.pool,
+    premium: number.premium,
+    presetKey: direction === "outbound" ? "speed_to_lead_caller" : recipe().preset,
+    runtimeMode: "multi_stage",
+    goal: $("goal").value.trim(),
+    greeting: $("greeting").value.trim(),
+    systemPrompt: prompt,
+    language: "en",
+    voice: {
+      provider: voiceProvider,
+      voiceId,
+    },
+    number: managedNumber ? {
+      search: {
+        numberStrategy: selected("numberStrategy"),
+        numberPool: selected("numberStrategy") === "default_pool" ? "default" : number.pool,
+        premium: number.premium,
+      },
+      telephony: {
+        mode: number.mode,
+        provider: number.provider,
+      },
+    } : undefined,
+    telephony: {
+      mode: number.mode,
+      provider: number.mode === "byok" ? selected("telephonyProvider") : number.provider,
+      numberStrategy: selected("numberStrategy"),
+      numberPool: selected("numberStrategy") === "default_pool" ? "default" : number.pool,
+      premium: number.premium,
+      label: agentKey,
+      credentials: number.mode === "byok" ? telephonyCredentials(false) : undefined,
+      customSip: number.mode === "byok" ? customSipConfig(false) : undefined,
+    },
+    byok,
+    ...artifactConfig(),
+    tools: toolsConfig(),
+    labs: selfHealing ? {
+      enabled: true,
+      voiceWatcher: true,
+      model: "supafone-labs-oracle",
+      mode: selected("labsMode"),
+      managedInfrastructure: selected("labsMode") === "supafone_managed",
+      stt: selected("labsMode") === "byok" ? { provider: "deepgram" } : undefined,
+      llm: selected("labsMode") === "byok" ? { provider: "anthropic", model: "claude-haiku-4-5-20251001" } : undefined,
+      tts: selected("labsMode") === "byok" ? { provider: selected("byokTtsProvider"), voiceId: $("byokTtsVoice").value.trim() || voiceId } : undefined,
+      label: agentKey,
+    } : undefined,
+    voiceWatcher: selfHealing ? true : undefined,
+    metadata: {
+      generated_by: "supafone-labs-builder",
+      sdk_package: "supafone-labs",
+      sdk_version: SDK_VERSION,
+      number_strategy: selected("numberStrategy"),
+      self_healing: selfHealing,
+    },
+  });
+}
+
+function restPayload() {
+  const cfg = sdkConfig();
+  return clean({
+    agent_key: cfg.agentKey,
+    agent_type: cfg.agentType,
+    style: cfg.style,
+    direction: cfg.direction,
+    name: cfg.name,
+    assistant_name: cfg.assistantName,
+    business_name: cfg.businessName,
+    website_url: cfg.websiteUrl,
+    number_strategy: cfg.numberStrategy,
+    number_pool: cfg.numberPool,
+    premium: cfg.premium,
+    preset_key: cfg.presetKey,
+    runtime_mode: cfg.runtimeMode,
+    goal: cfg.goal,
+    greeting: cfg.greeting,
+    system_prompt: cfg.systemPrompt,
+    language: cfg.language,
+    voice: cfg.voice && { provider: cfg.voice.provider, voice_id: cfg.voice.voiceId },
+    telephony: cfg.telephony && {
+      mode: cfg.telephony.mode,
+      provider: cfg.telephony.provider,
+      number_strategy: cfg.telephony.numberStrategy,
+      number_pool: cfg.telephony.numberPool,
+      premium: cfg.telephony.premium,
+      label: cfg.telephony.label,
+      credentials: cfg.telephony.credentials,
+      custom_sip: cfg.telephony.customSip,
+    },
+    byok: cfg.byok,
+    recording: cfg.recording && {
+      enabled: cfg.recording.enabled,
+      record_audio: cfg.recording.recordAudio,
+      consent_required: cfg.recording.consentRequired,
+      announcement: cfg.recording.announcement,
+      retention_days: cfg.recording.retentionDays,
+      storage: cfg.recording.storage,
+      redact_pii: cfg.recording.redactPii,
+    },
+    transcription: cfg.transcription && {
+      enabled: cfg.transcription.enabled,
+      provider: cfg.transcription.provider,
+      language: cfg.transcription.language,
+      redact_pii: cfg.transcription.redactPii,
+      diarization: cfg.transcription.diarization,
+      timestamps: cfg.transcription.timestamps,
+    },
+    artifacts: cfg.artifacts && {
+      recordings: cfg.artifacts.recordings,
+      transcripts: cfg.artifacts.transcripts,
+      summaries: cfg.artifacts.summaries,
+      qa_reports: cfg.artifacts.qaReports,
+      logs: cfg.artifacts.logs,
+      retention_days: cfg.artifacts.retentionDays,
+    },
+    compliance: cfg.compliance,
+    tools: cfg.tools,
+    labs: cfg.labs && {
+      enabled: cfg.labs.enabled,
+      voice_watcher: cfg.labs.voiceWatcher,
+      model: cfg.labs.model,
+      mode: cfg.labs.mode,
+      managed_infrastructure: cfg.labs.managedInfrastructure,
+      stt: cfg.labs.stt,
+      llm: cfg.labs.llm,
+      tts: cfg.labs.tts,
+      label: cfg.labs.label,
+    },
+    voice_watcher: cfg.voiceWatcher,
+    metadata: cfg.metadata,
+  });
+}
+
+function sdkMethod(language) {
+  const withNumber = selected("numberStrategy") !== "byok";
+  if (language === "python") {
+    if (selected("direction") === "outbound") return withNumber ? "create_outbound_with_number" : "create_outbound";
+    return withNumber ? "create_inbound_with_number" : "create_inbound";
+  }
+  if (selected("direction") === "outbound") return withNumber ? "createOutboundWithNumber" : "createOutbound";
+  return withNumber ? "createInboundWithNumber" : "createInbound";
+}
+
+function sdkCode() {
+  const method = sdkMethod("ts");
+  const cfg = JSON.stringify(sdkConfig(), null, 2);
+  return `import { Supafone } from "supafone-labs";
+
+const supafone = new Supafone({
+  apiKey: process.env.SUPAFONE_API_KEY!,
+});
+
+const agentConfig = ${cfg};
+
+const result = await supafone.labs.agents.${method}(agentConfig);
+
+console.log({
+  agentKey: result.agent?.agent_key,
+  widget: result.widget?.snippet,
+});`;
+}
+
+function pythonCode() {
+  const method = sdkMethod("python");
+  const cfg = JSON.stringify(sdkConfig(), null, 2);
+  return `import json
+import os
+
+from supafone_labs import Supafone
+
+supafone = Supafone(api_key=os.environ["SUPAFONE_API_KEY"])
+
+agent_config = json.loads(${JSON.stringify(cfg)})
+
+result = supafone.labs.agents.${method}(agent_config)
+
+print({
+    "agent_key": result.get("agent", {}).get("agent_key"),
+    "number": result.get("number", {}).get("number", {}).get("phone_number"),
+})`;
+}
+
+function curlCode() {
+  return `curl -X POST ${HOSTED_API_BASE}/api/v1/labs/agents \\
+  -H "Authorization: Bearer $SUPAFONE_API_KEY" \\
+  -H "Content-Type: application/json" \\
+  -d '${JSON.stringify(restPayload(), null, 2)}'`;
+}
+
+function exportText() {
+  if (activeTab === "python") return pythonCode();
+  if (activeTab === "json") return JSON.stringify(restPayload(), null, 2);
+  if (activeTab === "curl") return curlCode();
+  return sdkCode();
+}
+
+function setStatus(id, text, cls) {
+  const el = $(id);
+  el.className = "status-line" + (cls ? " " + cls : "");
+  el.textContent = text;
+}
+
+function renderChecks() {
+  const cfg = sdkConfig();
+  const supafoneKey = $("hostedKey").value.trim();
+  const labsKey = $("labsKey").value.trim();
+  const effectiveLabsKey = labsKey || supafoneKey;
+  const checks = [
+    { ok: !!cfg.agentKey, text: "Agent key is stable and SDK-ready." },
+    { ok: (cfg.goal || "").length > 24, text: "Goal is specific enough for a generated prompt." },
+    { ok: selected("numberStrategy") === "default_pool", warn: selected("numberStrategy") !== "default_pool", text: selected("numberStrategy") === "default_pool" ? "Shared number pool selected: no number-month add-on." : "Paid or BYO number path selected. Confirm before provisioning." },
+    { ok: !selfHealing || !!effectiveLabsKey, warn: selfHealing && !effectiveLabsKey, text: selfHealing ? (effectiveLabsKey ? "Labs will run from the Supafone key path." : "Self-healing needs a Supafone key before provisioning.") : "Self-healing is off for this agent." },
+    { ok: !!supafoneKey, warn: !supafoneKey, text: supafoneKey ? "Supafone API key is present for SDK provisioning." : "Paste your Supafone API key when you are ready to provision." },
+  ];
+  $("checks").innerHTML = checks.map((c) => {
+    const cls = c.ok ? "ok" : c.warn ? "warn" : "err";
+    return `<div class="check ${cls}"><i></i><span>${escapeHtml(c.text)}</span></div>`;
+  }).join("");
+}
+
+function renderSummary() {
+  const cfg = sdkConfig();
+  const number = numberPlan();
+  $("summaryAgent").textContent = cfg.agentKey;
+  $("summaryRoute").textContent = `${cfg.style.charAt(0).toUpperCase() + cfg.style.slice(1)} ${cfg.agentType}`;
+  $("summaryCost").textContent = number.cost;
+  $("summarySub").textContent = `${recipe().label} on ${selected("voiceProvider")} with ${number.label.toLowerCase()} number strategy.`;
+}
+
+function renderAll() {
+  maybeRefreshAgentKey();
+  if (!$("systemPrompt").dataset.dirty) $("systemPrompt").value = buildSystemPrompt();
+  renderSummary();
+  renderChecks();
+  $("codeEditor").value = exportText();
+  setStatus("codeStatus", "Generated from current UI state.", "");
+}
+
+function escapeHtml(value) {
+  return String(value || "").replace(/[<>&"]/g, (c) => ({ "<":"&lt;", ">":"&gt;", "&":"&amp;", '"':"&quot;" }[c]));
+}
+
+function bindSegments() {
+  document.querySelectorAll(".seg[data-bind]").forEach((seg) => {
+    const input = $(seg.dataset.bind);
+    seg.querySelectorAll("button").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        input.value = btn.dataset.value;
+        seg.querySelectorAll("button").forEach((other) => other.classList.toggle("on", other === btn));
+        if (seg.dataset.bind === "agentRecipe") {
+          const currentGoal = $("goal").value.trim();
+          if (!currentGoal || Object.values(RECIPES).some((r) => r.goal === currentGoal)) $("goal").value = recipe().goal;
+          $("systemPrompt").dataset.dirty = "";
+        }
+        if (seg.dataset.bind === "direction") $("systemPrompt").dataset.dirty = "";
+        if (seg.dataset.bind === "runtime" && selected("runtime") === "campaign" && selected("direction") !== "outbound") {
+          $("direction").value = "outbound";
+          document.querySelectorAll('[data-bind="direction"] button').forEach((b) => b.classList.toggle("on", b.dataset.value === "outbound"));
+        }
+        renderAll();
+      });
+    });
+  });
+}
+
+function bindInputs() {
+  [
+    "businessName", "agentName", "websiteUrl", "voiceId", "goal", "greeting", "hostedKey", "labsKey",
+    "byokAgentProvider", "byokAgentKey", "byokAgentModel", "telephonyAccountSid", "telephonyApiKey",
+    "telephonyApiSecret", "telephonyFromNumber", "sipTrunkUri", "sipUsername", "byokTtsProvider",
+    "byokTtsKey", "byokTtsVoice", "retentionDays", "consentAnnouncement", "numberAreaCode", "assignAgentKey",
+  ].forEach((id) => {
+    $(id).addEventListener("input", () => {
+      if (id === "goal") $("systemPrompt").dataset.dirty = "";
+      if (id === "hostedKey") sessionStorage.setItem("supafone_api_key", $(id).value.trim());
+      if (id === "labsKey") sessionStorage.setItem("supafone_labs_api_key", $(id).value.trim());
+      renderAll();
+    });
+    if ($(id).tagName === "SELECT") $(id).addEventListener("change", renderAll);
+  });
+  $("agentKey").addEventListener("input", () => {
+    agentKeyTouched = true;
+    renderAll();
+  });
+  $("systemPrompt").addEventListener("input", () => {
+    $("systemPrompt").dataset.dirty = "1";
+    renderAll();
+  });
+  document.querySelectorAll("#toolGrid [data-tool]").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      btn.classList.toggle("on");
+      renderAll();
+    });
+  });
+  $("selfHealingSwitch").addEventListener("click", () => {
+    selfHealing = !selfHealing;
+    $("selfHealingSwitch").classList.toggle("on", selfHealing);
+    $("selfHealingSwitch").setAttribute("aria-pressed", String(selfHealing));
+    $("systemPrompt").dataset.dirty = "";
+    renderAll();
+  });
+  $("recordingSwitch").addEventListener("click", () => {
+    recordingEnabled = !recordingEnabled;
+    $("recordingSwitch").classList.toggle("on", recordingEnabled);
+    $("recordingSwitch").setAttribute("aria-pressed", String(recordingEnabled));
+    renderAll();
+  });
+  $("transcriptionSwitch").addEventListener("click", () => {
+    transcriptionEnabled = !transcriptionEnabled;
+    $("transcriptionSwitch").classList.toggle("on", transcriptionEnabled);
+    $("transcriptionSwitch").setAttribute("aria-pressed", String(transcriptionEnabled));
+    renderAll();
+  });
+}
+
+function bindExports() {
+  document.querySelectorAll("#exportTabs button").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      activeTab = btn.dataset.tab;
+      document.querySelectorAll("#exportTabs button").forEach((other) => other.classList.toggle("on", other === btn));
+      $("codeEditor").value = exportText();
+      setStatus("codeStatus", activeTab === "sdk" ? "Editable TypeScript SDK export." : activeTab === "python" ? "Editable Python SDK export." : activeTab === "json" ? "REST payload the SDK serializes to." : "curl fallback for the same hosted-agent route.", "");
+    });
+  });
+  $("refreshCode").addEventListener("click", renderAll);
+  $("copyCode").addEventListener("click", async () => {
+    await navigator.clipboard.writeText($("codeEditor").value).catch(() => {});
+    setStatus("codeStatus", "Copied current editor contents.", "ok");
+  });
+  $("copyPayload").addEventListener("click", async () => {
+    await navigator.clipboard.writeText(JSON.stringify(restPayload(), null, 2)).catch(() => {});
+    setStatus("codeStatus", "Copied REST JSON payload.", "ok");
+  });
+  $("downloadCode").addEventListener("click", () => {
+    const ext = activeTab === "python" ? "py" : activeTab === "json" ? "json" : activeTab === "curl" ? "sh" : "ts";
+    const blob = new Blob([$("codeEditor").value], { type: activeTab === "json" ? "application/json" : "text/plain" });
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = `${$("agentKey").value || "supafone-agent"}.${ext}`;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+    setStatus("codeStatus", "Downloaded current editor contents.", "ok");
+  });
+}
+
+function loadKeys() {
+  $("hostedKey").value = sessionStorage.getItem("supafone_api_key") || sessionStorage.getItem("supafone_hosted_agent_key") || "";
+  $("labsKey").value = sessionStorage.getItem("supafone_labs_api_key") || "";
+}
+
+function validateForProvision() {
+  const supafoneKey = $("hostedKey").value.trim();
+  if (!supafoneKey) throw new Error("Paste your Supafone API key first.");
+  if (!$("agentKey").value.trim()) throw new Error("Agent key is required.");
+  if (!$("goal").value.trim()) throw new Error("Goal is required.");
+}
+
+function confirmNumberCost() {
+  const strategy = selected("numberStrategy");
+  if (strategy === "premium") return window.confirm("Premium numbers add $3/month on top of subscription. Continue?");
+  if (strategy === "dedicated") return window.confirm("Dedicated numbers add a monthly number charge. Continue?");
+  return true;
+}
+
+async function loadSdk() {
+  if (!sdkModulePromise) sdkModulePromise = import(SDK_CDN);
+  return sdkModulePromise;
+}
+
+async function provisionWithSdk() {
+  const btn = $("provisionSdk");
+  const log = $("resultLog");
+  try {
+    validateForProvision();
+    if (!confirmNumberCost()) return;
+    btn.disabled = true;
+    setStatus("provisionStatus", "Loading supafone-labs SDK and provisioning...", "");
+    log.style.display = "block";
+    log.textContent = `importing ${SDK_CDN}\n`;
+    const mod = await loadSdk();
+    const Supafone = mod.Supafone || mod.default;
+    if (!Supafone) throw new Error("supafone-labs SDK did not export Supafone.");
+    const supafoneKey = $("hostedKey").value.trim();
+    const labsKey = $("labsKey").value.trim();
+    const client = new Supafone({
+      apiKey: labsKey || supafoneKey,
+      supafoneApiKey: supafoneKey,
+      supafoneApiBaseUrl: HOSTED_API_BASE,
+    });
+    const cfg = sdkConfig(true);
+    if (cfg.labs) cfg.labs.apiKey = labsKey || supafoneKey;
+    const method = sdkMethod("ts");
+    log.textContent += `calling supafone.labs.agents.${method}(...)\n\n`;
+    const result = await client.labs.agents[method](cfg);
+    log.textContent = JSON.stringify(result, null, 2);
+    setStatus("provisionStatus", "Provisioned agent " + (result.agent?.agent_key || cfg.agentKey) + ".", "ok");
+  } catch (err) {
+    const message = err && err.message ? err.message : String(err);
+    log.style.display = "block";
+    log.textContent = message;
+    if (/404|Not Found/i.test(message)) {
+      log.textContent += "\n\nThe UI sent the SDK call correctly, but the production hosted-agent route is not live at api.supafone.ai/api/v1/labs/agents yet.";
+    }
+    setStatus("provisionStatus", "Provision failed: " + message, "err");
+  } finally {
+    btn.disabled = false;
+  }
+}
+
+function bindProvisioning() {
+  $("provisionSdk").addEventListener("click", provisionWithSdk);
+  $("dryRun").addEventListener("click", () => {
+    try {
+      validateForProvision();
+      renderAll();
+      setStatus("provisionStatus", "Config is valid for SDK provisioning.", "ok");
+      $("resultLog").style.display = "block";
+      $("resultLog").textContent = JSON.stringify({ sdk_method: sdkMethod("ts"), python_method: sdkMethod("python"), config: sdkConfig(), rest_payload: restPayload() }, null, 2);
+    } catch (err) {
+      setStatus("provisionStatus", err.message || String(err), "err");
+    }
+  });
+  $("clearKeys").addEventListener("click", () => {
+    sessionStorage.removeItem("supafone_api_key");
+    sessionStorage.removeItem("supafone_hosted_agent_key");
+    sessionStorage.removeItem("supafone_labs_api_key");
+    $("hostedKey").value = "";
+    $("labsKey").value = "";
+    renderAll();
+    setStatus("provisionStatus", "Session keys cleared.", "ok");
+  });
+}
+
+async function hostedClient() {
+  const mod = await loadSdk();
+  const Supafone = mod.Supafone || mod.default;
+  const supafoneKey = $("hostedKey").value.trim();
+  const labsKey = $("labsKey").value.trim();
+  if (!supafoneKey) throw new Error("Paste your Supafone API key first.");
+  return new Supafone({
+    apiKey: labsKey || supafoneKey,
+    supafoneApiKey: supafoneKey,
+    supafoneApiBaseUrl: HOSTED_API_BASE,
+    baseUrl: LABS_API_BASE,
+  });
+}
+
+async function hostedApiFetch(path, opts = {}) {
+  const supafoneKey = $("hostedKey").value.trim();
+  if (!supafoneKey) throw new Error("Paste your Supafone API key first.");
+  const res = await fetch(HOSTED_API_BASE + path, {
+    method: opts.method || "GET",
+    headers: {
+      Authorization: `Bearer ${supafoneKey}`,
+      Accept: "application/json",
+      ...(opts.body ? { "Content-Type": "application/json" } : {}),
+    },
+    body: opts.body ? JSON.stringify(opts.body) : undefined,
+  });
+  const payload = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(payload.detail || payload.message || `HTTP ${res.status}`);
+  return payload;
+}
+
+function assetText(value) {
+  return escapeHtml(value === undefined || value === null || value === "" ? "-" : value);
+}
+
+function renderAgentList(payload) {
+  const rows = payload?.agents || payload?.items || payload?.data || [];
+  $("agentList").innerHTML = rows.length ? rows.map((agent) => {
+    const key = agent.agent_key || agent.agentKey || agent.key || agent.id || "";
+    const name = agent.name || agent.assistant_name || agent.assistantName || key;
+    const style = agent.style || agent.direction || agent.agent_type || "agent";
+    return `<div class="list-item">
+      <b>${assetText(name)}</b><span>${assetText(key)} · ${assetText(style)}</span>
+      <div class="item-actions">
+        <button class="btn" type="button" data-agent-load="${assetText(key)}">Load key</button>
+        <button class="btn danger" type="button" data-agent-delete="${assetText(key)}">Delete</button>
+      </div>
+    </div>`;
+  }).join("") : `<div class="list-item"><span>No agents returned for this key.</span></div>`;
+}
+
+function numberId(row) {
+  return row.number_id || row.numberId || row.id || row.phone_number || row.phoneNumber || "";
+}
+
+function renderNumberList(payload, searched = false) {
+  const rows = payload?.numbers || payload?.items || payload?.data || [];
+  if (searched) latestNumberSearch = rows;
+  $("numberList").innerHTML = rows.length ? rows.map((num, index) => {
+    const id = numberId(num);
+    const phone = num.phone_number || num.phoneNumber || num.number || id;
+    const status = num.status || num.number_type || num.region || (searched ? "available" : "owned");
+    return `<div class="list-item">
+      <b>${assetText(phone)}</b><span>${assetText(id)} · ${assetText(status)}</span>
+      <div class="item-actions">
+        <button class="btn" type="button" data-number-select="${index}" data-number-id="${assetText(id)}" data-phone="${assetText(phone)}">Select</button>
+        <button class="btn" type="button" data-number-assign="${assetText(id)}">Assign</button>
+        <button class="btn" type="button" data-number-release="${assetText(id)}">Return</button>
+        <button class="btn danger" type="button" data-number-delete="${assetText(id)}">Delete</button>
+      </div>
+    </div>`;
+  }).join("") : `<div class="list-item"><span>No numbers returned. Search inventory or create with the current config.</span></div>`;
+}
+
+function renderCallList(payload) {
+  const rows = payload?.calls || payload?.items || payload?.data || [];
+  $("callList").innerHTML = rows.length ? rows.map((call) => {
+    const id = call.call_id || call.callId || call.id || "";
+    const agent = call.agent_key || call.agentKey || call.agent || "";
+    const status = call.status || call.outcome || "call";
+    return `<div class="list-item"><b>${assetText(id)}</b><span>${assetText(agent)} · ${assetText(status)}</span></div>`;
+  }).join("") : `<div class="list-item"><span>No recent calls returned.</span></div>`;
+}
+
+function renderArtifactList(recordings, transcripts) {
+  const recs = recordings?.recordings || recordings?.items || recordings?.data || [];
+  const trs = transcripts?.transcripts || transcripts?.items || transcripts?.data || [];
+  const rows = [
+    ...recs.map((row) => ({ ...row, kind: "recording" })),
+    ...trs.map((row) => ({ ...row, kind: "transcript" })),
+  ];
+  $("artifactList").innerHTML = rows.length ? rows.map((item) => {
+    const id = item.recording_id || item.transcript_id || item.id || item.call_id || "";
+    const label = item.url || item.recording_url || item.transcript_url || item.status || "";
+    const deleteButton = item.kind === "recording" ? `<button class="btn danger" type="button" data-recording-delete="${assetText(id)}">Delete</button>` : "";
+    return `<div class="list-item">
+      <b>${assetText(item.kind)} · ${assetText(id)}</b><span>${assetText(label)}</span>
+      <div class="item-actions">${deleteButton}</div>
+    </div>`;
+  }).join("") : `<div class="list-item"><span>No recordings or transcripts returned.</span></div>`;
+}
+
+async function refreshAssets() {
+  setStatus("assetStatus", "Loading agents, numbers, calls, and artifacts...", "");
+  try {
+    const agentKey = $("assignAgentKey").value.trim() || $("agentKey").value.trim();
+    const query = agentKey ? `?agent_key=${encodeURIComponent(agentKey)}&limit=20` : "?limit=20";
+    const [agents, numbers, calls, recordings, transcripts] = await Promise.all([
+      hostedApiFetch("/api/v1/labs/agents").catch((err) => ({ error: err.message })),
+      hostedApiFetch("/api/v1/labs/phone-numbers").catch((err) => ({ error: err.message })),
+      hostedApiFetch(`/api/v1/labs/calls${query}`).catch((err) => ({ error: err.message })),
+      hostedApiFetch(`/api/v1/labs/recordings${query}`).catch((err) => ({ error: err.message })),
+      hostedApiFetch(`/api/v1/labs/transcripts${query}`).catch((err) => ({ error: err.message })),
+    ]);
+    renderAgentList(agents);
+    renderNumberList(numbers);
+    renderCallList(calls);
+    renderArtifactList(recordings, transcripts);
+    setStatus("assetStatus", "Loaded developer assets for this key.", "ok");
+  } catch (err) {
+    setStatus("assetStatus", err.message || String(err), "err");
+  }
+}
+
+async function searchNumbersForUi() {
+  setStatus("assetStatus", "Searching number inventory...", "");
+  try {
+    const areaCode = $("numberAreaCode").value.trim();
+    const result = await hostedApiFetch("/api/v1/labs/phone-numbers/search", { method: "POST", body: clean({
+      area_code: areaCode,
+      number_strategy: selected("numberStrategy"),
+      number_pool: selected("numberStrategy") === "default_pool" ? "default" : undefined,
+      limit: 10,
+    }) });
+    renderNumberList(result, true);
+    setStatus("assetStatus", "Number search complete. Select one or buy the first result.", "ok");
+  } catch (err) {
+    setStatus("assetStatus", err.message || String(err), "err");
+  }
+}
+
+async function buyFirstNumber() {
+  if (!latestNumberSearch.length) await searchNumbersForUi();
+  const first = latestNumberSearch[0];
+  const phone = first?.phone_number || first?.phoneNumber;
+  if (!phone) return setStatus("assetStatus", "No search result to buy.", "err");
+  if (!window.confirm(`Buy/provision ${phone}? Dedicated or premium numbers may create monthly charges.`)) return;
+  try {
+    const result = await hostedApiFetch("/api/v1/labs/phone-numbers", { method: "POST", body: {
+      phone_number: phone,
+      friendly_name: $("agentName").value || $("agentKey").value,
+      agent_key: $("assignAgentKey").value.trim() || $("agentKey").value.trim(),
+      agent_name: $("agentName").value.trim(),
+      preset_key: selected("direction") === "outbound" ? "speed_to_lead_caller" : recipe().preset,
+      style: selected("direction"),
+      number_strategy: selected("numberStrategy"),
+      telephony: { mode: "supafone_managed", provider: "supafone" },
+    } });
+    $("resultLog").style.display = "block";
+    $("resultLog").textContent = JSON.stringify(result, null, 2);
+    setStatus("assetStatus", "Number provisioned.", "ok");
+    refreshAssets();
+  } catch (err) {
+    setStatus("assetStatus", err.message || String(err), "err");
+  }
+}
+
+async function assignSelectedNumber() {
+  const id = selectedNumberId;
+  const agentKey = $("assignAgentKey").value.trim() || $("agentKey").value.trim();
+  if (!id) return setStatus("assetStatus", "Select a number first.", "err");
+  if (!agentKey) return setStatus("assetStatus", "Enter an agent key to assign.", "err");
+  try {
+    const result = await hostedApiFetch(`/api/v1/labs/phone-numbers/${encodeURIComponent(id)}/assign`, { method: "POST", body: {
+      agent_key: agentKey,
+      agent_name: $("agentName").value.trim(),
+      friendly_name: $("businessName").value.trim() || agentKey,
+      style: selected("direction"),
+      preset_key: selected("direction") === "outbound" ? "speed_to_lead_caller" : recipe().preset,
+    } });
+    $("resultLog").style.display = "block";
+    $("resultLog").textContent = JSON.stringify(result, null, 2);
+    setStatus("assetStatus", `Assigned ${selectedPhoneNumber || id} to ${agentKey}.`, "ok");
+    refreshAssets();
+  } catch (err) {
+    setStatus("assetStatus", err.message || String(err), "err");
+  }
+}
+
+async function createMoreAgent() {
+  await provisionWithSdk();
+  refreshAssets();
+}
+
+function bindAssetManager() {
+  $("refreshAssets").addEventListener("click", refreshAssets);
+  $("searchNumbers").addEventListener("click", searchNumbersForUi);
+  $("buyFirstNumber").addEventListener("click", buyFirstNumber);
+  $("assignSelectedNumber").addEventListener("click", assignSelectedNumber);
+  $("createMoreAgent").addEventListener("click", createMoreAgent);
+  document.addEventListener("click", async (event) => {
+    const target = event.target.closest("[data-agent-load],[data-agent-delete],[data-number-select],[data-number-assign],[data-number-release],[data-number-delete],[data-recording-delete]");
+    if (!target) return;
+    try {
+      if (target.dataset.agentLoad) {
+        $("assignAgentKey").value = target.dataset.agentLoad;
+        $("agentKey").value = target.dataset.agentLoad;
+        agentKeyTouched = true;
+        renderAll();
+        return setStatus("assetStatus", "Loaded agent key into the builder.", "ok");
+      }
+      if (target.dataset.agentDelete) {
+        if (!window.confirm(`Delete agent ${target.dataset.agentDelete}?`)) return;
+        const result = await hostedApiFetch(`/api/v1/labs/agents/${encodeURIComponent(target.dataset.agentDelete)}?release_numbers=false`, { method: "DELETE" });
+        $("resultLog").style.display = "block";
+        $("resultLog").textContent = JSON.stringify(result, null, 2);
+      }
+      if (target.dataset.numberSelect !== undefined) {
+        selectedNumberId = target.dataset.numberId || "";
+        selectedPhoneNumber = target.dataset.phone || "";
+        return setStatus("assetStatus", `Selected ${selectedPhoneNumber || selectedNumberId}.`, "ok");
+      }
+      if (target.dataset.numberAssign) {
+        selectedNumberId = target.dataset.numberAssign;
+        await assignSelectedNumber();
+      }
+      if (target.dataset.numberRelease) {
+        if (!window.confirm(`Return number ${target.dataset.numberRelease} to pool?`)) return;
+        const result = await hostedApiFetch(`/api/v1/labs/phone-numbers/${encodeURIComponent(target.dataset.numberRelease)}/release`, { method: "POST", body: { reason: "builder release", return_to_pool: true } });
+        $("resultLog").style.display = "block";
+        $("resultLog").textContent = JSON.stringify(result, null, 2);
+      }
+      if (target.dataset.numberDelete) {
+        if (!window.confirm(`Delete/release number ${target.dataset.numberDelete}?`)) return;
+        const result = await hostedApiFetch(`/api/v1/labs/phone-numbers/${encodeURIComponent(target.dataset.numberDelete)}`, { method: "DELETE", body: { reason: "builder delete" } });
+        $("resultLog").style.display = "block";
+        $("resultLog").textContent = JSON.stringify(result, null, 2);
+      }
+      if (target.dataset.recordingDelete) {
+        if (!window.confirm(`Delete recording ${target.dataset.recordingDelete}?`)) return;
+        const result = await hostedApiFetch(`/api/v1/labs/recordings/${encodeURIComponent(target.dataset.recordingDelete)}?reason=builder%20delete`, { method: "DELETE" });
+        $("resultLog").style.display = "block";
+        $("resultLog").textContent = JSON.stringify(result, null, 2);
+      }
+      setStatus("assetStatus", "Action complete.", "ok");
+      refreshAssets();
+    } catch (err) {
+      setStatus("assetStatus", err.message || String(err), "err");
+    }
+  });
+}
+
+async function loadVoiceCatalog() {
+  const select = $("voiceCatalog");
+  try {
+    const key = $("labsKey").value.trim() || $("hostedKey").value.trim();
+    const headers = key ? { Authorization: `Bearer ${key}` } : {};
+    const res = await fetch(`${LABS_API_BASE}/v1/voices`, { headers });
+    if (!res.ok) throw new Error(await res.text());
+    const payload = await res.json();
+    const rows = payload.voices || [];
+    select.innerHTML = `<option value="">Manual voice id</option>` + rows.map((voice) => {
+      const value = voice.voice || voice.id || "";
+      const label = [value, voice.engine, voice.live === false ? "not configured" : ""].filter(Boolean).join(" · ");
+      return `<option value="${escapeHtml(value)}">${escapeHtml(label)}</option>`;
+    }).join("");
+  } catch (err) {
+    select.innerHTML = `<option value="">Voice catalog unavailable</option>`;
+  }
+}
+
+async function previewSelectedVoice() {
+  const key = $("labsKey").value.trim() || $("hostedKey").value.trim();
+  if (!key) return setStatus("provisionStatus", "Paste a Supafone or Labs key to preview voices.", "err");
+  const btn = $("previewVoice");
+  btn.disabled = true;
+  try {
+    const res = await fetch(`${LABS_API_BASE}/v1/tts`, {
+      method: "POST",
+      headers: { Authorization: `Bearer ${key}`, "Content-Type": "application/json" },
+      body: JSON.stringify({
+        voice: selectedVoiceName(),
+        text: "Hi, this is your Supafone agent voice preview.",
+      }),
+    });
+    if (!res.ok) throw new Error(await res.text());
+    const blob = await res.blob();
+    const audio = $("voiceAudio");
+    if (audio.dataset.url) URL.revokeObjectURL(audio.dataset.url);
+    audio.dataset.url = URL.createObjectURL(blob);
+    audio.src = audio.dataset.url;
+    await audio.play().catch(() => {});
+    setStatus("provisionStatus", "Voice preview loaded.", "ok");
+  } catch (err) {
+    setStatus("provisionStatus", err.message || String(err), "err");
+  } finally {
+    btn.disabled = false;
+  }
+}
+
+function renderLogs(rows) {
+  $("logView").textContent = (rows || []).map((row) => {
+    const id = row.id ? `#${row.id} ` : "";
+    return `${id}${row.at || ""} ${row.endpoint || ""} ${row.seconds_billed || row.seconds || 0}s\n${row.detail || ""}`;
+  }).join("\n\n") || "No logs returned for this key.";
+}
+
+async function refreshLogs() {
+  const key = $("labsKey").value.trim() || $("hostedKey").value.trim();
+  if (!key) return setStatus("logStatus", "Paste a Supafone or Labs key first.", "err");
+  setStatus("logStatus", "Loading log snapshot...", "");
+  try {
+    const res = await fetch(`${LABS_API_BASE}/v1/logs?limit=80`, { headers: { Authorization: `Bearer ${key}` } });
+    if (!res.ok) throw new Error(await res.text());
+    const payload = await res.json();
+    renderLogs(payload.logs || []);
+    setStatus("logStatus", "Loaded latest logs.", "ok");
+  } catch (err) {
+    setStatus("logStatus", err.message || String(err), "err");
+  }
+}
+
+async function startLogStream() {
+  const key = $("labsKey").value.trim() || $("hostedKey").value.trim();
+  if (!key) return setStatus("logStatus", "Paste a Supafone or Labs key first.", "err");
+  if (logAbort) logAbort.abort();
+  logAbort = new AbortController();
+  $("logView").textContent = "";
+  setStatus("logStatus", "Streaming logs...", "");
+  try {
+    const res = await fetch(`${LABS_API_BASE}/v1/logs/stream?limit=50&poll_ms=1500&snapshot=true`, {
+      headers: { Authorization: `Bearer ${key}` },
+      signal: logAbort.signal,
+    });
+    if (!res.ok) throw new Error(await res.text());
+    const reader = res.body.getReader();
+    const decoder = new TextDecoder();
+    let buffer = "";
+    for (;;) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      buffer += decoder.decode(value, { stream: true });
+      let split = buffer.indexOf("\n\n");
+      while (split >= 0) {
+        const raw = buffer.slice(0, split);
+        buffer = buffer.slice(split + 2);
+        const dataLine = raw.split("\n").find((line) => line.startsWith("data:"));
+        if (dataLine) {
+          const row = JSON.parse(dataLine.slice(5).trim());
+          $("logView").textContent += `${row.id ? "#" + row.id + " " : ""}${row.at || ""} ${row.endpoint || ""}\n${row.detail || ""}\n\n`;
+          $("logView").scrollTop = $("logView").scrollHeight;
+        }
+        split = buffer.indexOf("\n\n");
+      }
+    }
+  } catch (err) {
+    if (err.name !== "AbortError") setStatus("logStatus", err.message || String(err), "err");
+  }
+}
+
+function stopLogStream() {
+  if (logAbort) logAbort.abort();
+  logAbort = null;
+  setStatus("logStatus", "Log stream stopped.", "ok");
+}
+
+function bindVoiceAndLogs() {
+  $("voiceCatalog").addEventListener("change", () => {
+    const value = $("voiceCatalog").value;
+    if (value && value.includes(":")) {
+      const [provider, ...rest] = value.split(":");
+      $("voiceProvider").value = provider;
+      $("voiceId").value = rest.join(":");
+      document.querySelectorAll('[data-bind="voiceProvider"] button').forEach((b) => b.classList.toggle("on", b.dataset.value === provider));
+    }
+    renderAll();
+  });
+  $("previewVoice").addEventListener("click", previewSelectedVoice);
+  $("refreshLogs").addEventListener("click", refreshLogs);
+  $("startLogs").addEventListener("click", startLogStream);
+  $("stopLogs").addEventListener("click", stopLogStream);
+  loadVoiceCatalog();
+}
+
+function bindThemeAndNav() {
+  const themeBtn = $("themeBtn");
+  const sync = () => { themeBtn.textContent = document.documentElement.dataset.theme === "dark" ? "Light" : "Dark"; };
+  themeBtn.addEventListener("click", () => {
+    const next = document.documentElement.dataset.theme === "dark" ? "light" : "dark";
+    document.documentElement.dataset.theme = next;
+    localStorage.setItem("sl_theme", next);
+    sync();
+  });
+  sync();
+  const wrap = document.querySelector("nav .wrap");
+  const links = document.querySelector("nav .links");
+  const btn = document.createElement("button");
+  btn.className = "navtoggle";
+  btn.type = "button";
+  btn.setAttribute("aria-label", "Menu");
+  btn.setAttribute("aria-expanded", "false");
+  btn.innerHTML = "<span></span>";
+  wrap.appendChild(btn);
+  btn.addEventListener("click", (e) => {
+    e.stopPropagation();
+    const open = links.classList.toggle("open");
+    btn.classList.toggle("open", open);
+    btn.setAttribute("aria-expanded", String(open));
+  });
+  links.addEventListener("click", (e) => {
+    if (e.target.closest("a")) { links.classList.remove("open"); btn.classList.remove("open"); }
+  });
+  document.addEventListener("click", () => { links.classList.remove("open"); btn.classList.remove("open"); });
+}
+
+function init() {
+  bindThemeAndNav();
+  bindSegments();
+  bindInputs();
+  bindExports();
+  bindProvisioning();
+  bindVoiceAndLogs();
+  bindAssetManager();
+  loadKeys();
+  $("goal").value = recipe().goal;
+  $("systemPrompt").value = buildSystemPrompt();
+  renderAll();
+}
+
+init();
+</script>
+</body>
+</html>

@@ -5,6 +5,7 @@ oracle and the developer-facing facade live here.
 """
 from supafone_labs import runtime  # noqa: F401  (re-export the vendored runtime subpackage)
 from supafone_labs.config import ORACLE_MODELS, Settings, get_settings, provider_for_model
+from supafone_labs.client import Supafone, SupafoneError, VoicePreview, generate_call_stages
 from supafone_labs.models import clear_model_cache, discover_oracle_models
 from supafone_labs.facade import (
     CRM,
@@ -46,7 +47,7 @@ from supafone_labs.tts import (
 )
 from supafone_labs.types import BeliefState, Directive, DirectiveKind, directive_to_decision
 
-__version__ = "0.3.0"
+__version__ = "0.3.1"
 
 __all__ = [
     # facade
@@ -59,6 +60,10 @@ __all__ = [
     "CRM",
     "SuperchargeResult",
     "SCENARIO_PRESETS",
+    "Supafone",
+    "SupafoneError",
+    "VoicePreview",
+    "generate_call_stages",
     # oracle
     "OracleSession",
     "OracleWorkflow",

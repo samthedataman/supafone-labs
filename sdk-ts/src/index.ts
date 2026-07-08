@@ -9,9 +9,9 @@
  *
  * Works in Node 18+ (native fetch/WebSocket) and the browser.
  *
- *   npm i @supafone/labs
+ *   npm i supafone-labs
  *
- *   import { Supafone } from "@supafone/labs";
+ *   import { Supafone } from "supafone-labs";
  *   const supafone = new Supafone({ apiKey: process.env.SUPAFONE_API_KEY! });
  *   const agent = await supafone.labs.agents.createInboundWithNumber({
  *     agentKey: "northline-intake",
@@ -75,11 +75,51 @@ export interface UsageToday {
   usage: Record<string, { used: number; cap: number }>;
 }
 
+export interface LabsLogEntry {
+  id: number;
+  at: string;
+  endpoint: string;
+  seconds_billed: number;
+  duration_ms: number;
+  detail: string;
+  meta: Record<string, unknown>;
+}
+
+export interface StreamLogsOptions {
+  limit?: number;
+  afterId?: number;
+  pollMs?: number;
+  snapshot?: boolean;
+  signal?: AbortSignal;
+}
+
 export type LabsAgentType = "phone" | "web" | "campaign";
 export type LabsAgentStyle = "inbound" | "outbound";
 export type LabsRuntimeMode = "multi_stage" | "single_stage";
 export type LabsTelephonyMode = "supafone_managed" | "byok";
-export type LabsTelephonyProvider = "supafone" | "twilio" | "telnyx" | "plivo" | "sip" | string;
+export type LabsTelephonyProvider =
+  | "supafone"
+  | "twilio"
+  | "telnyx"
+  | "plivo"
+  | "signalwire"
+  | "sip"
+  | "custom_sip"
+  | "custom"
+  | string;
+export type LabsNumberStrategy = "default_pool" | "dedicated" | "premium" | "byok" | string;
+
+export interface LabsCallStage {
+  key?: string;
+  id?: string;
+  name: string;
+  goal?: string;
+  instructions?: string;
+  exitCriteria?: string[];
+  exit_criteria?: string[];
+  tools?: string[];
+  metadata?: Record<string, unknown>;
+}
 
 export interface LabsVoiceSelection {
   provider?: string;
@@ -89,9 +129,51 @@ export interface LabsVoiceSelection {
 }
 
 export interface LabsProviderKeys {
+  /** Agent runtime/platform providers. */
   ultravox?: string;
   ultravoxApiKey?: string;
   ultravox_api_key?: string;
+  retell?: string;
+  retellApiKey?: string;
+  retell_api_key?: string;
+  vapi?: string;
+  vapiApiKey?: string;
+  vapi_api_key?: string;
+  bland?: string;
+  blandApiKey?: string;
+  bland_api_key?: string;
+  livekit?: string;
+  livekitApiKey?: string;
+  livekit_api_key?: string;
+  livekitApiSecret?: string;
+  livekit_api_secret?: string;
+  pipecat?: string;
+  pipecatApiKey?: string;
+  pipecat_api_key?: string;
+  /** Telephony/carrier providers. */
+  twilio?: string;
+  twilioAccountSid?: string;
+  twilio_account_sid?: string;
+  twilioAuthToken?: string;
+  twilio_auth_token?: string;
+  twilioApiKeySid?: string;
+  twilio_api_key_sid?: string;
+  twilioApiKeySecret?: string;
+  twilio_api_key_secret?: string;
+  telnyx?: string;
+  telnyxApiKey?: string;
+  telnyx_api_key?: string;
+  plivo?: string;
+  plivoAuthId?: string;
+  plivo_auth_id?: string;
+  plivoAuthToken?: string;
+  plivo_auth_token?: string;
+  signalwire?: string;
+  signalwireApiToken?: string;
+  signalwire_api_token?: string;
+  signalwireProjectId?: string;
+  signalwire_project_id?: string;
+  /** TTS providers. */
   elevenlabs?: string;
   elevenlabsApiKey?: string;
   elevenlabs_api_key?: string;
@@ -104,6 +186,65 @@ export interface LabsProviderKeys {
   deepgram?: string;
   deepgramApiKey?: string;
   deepgram_api_key?: string;
+  /** Brain/STT providers used by Labs watcher or customer BYOK stacks. */
+  anthropic?: string;
+  anthropicApiKey?: string;
+  anthropic_api_key?: string;
+  openai?: string;
+  openaiApiKey?: string;
+  openai_api_key?: string;
+  xai?: string;
+  xaiApiKey?: string;
+  xai_api_key?: string;
+  [extra: string]: unknown;
+}
+
+export interface LabsCustomSipConfig {
+  sipTrunkUri?: string;
+  sip_trunk_uri?: string;
+  trunkUri?: string;
+  trunk_uri?: string;
+  sipHost?: string;
+  sip_host?: string;
+  fromNumber?: string;
+  from_number?: string;
+  username?: string;
+  password?: string;
+  transport?: string;
+  headers?: Record<string, string>;
+  codecs?: string[];
+  dtmfMode?: string;
+  dtmf_mode?: string;
+  metadata?: Record<string, unknown>;
+  [extra: string]: unknown;
+}
+
+export interface LabsProviderByokConfig {
+  provider?: string;
+  apiKey?: string;
+  api_key?: string;
+  credentials?: Record<string, unknown>;
+  settings?: Record<string, unknown>;
+  model?: string;
+  voiceId?: string;
+  voice_id?: string;
+  [extra: string]: unknown;
+}
+
+export interface LabsByokConfig {
+  providerKeys?: LabsProviderKeys;
+  provider_keys?: LabsProviderKeys;
+  agentProvider?: LabsProviderByokConfig;
+  agent_provider?: LabsProviderByokConfig;
+  runtime?: LabsProviderByokConfig;
+  telephony?: LabsTelephonyConfig;
+  tts?: LabsProviderByokConfig;
+  stt?: LabsProviderByokConfig;
+  llm?: LabsProviderByokConfig;
+  customSip?: LabsCustomSipConfig;
+  custom_sip?: LabsCustomSipConfig;
+  sip?: LabsCustomSipConfig;
+  [extra: string]: unknown;
 }
 
 export interface LabsTelephonyCredentials {
@@ -119,6 +260,20 @@ export interface LabsTelephonyCredentials {
   auth_id?: string;
   connectionId?: string;
   connection_id?: string;
+  telnyxConnectionId?: string;
+  telnyx_connection_id?: string;
+  signalwireSpaceUrl?: string;
+  signalwire_space_url?: string;
+  projectId?: string;
+  project_id?: string;
+  applicationId?: string;
+  application_id?: string;
+  trunkId?: string;
+  trunk_id?: string;
+  endpointId?: string;
+  endpoint_id?: string;
+  token?: string;
+  secret?: string;
   fromNumber?: string;
   from_number?: string;
   sipTrunkUri?: string;
@@ -129,6 +284,9 @@ export interface LabsTelephonyCredentials {
   password?: string;
   webhookSecret?: string;
   webhook_secret?: string;
+  customSip?: LabsCustomSipConfig;
+  custom_sip?: LabsCustomSipConfig;
+  [extra: string]: unknown;
 }
 
 export interface LabsTelephonyConfig {
@@ -137,9 +295,22 @@ export interface LabsTelephonyConfig {
   /** Default is Supafone-managed; developers do not need Twilio for this path. */
   mode?: LabsTelephonyMode;
   provider?: LabsTelephonyProvider;
+  /** default_pool reuses idle Supafone numbers; dedicated/premium reserve a number-month. */
+  numberStrategy?: LabsNumberStrategy;
+  number_strategy?: LabsNumberStrategy;
+  numberPool?: string;
+  number_pool?: string;
+  numberId?: string;
+  number_id?: string;
+  premium?: boolean;
   label?: string;
   credentials?: LabsTelephonyCredentials;
+  providerSettings?: Record<string, unknown>;
+  provider_settings?: Record<string, unknown>;
+  customSip?: LabsCustomSipConfig;
+  custom_sip?: LabsCustomSipConfig;
   metadata?: Record<string, unknown>;
+  [extra: string]: unknown;
 }
 
 export interface LabsToolsConfig {
@@ -161,11 +332,61 @@ export interface LabsToolsConfig {
   custom_tools?: Array<Record<string, unknown>>;
 }
 
+export interface LabsRecordingConfig {
+  enabled?: boolean;
+  recordAudio?: boolean;
+  record_audio?: boolean;
+  consentRequired?: boolean;
+  consent_required?: boolean;
+  announcement?: string;
+  retentionDays?: number;
+  retention_days?: number;
+  storage?: "supafone_managed" | "byok" | string;
+  redactPii?: boolean;
+  redact_pii?: boolean;
+  metadata?: Record<string, unknown>;
+}
+
+export interface LabsTranscriptionConfig {
+  enabled?: boolean;
+  provider?: string;
+  model?: string;
+  language?: string;
+  redactPii?: boolean;
+  redact_pii?: boolean;
+  diarization?: boolean;
+  timestamps?: boolean;
+  metadata?: Record<string, unknown>;
+}
+
+export interface LabsArtifactsConfig {
+  recordings?: boolean;
+  transcripts?: boolean;
+  summaries?: boolean;
+  qaReports?: boolean;
+  qa_reports?: boolean;
+  logs?: boolean;
+  webhooks?: boolean;
+  retentionDays?: number;
+  retention_days?: number;
+  metadata?: Record<string, unknown>;
+}
+
 export interface LabsWatcherConfig {
   enabled?: boolean;
   voiceWatcher?: boolean;
   voice_watcher?: boolean;
+  apiKey?: string;
+  api_key?: string;
   model?: string;
+  mode?: "supafone_managed" | "byok" | string;
+  managedInfrastructure?: boolean;
+  managed_infrastructure?: boolean;
+  stt?: Record<string, unknown>;
+  llm?: Record<string, unknown>;
+  tts?: Record<string, unknown>;
+  providerKeys?: Record<string, unknown>;
+  provider_keys?: Record<string, unknown>;
   label?: string;
 }
 
@@ -211,6 +432,10 @@ export interface LabsUltravoxRuntime {
   retention_policy?: string;
   callTemplate?: Record<string, unknown>;
   call_template?: Record<string, unknown>;
+  customSip?: LabsCustomSipConfig;
+  custom_sip?: LabsCustomSipConfig;
+  sip?: LabsCustomSipConfig;
+  [extra: string]: unknown;
 }
 
 export interface CreateLabsAgentRequest {
@@ -234,11 +459,22 @@ export interface CreateLabsAgentRequest {
   website_url?: string;
   phoneNumber?: string;
   phone_number?: string;
+  numberStrategy?: LabsNumberStrategy;
+  number_strategy?: LabsNumberStrategy;
+  numberPool?: string;
+  number_pool?: string;
+  premium?: boolean;
   direction?: string;
   presetKey?: string;
   preset_key?: string;
   runtimeMode?: LabsRuntimeMode;
   runtime_mode?: LabsRuntimeMode;
+  /** Default true. When true, the SDK creates sensible call stages from prompt metadata. */
+  callStages?: boolean | LabsCallStage[];
+  call_stages?: boolean | LabsCallStage[];
+  stages?: LabsCallStage[];
+  autoCallStages?: boolean;
+  auto_call_stages?: boolean;
   goal?: string;
   greeting?: string;
   systemPrompt?: string;
@@ -247,8 +483,15 @@ export interface CreateLabsAgentRequest {
   voice?: LabsVoiceSelection;
   providerKeys?: LabsProviderKeys;
   provider_keys?: LabsProviderKeys;
-  byok?: LabsProviderKeys;
+  byok?: LabsProviderKeys | LabsByokConfig;
   telephony?: LabsTelephonyConfig;
+  customSip?: LabsCustomSipConfig;
+  custom_sip?: LabsCustomSipConfig;
+  sip?: LabsCustomSipConfig;
+  recording?: LabsRecordingConfig;
+  transcription?: LabsTranscriptionConfig;
+  artifacts?: LabsArtifactsConfig;
+  compliance?: Record<string, unknown>;
   tools?: LabsToolsConfig;
   labs?: LabsWatcherConfig;
   ultravox?: LabsUltravoxRuntime;
@@ -266,6 +509,21 @@ export interface ListLabsAgentsOptions {
 }
 
 export interface GetLabsAgentOptions extends ListLabsAgentsOptions {}
+
+export interface DeleteLabsAgentOptions {
+  agencyId?: string;
+  agency_id?: string;
+  releaseNumbers?: boolean;
+  release_numbers?: boolean;
+}
+
+export interface DeleteLabsAgentResponse {
+  success?: boolean;
+  deleted?: boolean;
+  agent_key?: string;
+  released_numbers?: unknown[];
+  [extra: string]: unknown;
+}
 
 export interface LabsCapabilitiesResponse {
   product: string;
@@ -299,9 +557,57 @@ export interface LabsVoiceListResponse {
   errors?: Record<string, string>;
 }
 
+export interface LabsCallListOptions {
+  agencyId?: string;
+  agentKey?: string;
+  agent_key?: string;
+  limit?: number;
+}
+
+export interface LabsCallArtifact {
+  id?: string;
+  call_id?: string;
+  agent_key?: string;
+  status?: string;
+  started_at?: string;
+  duration_seconds?: number;
+  recording_url?: string;
+  transcript_url?: string;
+  [extra: string]: unknown;
+}
+
+export interface LabsCallListResponse {
+  calls: LabsCallArtifact[];
+  [extra: string]: unknown;
+}
+
+export interface LabsRecordingListOptions extends LabsCallListOptions {
+  callId?: string;
+  call_id?: string;
+}
+
+export interface LabsRecordingListResponse {
+  recordings: Array<Record<string, unknown>>;
+  [extra: string]: unknown;
+}
+
+export interface LabsTranscriptListOptions extends LabsCallListOptions {
+  callId?: string;
+  call_id?: string;
+}
+
+export interface LabsTranscriptListResponse {
+  transcripts: Array<Record<string, unknown>>;
+  [extra: string]: unknown;
+}
+
 export interface LabsPhoneNumberSearchOptions {
   agencyId?: string;
   agency_id?: string;
+  numberPool?: string;
+  number_pool?: string;
+  numberStrategy?: LabsNumberStrategy;
+  number_strategy?: LabsNumberStrategy;
   countryCode?: string;
   country_code?: string;
   areaCode?: string;
@@ -376,6 +682,11 @@ export interface LabsPhoneNumberProvisionRequest {
   agent_name?: string;
   presetKey?: string;
   preset_key?: string;
+  numberStrategy?: LabsNumberStrategy;
+  number_strategy?: LabsNumberStrategy;
+  numberPool?: string;
+  number_pool?: string;
+  premium?: boolean;
   style?: LabsAgentStyle;
   agentStyle?: LabsAgentStyle;
   agent_style?: LabsAgentStyle;
@@ -385,6 +696,15 @@ export interface LabsPhoneNumberProvisionRequest {
 }
 
 export interface LabsPhoneNumberAssignRequest extends Omit<LabsPhoneNumberProvisionRequest, "phoneNumber" | "phone_number" | "departmentId" | "department_id"> {}
+
+export interface LabsPhoneNumberReleaseRequest {
+  agencyId?: string;
+  agency_id?: string;
+  reason?: string;
+  returnToPool?: boolean;
+  return_to_pool?: boolean;
+  metadata?: Record<string, unknown>;
+}
 
 export interface LabsPhoneNumberProvisionResponse {
   success: boolean;
@@ -398,6 +718,14 @@ export interface LabsPhoneNumberAssignResponse {
   success: boolean;
   number: LabsPhoneNumberRecord;
   assignment?: Record<string, unknown>;
+}
+
+export interface LabsPhoneNumberReleaseResponse {
+  success: boolean;
+  number?: LabsPhoneNumberRecord;
+  released?: boolean;
+  returned_to_pool?: boolean;
+  [extra: string]: unknown;
 }
 
 export interface LabsPhoneNumberBuyAndAssignRequest extends LabsPhoneNumberProvisionRequest {
@@ -685,6 +1013,14 @@ export class SupafoneLabs {
     }
   }
 
+  /** Convenience alias for voice preview UI/buttons. */
+  previewVoice(
+    voice = "supafone-labs-calm-en",
+    text = "Hi, this is your Supafone agent voice preview.",
+  ): Promise<Uint8Array> {
+    return this.tts(text, voice);
+  }
+
   /** Hosted STT for a finished audio clip — returns transcript + language tags. */
   async stt(
     audio: Uint8Array | ArrayBuffer,
@@ -742,8 +1078,45 @@ export class SupafoneLabs {
   }
 
   /** The auditable whisper/billing log. */
-  logs(limit = 100): Promise<{ logs: unknown[] }> {
+  logs(limit = 100): Promise<{ logs: LabsLogEntry[] }> {
     return this.request("GET", `/v1/logs?limit=${limit}`);
+  }
+
+  /** Live audit-log stream. Works in Node 18+ and browsers via fetch streaming. */
+  async *streamLogs(opts: StreamLogsOptions = {}): AsyncGenerator<LabsLogEntry> {
+    const q = new URLSearchParams({
+      limit: String(opts.limit ?? 100),
+      poll_ms: String(opts.pollMs ?? 1000),
+      snapshot: String(opts.snapshot ?? true),
+    });
+    if (opts.afterId !== undefined) q.set("after_id", String(opts.afterId));
+    const res = await fetch(`${this.baseUrl}/v1/logs/stream?${q}`, {
+      method: "GET",
+      signal: opts.signal,
+      headers: { Authorization: `Bearer ${this.apiKey}` },
+    });
+    if (!res.ok) throw new SupafoneLabsError(`streamLogs: ${await res.text()}`, res.status);
+    if (!res.body) throw new SupafoneLabsError("streamLogs: response body is not readable");
+    const reader = res.body.getReader();
+    const decoder = new TextDecoder();
+    let buffer = "";
+    try {
+      for (;;) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        buffer += decoder.decode(value, { stream: true });
+        let split = buffer.indexOf("\n\n");
+        while (split >= 0) {
+          const raw = buffer.slice(0, split);
+          buffer = buffer.slice(split + 2);
+          const parsed = parseSseLog(raw);
+          if (parsed) yield parsed;
+          split = buffer.indexOf("\n\n");
+        }
+      }
+    } finally {
+      reader.releaseLock();
+    }
   }
 
   /** The structured whisper feed (what the console shows). */
@@ -779,6 +1152,11 @@ export class SupafoneLabs {
       "/v1/voices",
     );
     return d.voices.map((v) => (typeof v === "string" ? v : (v.voice ?? v.id ?? ""))).filter(Boolean);
+  }
+
+  /** Full hosted voice catalog with provider live/configured flags. */
+  voiceCatalog(): Promise<{ voices: Array<Record<string, unknown>> }> {
+    return this.request("GET", "/v1/voices");
   }
 }
 
@@ -856,6 +1234,9 @@ class LabsNamespace {
   readonly voices: LabsVoicesNamespace;
   readonly phoneNumbers: LabsPhoneNumbersNamespace;
   readonly telephony: LabsTelephonyNamespace;
+  readonly calls: LabsCallsNamespace;
+  readonly recordings: LabsRecordingsNamespace;
+  readonly transcripts: LabsTranscriptsNamespace;
 
   constructor(private sm: SupafoneLabs) {
     this.agents = new LabsAgentsNamespace(sm);
@@ -864,6 +1245,9 @@ class LabsNamespace {
     this.voices = new LabsVoicesNamespace(sm);
     this.phoneNumbers = new LabsPhoneNumbersNamespace(sm);
     this.telephony = new LabsTelephonyNamespace(sm);
+    this.calls = new LabsCallsNamespace(sm);
+    this.recordings = new LabsRecordingsNamespace(sm);
+    this.transcripts = new LabsTranscriptsNamespace(sm);
   }
 
   /** Discover the Supafone convenience layer over Ultravox. */
@@ -971,6 +1355,20 @@ class LabsAgentsNamespace {
       `/api/v1/labs/agents/${encodeURIComponent(agentKey)}${suffix}`,
     );
   }
+
+  /** Delete an agent. Optionally ask the backend to release assigned numbers. */
+  delete(agentKey: string, opts: DeleteLabsAgentOptions = {}): Promise<DeleteLabsAgentResponse> {
+    const q = new URLSearchParams();
+    const agencyId = opts.agency_id ?? opts.agencyId;
+    const releaseNumbers = opts.release_numbers ?? opts.releaseNumbers;
+    if (agencyId) q.set("agency_id", agencyId);
+    if (releaseNumbers !== undefined) q.set("release_numbers", String(releaseNumbers));
+    const suffix = q.toString() ? `?${q}` : "";
+    return this.sm.requestSupafoneApi<DeleteLabsAgentResponse>(
+      "DELETE",
+      `/api/v1/labs/agents/${encodeURIComponent(agentKey)}${suffix}`,
+    );
+  }
 }
 
 class LabsPresetsNamespace {
@@ -1000,6 +1398,69 @@ class LabsVoicesNamespace {
     if (opts.provider) q.set("provider", opts.provider);
     const suffix = q.toString() ? `?${q}` : "";
     return this.sm.requestSupafoneApi<LabsVoiceListResponse>("GET", `/api/v1/labs/voices${suffix}`);
+  }
+}
+
+class LabsCallsNamespace {
+  constructor(private sm: SupafoneLabs) {}
+
+  list(opts: LabsCallListOptions = {}): Promise<LabsCallListResponse> {
+    const q = hostedListQuery(opts);
+    const suffix = q.toString() ? `?${q}` : "";
+    return this.sm.requestSupafoneApi<LabsCallListResponse>("GET", `/api/v1/labs/calls${suffix}`);
+  }
+
+  get(callId: string, opts: { agencyId?: string } = {}): Promise<Record<string, unknown>> {
+    const q = new URLSearchParams();
+    if (opts.agencyId) q.set("agency_id", opts.agencyId);
+    const suffix = q.toString() ? `?${q}` : "";
+    return this.sm.requestSupafoneApi("GET", `/api/v1/labs/calls/${encodeURIComponent(callId)}${suffix}`);
+  }
+}
+
+class LabsRecordingsNamespace {
+  constructor(private sm: SupafoneLabs) {}
+
+  list(opts: LabsRecordingListOptions = {}): Promise<LabsRecordingListResponse> {
+    const q = hostedListQuery(opts);
+    const callId = opts.call_id ?? opts.callId;
+    if (callId) q.set("call_id", callId);
+    const suffix = q.toString() ? `?${q}` : "";
+    return this.sm.requestSupafoneApi<LabsRecordingListResponse>("GET", `/api/v1/labs/recordings${suffix}`);
+  }
+
+  get(recordingId: string, opts: { agencyId?: string } = {}): Promise<Record<string, unknown>> {
+    const q = new URLSearchParams();
+    if (opts.agencyId) q.set("agency_id", opts.agencyId);
+    const suffix = q.toString() ? `?${q}` : "";
+    return this.sm.requestSupafoneApi("GET", `/api/v1/labs/recordings/${encodeURIComponent(recordingId)}${suffix}`);
+  }
+
+  delete(recordingId: string, opts: { agencyId?: string; reason?: string } = {}): Promise<Record<string, unknown>> {
+    const q = new URLSearchParams();
+    if (opts.agencyId) q.set("agency_id", opts.agencyId);
+    if (opts.reason) q.set("reason", opts.reason);
+    const suffix = q.toString() ? `?${q}` : "";
+    return this.sm.requestSupafoneApi("DELETE", `/api/v1/labs/recordings/${encodeURIComponent(recordingId)}${suffix}`);
+  }
+}
+
+class LabsTranscriptsNamespace {
+  constructor(private sm: SupafoneLabs) {}
+
+  list(opts: LabsTranscriptListOptions = {}): Promise<LabsTranscriptListResponse> {
+    const q = hostedListQuery(opts);
+    const callId = opts.call_id ?? opts.callId;
+    if (callId) q.set("call_id", callId);
+    const suffix = q.toString() ? `?${q}` : "";
+    return this.sm.requestSupafoneApi<LabsTranscriptListResponse>("GET", `/api/v1/labs/transcripts${suffix}`);
+  }
+
+  get(transcriptId: string, opts: { agencyId?: string } = {}): Promise<Record<string, unknown>> {
+    const q = new URLSearchParams();
+    if (opts.agencyId) q.set("agency_id", opts.agencyId);
+    const suffix = q.toString() ? `?${q}` : "";
+    return this.sm.requestSupafoneApi("GET", `/api/v1/labs/transcripts/${encodeURIComponent(transcriptId)}${suffix}`);
   }
 }
 
@@ -1045,6 +1506,42 @@ class LabsPhoneNumbersNamespace {
       "POST",
       `/api/v1/labs/phone-numbers/${encodeURIComponent(numberId)}/assign`,
       phoneNumberAssignPayload(input),
+    );
+  }
+
+  /** Unassign a number from an agent but keep it reserved on the account. */
+  unassign(numberId: string, input: LabsPhoneNumberReleaseRequest = {}): Promise<LabsPhoneNumberReleaseResponse> {
+    return this.sm.requestSupafoneApi<LabsPhoneNumberReleaseResponse>(
+      "POST",
+      `/api/v1/labs/phone-numbers/${encodeURIComponent(numberId)}/unassign`,
+      phoneNumberReleasePayload(input),
+    );
+  }
+
+  /** Give a number back to the shared pool or release the reservation. */
+  release(numberId: string, input: LabsPhoneNumberReleaseRequest = {}): Promise<LabsPhoneNumberReleaseResponse> {
+    return this.sm.requestSupafoneApi<LabsPhoneNumberReleaseResponse>(
+      "POST",
+      `/api/v1/labs/phone-numbers/${encodeURIComponent(numberId)}/release`,
+      phoneNumberReleasePayload({ ...input, returnToPool: input.returnToPool ?? input.return_to_pool ?? true }),
+    );
+  }
+
+  /** Alias for release(numberId, { returnToPool: true }). */
+  returnToPool(numberId: string, input: LabsPhoneNumberReleaseRequest = {}): Promise<LabsPhoneNumberReleaseResponse> {
+    return this.release(numberId, { ...input, returnToPool: true });
+  }
+
+  /** Delete/release a number reservation. Backend policy decides whether this is allowed. */
+  delete(numberId: string, input: LabsPhoneNumberReleaseRequest = {}): Promise<LabsPhoneNumberReleaseResponse> {
+    const q = new URLSearchParams();
+    const agencyId = input.agency_id ?? input.agencyId;
+    if (agencyId) q.set("agency_id", agencyId);
+    const suffix = q.toString() ? `?${q}` : "";
+    return this.sm.requestSupafoneApi<LabsPhoneNumberReleaseResponse>(
+      "DELETE",
+      `/api/v1/labs/phone-numbers/${encodeURIComponent(numberId)}${suffix}`,
+      phoneNumberReleasePayload(input),
     );
   }
 
@@ -1180,17 +1677,26 @@ function labsAgentPayload(input: CreateLabsAgentRequest): Record<string, unknown
     industry: input.industry,
     website_url: input.website_url ?? input.websiteUrl,
     phone_number: input.phone_number ?? input.phoneNumber,
+    number_strategy: input.number_strategy ?? input.numberStrategy,
+    number_pool: input.number_pool ?? input.numberPool,
+    premium: input.premium,
     direction: input.direction,
     preset_key: input.preset_key ?? input.presetKey,
     runtime_mode: input.runtime_mode ?? input.runtimeMode,
+    call_stages: callStagesPayload(input),
     goal: input.goal,
     greeting: input.greeting,
     system_prompt: input.system_prompt ?? input.systemPrompt,
     language: input.language,
     voice: input.voice ? voicePayload(input.voice) : undefined,
     provider_keys: input.provider_keys ?? (input.providerKeys ? providerKeysPayload(input.providerKeys) : undefined),
-    byok: input.byok ? providerKeysPayload(input.byok) : undefined,
+    byok: input.byok ? byokPayload(input.byok) : undefined,
     telephony: input.telephony ? telephonyPayload(input.telephony) : undefined,
+    custom_sip: customSipPayload(input.custom_sip ?? input.customSip ?? input.sip),
+    recording: input.recording ? recordingPayload(input.recording) : undefined,
+    transcription: input.transcription ? transcriptionPayload(input.transcription) : undefined,
+    artifacts: input.artifacts ? artifactsPayload(input.artifacts) : undefined,
+    compliance: input.compliance,
     tools: input.tools ? toolsPayload(input.tools) : undefined,
     labs: input.labs ? labsPayload(input.labs) : undefined,
     ultravox: input.ultravox ? ultravoxPayload(input.ultravox) : undefined,
@@ -1200,13 +1706,28 @@ function labsAgentPayload(input: CreateLabsAgentRequest): Record<string, unknown
   });
 }
 
+function hostedListQuery(opts: LabsCallListOptions): URLSearchParams {
+  const q = new URLSearchParams();
+  if (opts.agencyId) q.set("agency_id", opts.agencyId);
+  const agentKey = opts.agent_key ?? opts.agentKey;
+  if (agentKey) q.set("agent_key", agentKey);
+  if (opts.limit !== undefined) q.set("limit", String(opts.limit));
+  return q;
+}
+
 function telephonyPayload(input: LabsTelephonyConfig): Record<string, unknown> {
   return compact({
     agency_id: input.agency_id ?? input.agencyId,
     mode: input.mode,
     provider: input.provider,
+    number_strategy: input.number_strategy ?? input.numberStrategy,
+    number_pool: input.number_pool ?? input.numberPool,
+    number_id: input.number_id ?? input.numberId,
+    premium: input.premium,
     label: input.label,
     credentials: input.credentials ? telephonyCredentialsPayload(input.credentials) : undefined,
+    provider_settings: input.provider_settings ?? input.providerSettings,
+    custom_sip: customSipPayload(input.custom_sip ?? input.customSip),
     metadata: input.metadata,
   });
 }
@@ -1225,12 +1746,23 @@ function telephonyCredentialsPayload(input: LabsTelephonyCredentials): Record<st
     username: input.username,
     password: input.password,
     webhook_secret: input.webhook_secret ?? input.webhookSecret,
+    telnyx_connection_id: input.telnyx_connection_id ?? input.telnyxConnectionId,
+    signalwire_space_url: input.signalwire_space_url ?? input.signalwireSpaceUrl,
+    project_id: input.project_id ?? input.projectId,
+    application_id: input.application_id ?? input.applicationId,
+    trunk_id: input.trunk_id ?? input.trunkId,
+    endpoint_id: input.endpoint_id ?? input.endpointId,
+    token: input.token,
+    secret: input.secret,
+    custom_sip: customSipPayload(input.custom_sip ?? input.customSip),
   });
 }
 
 function phoneNumberSearchPayload(input: LabsPhoneNumberSearchOptions): Record<string, unknown> {
   return compact({
     agency_id: input.agency_id ?? input.agencyId,
+    number_pool: input.number_pool ?? input.numberPool,
+    number_strategy: input.number_strategy ?? input.numberStrategy,
     country_code: input.country_code ?? input.countryCode,
     area_code: input.area_code ?? input.areaCode,
     postal_code: input.postal_code ?? input.postalCode,
@@ -1252,6 +1784,9 @@ function phoneNumberProvisionPayload(input: LabsPhoneNumberProvisionRequest): Re
     agent_id: input.agent_id ?? input.agentId,
     agent_name: input.agent_name ?? input.agentName,
     preset_key: input.preset_key ?? input.presetKey,
+    number_strategy: input.number_strategy ?? input.numberStrategy,
+    number_pool: input.number_pool ?? input.numberPool,
+    premium: input.premium,
     style: input.agent_style ?? input.agentStyle ?? input.style,
     direction: input.direction,
     telephony: input.telephony ? telephonyPayload(input.telephony) : undefined,
@@ -1267,11 +1802,111 @@ function phoneNumberAssignPayload(input: LabsPhoneNumberAssignRequest): Record<s
     agent_name: input.agent_name ?? input.agentName,
     friendly_name: input.friendly_name ?? input.friendlyName,
     preset_key: input.preset_key ?? input.presetKey,
+    number_strategy: input.number_strategy ?? input.numberStrategy,
+    number_pool: input.number_pool ?? input.numberPool,
+    premium: input.premium,
     style: input.agent_style ?? input.agentStyle ?? input.style,
     direction: input.direction,
     telephony: input.telephony ? telephonyPayload(input.telephony) : undefined,
     metadata: input.metadata,
   });
+}
+
+function phoneNumberReleasePayload(input: LabsPhoneNumberReleaseRequest): Record<string, unknown> {
+  return compact({
+    agency_id: input.agency_id ?? input.agencyId,
+    reason: input.reason,
+    return_to_pool: input.return_to_pool ?? input.returnToPool,
+    metadata: input.metadata,
+  });
+}
+
+function callStagesPayload(input: CreateLabsAgentRequest): Record<string, unknown>[] | undefined {
+  const explicit = input.call_stages ?? input.callStages ?? input.stages;
+  const auto = input.auto_call_stages ?? input.autoCallStages;
+  if (Array.isArray(explicit)) return explicit.map(callStagePayload);
+  if (explicit === false || auto === false) return undefined;
+  return generateCallStages(input).map(callStagePayload);
+}
+
+function callStagePayload(input: LabsCallStage): Record<string, unknown> {
+  return compact({
+    key: input.key ?? input.id,
+    name: input.name,
+    goal: input.goal,
+    instructions: input.instructions,
+    exit_criteria: input.exit_criteria ?? input.exitCriteria,
+    tools: input.tools,
+    metadata: input.metadata,
+  });
+}
+
+export function generateCallStages(input: CreateLabsAgentRequest): LabsCallStage[] {
+  const direction = String(input.direction ?? input.agent_style ?? input.agentStyle ?? input.style ?? "inbound").toLowerCase();
+  const haystack = [
+    input.name,
+    input.assistant_name ?? input.assistantName,
+    input.business_name ?? input.businessName,
+    input.industry,
+    input.goal,
+    input.system_prompt ?? input.systemPrompt,
+    input.preset_key ?? input.presetKey,
+  ].filter(Boolean).join(" ").toLowerCase();
+  const meta = { auto_generated: true, source: "supafone-labs-sdk" };
+
+  if (direction === "outbound" || haystack.includes("sales") || haystack.includes("lead")) {
+    return [
+      stage("intro_consent", "Intro and consent", "State who you are, why you are calling, and offer an immediate opt-out.", ["Caller understands purpose", "Opt-out is honored"], meta),
+      stage("qualification", "Qualification", "Confirm fit, urgency, decision process, and the best next step.", ["Need and timeline are clear"], meta),
+      stage("offer", "Offer", "Explain the next step in plain language without unsupported claims.", ["Caller understands the next step"], meta),
+      stage("booking", "Booking", "Book or route the caller only after confirming required details.", ["Next step is confirmed by a tool or human handoff"], meta),
+      stage("close", "Close", "Summarize what will happen next and end politely.", ["Caller knows the follow-up path"], meta),
+    ];
+  }
+
+  if (haystack.includes("legal") || haystack.includes("law") || haystack.includes("injury") || haystack.includes("intake")) {
+    return [
+      stage("greeting", "Greeting", "Open warmly and acknowledge the caller before logistics.", ["Caller need is understood"], meta),
+      stage("incident", "Incident details", "Collect what happened, when it happened, injuries, insurance, and contact details.", ["Core facts are collected"], meta),
+      stage("screening", "Screening", "Identify urgency, jurisdiction, conflicts, and whether human escalation is required.", ["Escalation decision is clear"], meta),
+      stage("booking", "Consult booking", "Book the right next step without quoting fees or inventing availability.", ["Booking or handoff is tool-confirmed"], meta),
+      stage("close", "Close", "Summarize the next step and set expectations accurately.", ["Caller knows exactly what happens next"], meta),
+    ];
+  }
+
+  if (haystack.includes("medical") || haystack.includes("clinic") || haystack.includes("patient") || haystack.includes("health")) {
+    return [
+      stage("greeting", "Greeting", "Identify the caller need and keep the tone calm and concise.", ["Caller need is understood"], meta),
+      stage("patient_context", "Patient context", "Collect non-sensitive scheduling context and avoid medical advice.", ["Required scheduling context is collected"], meta),
+      stage("routing", "Routing", "Route urgent, billing, clinical, and scheduling requests correctly.", ["Correct route is selected"], meta),
+      stage("appointment", "Appointment", "Book or request the appointment only after confirming details.", ["Appointment path is confirmed"], meta),
+      stage("close", "Close", "Recap next steps and any confirmed timing.", ["Caller knows the next step"], meta),
+    ];
+  }
+
+  return [
+    stage("greeting", "Greeting", "Open naturally, identify the caller need, and set a helpful tone.", ["Caller need is understood"], meta),
+    stage("discovery", "Discovery", "Ask one question at a time until the key details are clear.", ["Required details are collected"], meta),
+    stage("resolution", "Resolution", "Answer approved questions or route to the right workflow.", ["Resolution path is selected"], meta),
+    stage("action", "Action", "Use tools for booking, routing, messaging, or handoff before claiming success.", ["Action is confirmed by a tool or handoff"], meta),
+    stage("close", "Close", "Summarize the outcome and next step accurately.", ["Caller knows what happens next"], meta),
+  ];
+}
+
+function stage(
+  key: string,
+  name: string,
+  instructions: string,
+  exitCriteria: string[],
+  metadata: Record<string, unknown>,
+): LabsCallStage {
+  return {
+    key,
+    name,
+    instructions,
+    exitCriteria,
+    metadata,
+  };
 }
 
 function voicePayload(input: LabsVoiceSelection): Record<string, unknown> {
@@ -1286,6 +1921,30 @@ function providerKeysPayload(input: LabsProviderKeys): Record<string, unknown> {
   return compact({
     ultravox: input.ultravox,
     ultravox_api_key: input.ultravox_api_key ?? input.ultravoxApiKey,
+    retell: input.retell,
+    retell_api_key: input.retell_api_key ?? input.retellApiKey,
+    vapi: input.vapi,
+    vapi_api_key: input.vapi_api_key ?? input.vapiApiKey,
+    bland: input.bland,
+    bland_api_key: input.bland_api_key ?? input.blandApiKey,
+    livekit: input.livekit,
+    livekit_api_key: input.livekit_api_key ?? input.livekitApiKey,
+    livekit_api_secret: input.livekit_api_secret ?? input.livekitApiSecret,
+    pipecat: input.pipecat,
+    pipecat_api_key: input.pipecat_api_key ?? input.pipecatApiKey,
+    twilio: input.twilio,
+    twilio_account_sid: input.twilio_account_sid ?? input.twilioAccountSid,
+    twilio_auth_token: input.twilio_auth_token ?? input.twilioAuthToken,
+    twilio_api_key_sid: input.twilio_api_key_sid ?? input.twilioApiKeySid,
+    twilio_api_key_secret: input.twilio_api_key_secret ?? input.twilioApiKeySecret,
+    telnyx: input.telnyx,
+    telnyx_api_key: input.telnyx_api_key ?? input.telnyxApiKey,
+    plivo: input.plivo,
+    plivo_auth_id: input.plivo_auth_id ?? input.plivoAuthId,
+    plivo_auth_token: input.plivo_auth_token ?? input.plivoAuthToken,
+    signalwire: input.signalwire,
+    signalwire_api_token: input.signalwire_api_token ?? input.signalwireApiToken,
+    signalwire_project_id: input.signalwire_project_id ?? input.signalwireProjectId,
     elevenlabs: input.elevenlabs,
     elevenlabs_api_key: input.elevenlabs_api_key ?? input.elevenlabsApiKey,
     cartesia: input.cartesia,
@@ -1294,6 +1953,59 @@ function providerKeysPayload(input: LabsProviderKeys): Record<string, unknown> {
     inworld_api_key: input.inworld_api_key ?? input.inworldApiKey,
     deepgram: input.deepgram,
     deepgram_api_key: input.deepgram_api_key ?? input.deepgramApiKey,
+    anthropic: input.anthropic,
+    anthropic_api_key: input.anthropic_api_key ?? input.anthropicApiKey,
+    openai: input.openai,
+    openai_api_key: input.openai_api_key ?? input.openaiApiKey,
+    xai: input.xai,
+    xai_api_key: input.xai_api_key ?? input.xaiApiKey,
+  });
+}
+
+function byokPayload(input: LabsProviderKeys | LabsByokConfig): Record<string, unknown> {
+  const structured = input as LabsByokConfig;
+  if (
+    structured.agentProvider ||
+    structured.agent_provider ||
+    structured.runtime ||
+    structured.telephony ||
+    structured.tts ||
+    structured.stt ||
+    structured.llm ||
+    structured.providerKeys ||
+    structured.provider_keys ||
+    structured.customSip ||
+    structured.custom_sip ||
+    structured.sip
+  ) {
+    return compact({
+      provider_keys: providerKeysPayload(structured.provider_keys ?? structured.providerKeys ?? {}),
+      agent_provider: providerConfigPayload(structured.agent_provider ?? structured.agentProvider ?? structured.runtime),
+      telephony: structured.telephony ? telephonyPayload(structured.telephony) : undefined,
+      tts: providerConfigPayload(structured.tts),
+      stt: providerConfigPayload(structured.stt),
+      llm: providerConfigPayload(structured.llm),
+      custom_sip: customSipPayload(structured.custom_sip ?? structured.customSip ?? structured.sip),
+    });
+  }
+  return providerKeysPayload(input as LabsProviderKeys);
+}
+
+function providerConfigPayload(input?: LabsProviderByokConfig): Record<string, unknown> | undefined {
+  if (!input) return undefined;
+  const out: Record<string, unknown> = { ...input };
+  delete out.apiKey;
+  delete out.api_key;
+  delete out.voiceId;
+  delete out.voice_id;
+  return compact({
+    ...out,
+    provider: input.provider,
+    api_key: input.api_key ?? input.apiKey,
+    credentials: input.credentials,
+    settings: input.settings,
+    model: input.model,
+    voice_id: input.voice_id ?? input.voiceId,
   });
 }
 
@@ -1312,11 +2024,57 @@ function toolsPayload(input: LabsToolsConfig): Record<string, unknown> {
   });
 }
 
+function recordingPayload(input: LabsRecordingConfig): Record<string, unknown> {
+  return compact({
+    enabled: input.enabled,
+    record_audio: input.record_audio ?? input.recordAudio,
+    consent_required: input.consent_required ?? input.consentRequired,
+    announcement: input.announcement,
+    retention_days: input.retention_days ?? input.retentionDays,
+    storage: input.storage,
+    redact_pii: input.redact_pii ?? input.redactPii,
+    metadata: input.metadata,
+  });
+}
+
+function transcriptionPayload(input: LabsTranscriptionConfig): Record<string, unknown> {
+  return compact({
+    enabled: input.enabled,
+    provider: input.provider,
+    model: input.model,
+    language: input.language,
+    redact_pii: input.redact_pii ?? input.redactPii,
+    diarization: input.diarization,
+    timestamps: input.timestamps,
+    metadata: input.metadata,
+  });
+}
+
+function artifactsPayload(input: LabsArtifactsConfig): Record<string, unknown> {
+  return compact({
+    recordings: input.recordings,
+    transcripts: input.transcripts,
+    summaries: input.summaries,
+    qa_reports: input.qa_reports ?? input.qaReports,
+    logs: input.logs,
+    webhooks: input.webhooks,
+    retention_days: input.retention_days ?? input.retentionDays,
+    metadata: input.metadata,
+  });
+}
+
 function labsPayload(input: LabsWatcherConfig): Record<string, unknown> {
   return compact({
     enabled: input.enabled,
     voice_watcher: input.voice_watcher ?? input.voiceWatcher,
+    api_key: input.api_key ?? input.apiKey,
     model: input.model,
+    mode: input.mode,
+    managed_infrastructure: input.managed_infrastructure ?? input.managedInfrastructure,
+    stt: input.stt,
+    llm: input.llm,
+    tts: input.tts,
+    provider_keys: input.provider_keys ?? input.providerKeys,
     label: input.label,
   });
 }
@@ -1346,6 +2104,24 @@ function ultravoxPayload(input: LabsUltravoxRuntime): Record<string, unknown> {
     voiceOverrides: input.voiceOverrides ?? input.voice_overrides,
     retentionPolicy: input.retentionPolicy ?? input.retention_policy,
     callTemplate: input.callTemplate ?? input.call_template,
+    custom_sip: customSipPayload(input.custom_sip ?? input.customSip ?? input.sip),
+  });
+}
+
+function customSipPayload(input?: LabsCustomSipConfig): Record<string, unknown> | undefined {
+  if (!input) return undefined;
+  return compact({
+    sip_trunk_uri: input.sip_trunk_uri ?? input.sipTrunkUri,
+    trunk_uri: input.trunk_uri ?? input.trunkUri,
+    sip_host: input.sip_host ?? input.sipHost,
+    from_number: input.from_number ?? input.fromNumber,
+    username: input.username,
+    password: input.password,
+    transport: input.transport,
+    headers: input.headers,
+    codecs: input.codecs,
+    dtmf_mode: input.dtmf_mode ?? input.dtmfMode,
+    metadata: input.metadata,
   });
 }
 
@@ -1355,6 +2131,18 @@ function compact(input: Record<string, unknown>): Record<string, unknown> {
     if (value !== undefined) out[key] = value;
   }
   return out;
+}
+
+function parseSseLog(raw: string): LabsLogEntry | null {
+  const data: string[] = [];
+  for (const line of raw.split(/\r?\n/)) {
+    if (!line || line.startsWith(":")) continue;
+    if (line.startsWith("data:")) data.push(line.slice(5).trimStart());
+  }
+  if (!data.length) return null;
+  const parsed = safeJson(data.join("\n"));
+  if (!parsed || typeof parsed !== "object") return null;
+  return parsed as LabsLogEntry;
 }
 
 function safeJson(text: string): unknown {

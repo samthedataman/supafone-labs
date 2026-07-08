@@ -21,21 +21,25 @@ path: it perceives the caller, remembers, retrieves, deduces intent and emotion,
 catches mistakes, and silently coaches the live agent. And it **improves every
 call** via gradient descent on its own prompts.
 
-## One package, two layers
+## One package, two main features
 
-Supafone Labs gives you three ways to build:
+Supafone Labs gives you two product pillars:
 
-- **Hosted Supafone agents** -- create a durable phone/web/campaign agent with
-  `@supafone/labs` and helpers such as
+- **Agent Factory** -- create a durable phone/web/campaign agent with
+  `supafone-labs` and helpers such as
   `supafone.labs.agents.createInboundWithNumber()`. Supafone manages the phone
-  number, voice providers, multistage state machine, tools, recordings,
-  transcripts, widget, usage, and Supafone Pro watcher. No developer Twilio
-  account is required in the default path.
-- **Bring-your-stack supervision** -- keep Vapi, Retell, ElevenLabs, OpenAI
-  Realtime, Ultravox, Twilio, LiveKit, or SIP, then let Supafone Labs supervise
-  and coach the live call.
-- **Open-source runtime** -- run the deterministic runtime and adapters locally
-  with your own keys.
+  number, agent/provider stack, TTS/STT/LLM defaults, multistage state machine,
+  tools, recordings, transcripts, widget, usage, and Supafone Pro watcher. No
+  developer vendor account is required in the default path.
+- **Self-healing Labs watcher** -- keep Vapi, Retell, Bland, ElevenLabs,
+  OpenAI Realtime, Grok, Ultravox, Twilio, Telnyx, LiveKit, Pipecat, SIP, or
+  another stack, then let Supafone Labs supervise and coach the live call.
+
+BYOK is optional and split into three lanes: agent/provider stack, telephony,
+and TTS. Those lanes can be mixed with Supafone-managed defaults.
+
+You can also run the deterministic open-source runtime and adapters locally
+with your own keys.
 
 `pip install supafone-labs` gives you both:
 

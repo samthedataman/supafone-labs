@@ -19,10 +19,10 @@ https://api.supafone.ai/api/v1/labs
 The compatibility namespace `/api/v1/developer` exists for older clients, but
 new code should use `/api/v1/labs`.
 
-The recommended TypeScript package is `@supafone/labs`:
+The recommended TypeScript package is `supafone-labs`:
 
 ```ts
-import { Supafone } from "@supafone/labs";
+import { Supafone } from "supafone-labs";
 
 const supafone = new Supafone({
   apiKey: process.env.SUPAFONE_API_KEY!,
@@ -337,8 +337,17 @@ GET /api/v1/labs/telephony
 PUT /api/v1/labs/telephony
 ```
 
-BYOK telephony is the advanced path for developers who already own provider
-accounts. It is not required for the default Supafone-managed flow:
+BYOK is the advanced path for developers who already own provider accounts. It
+is not required for the default Supafone-managed flow. Keep BYOK split into
+three lanes:
+
+| Lane | Examples |
+| --- | --- |
+| Agent/provider stack | Ultravox, Retell, Vapi, Bland, LiveKit, Pipecat, GPT Realtime, Grok |
+| Telephony | Twilio, Telnyx, Plivo, SignalWire, SIP/custom trunks |
+| TTS | Cartesia, ElevenLabs, Inworld, Deepgram, custom TTS |
+
+BYOK telephony example:
 
 ```json
 {
@@ -352,8 +361,9 @@ accounts. It is not required for the default Supafone-managed flow:
 }
 ```
 
-Supported BYOK telephony provider labels are `twilio`, `telnyx`, `plivo`, and
-`sip`. Supafone still keeps the agent framework, stages, tools, transcripts,
+Supported BYOK telephony provider labels include `twilio`, `telnyx`, `plivo`,
+`signalwire`, `sip`, and custom provider labels enabled for the account.
+Supafone still keeps the agent framework, stages, tools, transcripts,
 recordings, account sync, and Supafone Pro watcher attached.
 
 ## Supafone Pro

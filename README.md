@@ -29,7 +29,7 @@ brain = supafone_labs.supercharge(my_agent)   # that's the whole integration
 ```
 
 ```ts
-import { Supafone } from "@supafone/labs";
+import { Supafone } from "supafone-labs";
 
 const supafone = new Supafone({ apiKey: process.env.SUPAFONE_API_KEY! });
 
@@ -48,6 +48,33 @@ agent API at `https://api.supafone.ai/api/v1/labs`. The default path buys and
 routes Supafone-managed numbers, so developers do not need to create Twilio,
 Ultravox, Cartesia, Inworld, ElevenLabs, or Deepgram accounts just to ship an
 agent. BYOK remains available when a team already owns those provider accounts.
+
+## The two product pillars
+
+Supafone Labs has two equally important features:
+
+1. **Agent Factory**: create complete inbound, outbound, web, and campaign
+   agents from one Supafone API key. This is the managed path. It eliminates
+   the need to bring your own voice-platform, telephony, TTS, STT, or LLM keys
+   before you can launch.
+2. **Self-healing Labs watcher**: attach the Supafone second mind to a hosted
+   agent or to an agent you already run. It listens beside the call, watches
+   transcripts, tools, state, and outcomes, then sends silent corrective
+   directives through the provider's native control channel.
+
+Managed is the default. BYOK is available when the customer already owns
+provider accounts or needs provider-specific controls. Keep the BYOK lanes
+separate:
+
+| BYOK lane | What it covers | Examples |
+| --- | --- | --- |
+| Agent/provider stack | The realtime agent or model runtime | Ultravox, Retell, Vapi, Bland, LiveKit, Pipecat, GPT Realtime, Grok |
+| Telephony | Carrier, trunk, and phone-network credentials | Twilio, Telnyx, Plivo, SignalWire, SIP/custom trunks |
+| TTS | Voice rendering and voice-clone/provider credentials | Cartesia, ElevenLabs, Inworld, Deepgram, custom TTS |
+
+Those lanes can be mixed. A team can use Supafone-managed telephony with BYOK
+TTS, or BYOK Twilio/Telnyx with the managed Labs watcher, or bring the full
+stack and only use Supafone for self-healing supervision and logs.
 
 ## Why this exists
 
@@ -162,7 +189,7 @@ mind whispered.
 
 ## Hosted Supafone agents
 
-Use `@supafone/labs` when you want Supafone to host the whole agent:
+Use `supafone-labs` when you want Supafone to host the whole agent:
 
 ```ts
 const inbound = await supafone.labs.agents.createInboundWithNumber({
@@ -290,12 +317,16 @@ Full reference with every endpoint, WebSocket framing, and error shapes:
 | | |
 |---|---|
 | **Signup** | 5 free minutes, no card |
-| **Pay as you go** | [$10 → 400 minutes](https://buy.stripe.com/7sY00d4Mz4yoaiF9003VC01) |
-| **Subscription** | [$49/mo → 2,000 minutes](https://buy.stripe.com/14A28l6UH4yo3Uh4JK3VC00) |
+| **Developer** | $49/mo → 300 included Supafone minutes; then $0.14/min |
+| **Growth** | $249/mo → 2,500 included Supafone minutes; then $0.11/min |
+| **Scale** | $999/mo → 12,000 included Supafone minutes; then $0.085/min |
+| **Managed numbers** | $1.25-$1.50/number-month depending on tier |
 | **Metering** | oracle call = 1s · TTS ≈ seconds of speech · live STT = session time |
 | **Self-host** | free forever — the gateway (`cloud/`) is in this repo, MIT |
 
 Every billed second is itemized in [`/v1/logs`](https://labs.supafone.ai/console.html).
+The live pricing contract is exposed at [`/v1/pricing`](https://api.labs.supafone.ai/v1/pricing)
+and rendered at [labs.supafone.ai/pricing.html](https://labs.supafone.ai/pricing.html).
 BYO vendor keys always win when present — leaving the cloud is deleting one
 environment variable.
 
