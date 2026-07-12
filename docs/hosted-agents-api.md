@@ -142,15 +142,29 @@ Important response fields:
     "transcription": true,
     "web_widget": true,
     "agent_styles": ["inbound", "outbound"],
+    "byok": {
+      "ultravox": { "api_key": "string", "base_url": "string (optional)" }
+    },
     "default_telephony": {
       "mode": "supafone_managed",
       "provider": "supafone",
       "number_buying": "supafone_master_twilio",
       "requires_developer_twilio_account": false
     }
+  },
+  "runtimes": {
+    "available": ["ultravox"],
+    "managed": "ultravox",
+    "byok": ["ultravox"],
+    "coming_soon": ["vapi", "retell", "bland", "livekit", "pipecat"]
   }
 }
 ```
+
+The `runtimes` block reports what runs today: Ultravox is available both
+**managed** (Supafone's platform key) and **BYOK** (your own key). Vapi, Retell,
+Bland, LiveKit, and Pipecat are still coming soon and their agent runtimes
+return `400 "coming soon"`.
 
 List presets:
 
@@ -240,6 +254,14 @@ The SDK accepts camelCase names such as `agentKey`, `assistantName`,
 `websiteUrl`, `runtimeMode`, `callRouting`, and `firmKnowledge`; raw HTTP accepts
 the snake_case names shown above.
 
+To run the agent on your **own** Ultravox account (your key, your billing), add a
+`byok.ultravox` block to the create body —
+`{"api_key": "uvx_...", "base_url": "https://api.ultravox.ai/api"}` (`base_url`
+optional; a `byok.credentials` object is also accepted as the key holder). The
+key is stored encrypted on your account, never in the agent doc, and
+`runtime_mode` becomes `"byok"`. It can also be connected standalone with
+`PUT /api/v1/labs/runtime` (see [Runtime](#runtime-managed-vs-byok-ultravox)).
+
 Create response:
 
 ```json
@@ -253,10 +275,13 @@ Create response:
     "preset_key": "general_intake_receptionist"
   },
   "runtime": {
-    "provider_accounts": {
-      "mode": "supafone_managed",
-      "requires_developer_provider_keys": false
-    }
+    "provider": "ultravox",
+    "managed": true,
+    "key_source": "platform",
+    "status": "ready",
+    "model": "...",
+    "direction": "inbound",
+    "telephony": { "mode": "supafone_managed", "provider": "supafone" }
   },
   "widget": {
     "widget_key": "sf_...",
@@ -264,6 +289,10 @@ Create response:
   }
 }
 ```
+
+In the `runtime` block, `managed` is `false` and `key_source` is `"byok"` when
+the agent runs on your own Ultravox key; `status` is `"simulated"` when neither a
+platform nor a BYOK runtime key is connected.
 
 ## List and fetch agents
 
@@ -365,6 +394,50 @@ Supported BYOK telephony provider labels include `twilio`, `telnyx`, `plivo`,
 `signalwire`, `sip`, and custom provider labels enabled for the account.
 Supafone still keeps the agent framework, stages, tools, transcripts,
 recordings, account sync, and Supafone Pro watcher attached.
+
+## Runtime (managed vs BYOK Ultravox)
+
+The agent runtime runs on Ultravox. By default it uses Supafone's managed
+platform key. Connect your **own** Ultravox account to place and monitor agents
+on your key and billing; `runtime_mode` becomes `"byok"`. Managed remains the
+default.
+
+```http
+GET  /api/v1/labs/runtime
+PUT  /api/v1/labs/runtime
+```
+
+Connect or update the key:
+
+```bash
+curl "$SUPAFONE_API_BASE_URL/api/v1/labs/runtime" \
+  -X PUT \
+  -H "Authorization: Bearer $SUPAFONE_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "provider": "ultravox",
+    "credentials": { "api_key": "uvx_...", "base_url": "https://api.ultravox.ai/api" }
+  }'
+```
+
+`base_url` is optional. A blank `api_key` keeps the stored key so other fields
+can be re-saved. A non-`ultravox` provider returns `400 "coming soon"`. Both
+`GET` and `PUT` return the same status shape:
+
+```json
+{
+  "account_id": "...",
+  "provider": "ultravox",
+  "managed": false,
+  "byok_connected": true,
+  "base_url": "https://api.ultravox.ai/api",
+  "updated_at": "2026-07-11T00:00:00Z"
+}
+```
+
+You can also connect the key at agent create via `byok.ultravox`. Non-Ultravox
+agent runtimes (Vapi, Retell, Bland, LiveKit, Pipecat) still return
+`400 "coming soon"`.
 
 ## Supafone Pro
 

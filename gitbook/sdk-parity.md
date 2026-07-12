@@ -1,4 +1,4 @@
-# SDK Parity
+# ⚖️ SDK Parity
 
 The Python and TypeScript SDKs should let developers do the same work with the
 same vocabulary. Use camelCase in TypeScript and snake_case in Python, but keep
@@ -86,6 +86,17 @@ agent = supafone.labs.agents.createInboundWithNumber({
 | Usage | `supafone.usage()` | `supafone.usage()` |
 | Log snapshot | `supafone.logs()` | `supafone.logs()` |
 | Log stream | `supafone.streamLogs()` | `supafone.stream_logs()` / `streamLogs()` |
+| Place a real call | `supafone.placeCall()` | `supafone.place_call()` |
+| Fetch one call (live transcript) | `supafone.getCall()` | `supafone.get_call()` |
+| Classify a finished call | `supafone.classifyCall()` | `supafone.classify_call()` |
+| Auto post-call analysis | `postCallAnalysis: true` | `post_call_analysis=True` |
+| Brand scan | `supafone.scanBrand()` | `supafone.scan_brand()` |
+| Generate intake form | `supafone.generateIntakeForm()` | `supafone.generate_intake_form()` |
+| Campaign lifecycle | `supafone.campaigns.create/get/list/update/launch/pause()` | same names, snake_case |
+| Campaign config (YAML) | `campaigns.validateConfig/applyConfig/exportConfig/generateConfig()` | `campaigns.validate_config/apply_config/export_config/generate_config()` |
+| E-sign documents | `campaigns.uploadSigningDocument/detectSignatureFields/setSignatureFields()` | `campaigns.upload_signing_document/detect_signature_fields/set_signature_fields()` |
+| QA suites + SSR grading | `supafone.qa.generate/run/suite/history()` | `supafone.qa.generate/run/suite/history()` |
+| Labs session login | `supafone.labsLogin()` | `supafone.labs_login()` |
 
 ## BYOK Parity
 

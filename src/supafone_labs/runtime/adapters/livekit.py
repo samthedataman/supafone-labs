@@ -7,8 +7,10 @@ LiveKit Agents runs in your process; the ``AgentSession`` emits typed events:
 those event names (snake_case) under ``type``/``event``.
 
 Injection: you own the session object, so the compiled action is a
-``chat_context_append`` — add a system-role message to the agent's live
-``ChatContext`` before its next inference turn.
+``chat_context_append`` — add an assistant-role message to the agent's live
+``ChatContext`` before its next inference turn. Realtime models VOICE an
+appended ``system`` item; ``assistant`` is LiveKit's canonical silent-context
+role, so it steers the next turn without being spoken.
 """
 from __future__ import annotations
 
@@ -141,7 +143,7 @@ class LivekitAdapter(BaseAdapter):
                 ProviderAction(
                     provider=self.provider_name,
                     kind="chat_context_append",
-                    payload={"role": "system", "content": text},
+                    payload={"role": "assistant", "content": text},
                 )
             ]
         if decision.kind == DecisionKinds.FORCE_STAGE_TRANSITION:
@@ -150,7 +152,7 @@ class LivekitAdapter(BaseAdapter):
                     provider=self.provider_name,
                     kind="chat_context_append",
                     payload={
-                        "role": "system",
+                        "role": "assistant",
                         "content": f"Conversation stage is now: {decision.payload['stage']}",
                     },
                 )
@@ -160,7 +162,7 @@ class LivekitAdapter(BaseAdapter):
                 ProviderAction(
                     provider=self.provider_name,
                     kind="chat_context_append",
-                    payload={"role": "system", "content": str(decision.payload)},
+                    payload={"role": "assistant", "content": str(decision.payload)},
                 )
             ]
         if decision.kind == DecisionKinds.BLOCK_DELIVERY_UNTIL_CONSENT:

@@ -1,4 +1,4 @@
-# Hosted Agent Builder
+# 🏗️ Hosted Agent Builder
 
 The hosted agent builder creates complete Supafone agents with managed voices,
 stages, tools, artifacts, widget sync, and Supafone Pro watcher attached.
@@ -6,12 +6,12 @@ stages, tools, artifacts, widget sync, and Supafone Pro watcher attached.
 There are two builder modes:
 
 - **Programmatic builder**: TypeScript SDK or REST calls to
-  `https://api.supafone.ai/api/v1/labs` with an `sf_live_...` key.
+  `https://api.supafone.ai/api/v1/labs` with your one `sl_live_...` key (a legacy scoped `sf_live_...` key also works).
 - **Labs Cloud test builder**: session-scoped `/v1/builder/*` endpoints on
   `https://api.labs.supafone.ai` for supervised test calls, grading, QA, and
   optimizer feedback.
 
-The builder UI should start with the Supafone API key and the hosted Agent
+The builder UI should start with the one `sl_` Labs key and the hosted Agent
 Factory path. BYOK provider credentials should live behind an advanced drawer.
 After a working agent is created, the builder should export the exact same
 configuration as TypeScript, Python, REST, and JSON.
@@ -40,7 +40,8 @@ transcription, PII redaction, retention days, and consent announcement.
 import { Supafone } from "supafone-labs";
 
 const supafone = new Supafone({
-  apiKey: process.env.SUPAFONE_API_KEY!,
+  apiKey: process.env.SUPAFONE_LABS_API_KEY!,
+  voiceWatcher: true, // default on — provisions agents under the Voice Watcher framework
 });
 
 const inbound = await supafone.labs.agents.createInbound({
@@ -127,6 +128,31 @@ await supafone.builder.finish("call-1", [
   { role: "whisper", text: "Do not quote fees; offer to connect them." },
   { role: "agent", text: "I cannot quote fees, but I can connect you with the team." }
 ]);
+```
+
+## Builder Copilot Wizard
+
+`POST /v1/builder/wizard` on Labs Cloud powers the conversational copilot in
+the [labs.supafone.ai builder](https://labs.supafone.ai/builder.html): one
+copilot turn takes developer prose in and returns validated field updates out.
+The caller sends a `fields` catalog (key, label, type, options) plus the
+current `draft`; the response is `{updates, reply}` with every value clamped
+to the caller's catalog — a deterministic contract the UI can apply directly
+to the real form. It authenticates with an `sl_` key and bills one oracle
+call per turn (only when the model actually ran).
+
+```http
+POST https://api.labs.supafone.ai/v1/builder/wizard
+Authorization: Bearer sl_live_...
+
+{
+  "message": "Outbound roofing quotes, warm tone, 415 number",
+  "draft": {"direction": ""},
+  "fields": [
+    {"key": "direction", "label": "Direction", "type": "choice", "options": ["inbound", "outbound"]},
+    {"key": "agent_prompt", "label": "Prompt", "type": "text"}
+  ]
+}
 ```
 
 ## Builder Contract

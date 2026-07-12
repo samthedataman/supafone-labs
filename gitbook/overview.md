@@ -1,4 +1,4 @@
-# Product Overview
+# 🗺️ Product Overview
 
 Supafone Labs is built around a simple architecture: the live voice agent keeps
 talking inside the realtime latency budget, while Supafone Labs runs a second
@@ -9,7 +9,8 @@ can improve the call.
 ## Product Surfaces
 
 **Hosted Supafone agents** are created through the Supafone hosted-agent API at
-`https://api.supafone.ai/api/v1/labs` with an `sf_live_...` key. This path is
+`https://api.supafone.ai/api/v1/labs` with your `sl_live_...` key (one-key
+auth) or a scoped `sf_live_...` key. This path is
 for complete agents: inbound receptionists, outbound sales agents, web agents,
 campaign agents, managed numbers, presets, tools, artifacts, and Supafone Pro.
 This is the Agent Factory path: by default, Supafone supplies the operational

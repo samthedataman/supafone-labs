@@ -3,6 +3,7 @@ from supafone_labs.runtime.adapters.bland import BlandAdapter
 from supafone_labs.runtime.adapters.cartesia import CartesiaAdapter
 from supafone_labs.runtime.adapters.deepgram import DeepgramAdapter
 from supafone_labs.runtime.adapters.elevenlabs import ElevenLabsAdapter
+from supafone_labs.runtime.adapters.gemini_live import GeminiLiveAdapter
 from supafone_labs.runtime.adapters.generic import GenericWebhookAdapter
 from supafone_labs.runtime.adapters.gpt_realtime import GPTRealtimeAdapter
 from supafone_labs.runtime.adapters.grok import GrokAdapter
@@ -19,6 +20,7 @@ __all__ = [
     "DeepgramAdapter",
     "ElevenLabsAdapter",
     "GPTRealtimeAdapter",
+    "GeminiLiveAdapter",
     "GenericWebhookAdapter",
     "GrokAdapter",
     "InworldAdapter",

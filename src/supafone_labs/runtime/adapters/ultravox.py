@@ -138,11 +138,22 @@ class UltravoxAdapter(BaseAdapter):
         state: RuntimeState,
     ) -> list[ProviderAction]:
         if decision.kind == DecisionKinds.INJECT_HIDDEN_INSTRUCTION:
+            # Ultravox send_data_message: type "user_text_message" with
+            # urgency "later" queues the instruction WITHOUT interrupting or
+            # forcing the agent to speak it — the silent-whisper contract.
+            # (Immediate/default urgency would voice it back mid-turn.)
+            # `message` is retained as a back-compat alias of `text`.
+            instruction = f"<instruction>{decision.payload['text']}</instruction>"
             return [
                 ProviderAction(
                     provider=self.provider_name,
                     kind="inject_message",
-                    payload={"message": f"<instruction>{decision.payload['text']}</instruction>"},
+                    payload={
+                        "type": "user_text_message",
+                        "text": instruction,
+                        "urgency": "later",
+                        "message": instruction,
+                    },
                 )
             ]
         if decision.kind == DecisionKinds.FORCE_STAGE_TRANSITION:

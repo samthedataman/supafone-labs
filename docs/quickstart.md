@@ -47,6 +47,7 @@ import { Supafone } from "supafone-labs";
 const supafone = new Supafone({
   apiKey: process.env.SUPAFONE_LABS_API_KEY || process.env.SUPAFONE_API_KEY!,
   supafoneApiKey: process.env.SUPAFONE_API_KEY!,
+  voiceWatcher: true, // default on — provisions agents under the Voice Watcher framework
 });
 
 const agent = await supafone.labs.agents.createInboundWithNumber({
@@ -126,9 +127,9 @@ npx tsx examples/smoke-hosted-agent.ts
 ```
 
 It discovers capabilities, presets, and voices, creates a web intake agent,
-fetches it back, confirms `runtime.provider_accounts.mode` is
-`supafone_managed`, confirms no developer provider keys are required, and prints
-the widget snippet.
+fetches it back, confirms `runtime.telephony.mode` is `supafone_managed` and the
+runtime is managed (`runtime.managed === true`, no developer Ultravox key
+required), and prints the widget snippet.
 
 Use `supafone.labs.voices.list()` to show available voice choices, and
 `supafone.labs.presets.list()` to show the stage presets before creating the

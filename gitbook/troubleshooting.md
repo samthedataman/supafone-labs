@@ -1,14 +1,16 @@
-# Troubleshooting
+# 🔧 Troubleshooting
 
 ## 401 or Invalid Key
 
-Check which API you are calling:
+One `sl_live_...` key authenticates **both** APIs — `https://api.labs.supafone.ai`
+and `https://api.supafone.ai`. If you get a 401:
 
-- `sl_live_...` works on `https://api.labs.supafone.ai`.
-- `sf_live_...` works on `https://api.supafone.ai/api/v1/labs`.
+- Confirm the key is active in the Labs console.
+- Confirm an app.supafone.ai account exists with the **same email** that owns
+  the key — the product API maps the key to your account by owner email.
 
-Do not use an `sl_live_...` key for hosted-agent provisioning, and do not use an
-`sf_live_...` key for Labs Cloud oracle/TTS/STT.
+Legacy scoped `sf_live_...` keys authenticate only the hosted-agent surface
+(`https://api.supafone.ai/api/v1/labs`), not Labs Cloud oracle/TTS/STT.
 
 ## 402 Out of Minutes
 
@@ -19,7 +21,17 @@ curl https://api.labs.supafone.ai/v1/billing/balance \
   -H "Authorization: Bearer $SUPAFONE_LABS_API_KEY"
 ```
 
-Top up through the returned Stripe links.
+Top up through the returned Stripe links or have an admin grant credits.
+
+## 403 Admin Secret Required
+
+Admin endpoints require:
+
+```text
+X-Admin-Secret: <server-side-admin-secret>
+```
+
+Do not call admin endpoints from public browser clients.
 
 ## 429 Daily Cap Reached
 

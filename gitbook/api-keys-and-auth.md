@@ -1,11 +1,45 @@
-# API Keys and Auth
+# 🔑 API Keys and Auth
 
-Supafone Labs uses two key families. They are intentionally separate.
+**One key does everything.** A single `sl_live_...` Labs key authenticates Labs
+Cloud, the whole Supafone product API, the MCP server, and both SDKs — as long
+as an app.supafone.ai account exists with the **same email** that owns the key.
+Set `export SUPAFONE_TOKEN=sl_live_...` and you are done; there is no second key
+to provision. Legacy scoped `sf_live_...` keys still work for hosted-agent-only
+use, but they are the exception, not the default.
+
+One key covers both surfaces:
 
 | Key | Base URL | Used for |
 | --- | --- | --- |
-| `sl_live_...` | `https://api.labs.supafone.ai` | Labs Cloud oracle, TTS, STT, logs, usage, builder, QA, optimizer |
-| `sf_live_...` | `https://api.supafone.ai/api/v1/labs` | Hosted Supafone agent, phone number, voice, preset, and telephony API |
+| `sl_live_...` | `https://api.labs.supafone.ai` **and** `https://api.supafone.ai` | Everything: Labs Cloud oracle, TTS, STT, logs, usage, builder, QA, optimizer — plus the whole product API (campaigns, calls, agents) via one-key auth |
+| `sf_live_...` (legacy) | `https://api.supafone.ai/api/v1/labs` | Optional scoped key for hosted-agent-only use — the `sl_` key already covers this surface |
+
+## One Key, Both APIs
+
+An `sl_` key is no longer labs-only. The Supafone product API
+(`https://api.supafone.ai`) accepts it as a bearer credential anywhere an
+account JWT works: on first use it introspects the key against
+`GET https://api.labs.supafone.ai/v1/keys/introspect`, maps the key's owner
+email to your app.supafone.ai account, and caches the validated key
+in-process for ~5 minutes. Anything doubtful — unknown key, deactivated key,
+labs outage — fails closed as a 401, never a fallback.
+
+```bash
+export SUPAFONE_TOKEN=sl_live_...   # ONE env var: MCP + both SDKs, end to end
+
+curl https://api.supafone.ai/api/v1/campaigns \
+  -H "Authorization: Bearer $SUPAFONE_TOKEN"
+```
+
+Requirements:
+
+- An app.supafone.ai account must exist with the **same email** that owns the
+  key — otherwise the API answers 401 with "create an app.supafone.ai account
+  with the same email".
+- The key must be active in the labs console.
+
+Account login (email/password or JWT) keeps working exactly as before — the
+`sl_` path is additive.
 
 ## Labs Cloud Auth
 
@@ -32,15 +66,18 @@ const supafone = new Supafone({
 });
 ```
 
-## Hosted-Agent Auth
+## Legacy Scoped Hosted-Agent Keys
 
-Hosted-agent API calls use a Supafone hosted-agent key that starts with
-`sf_live_...`.
+Your one `sl_` key already authenticates the hosted-agent API via one-key auth,
+so most integrations never need a second key:
 
 ```bash
 curl https://api.supafone.ai/api/v1/labs/capabilities \
-  -H "Authorization: Bearer $SUPAFONE_API_KEY"
+  -H "Authorization: Bearer $SUPAFONE_LABS_API_KEY"
 ```
+
+For hosted-agent-only deployments you can still mint a scoped `sf_live_...` key
+from the Supafone account-admin flow. It is the exception, not the default.
 
 The hosted-agent API also accepts `x-supafone-key` and `x-supafone-api-key`, but
 bearer auth is the recommended default.
@@ -120,4 +157,3 @@ accept either a session token or an `sl_live_...` key.
 - Use environment variables in examples, tests, and deploys.
 - Show only masked keys in dashboards and logs.
 - Rotate keys when they leave the intended environment.
-

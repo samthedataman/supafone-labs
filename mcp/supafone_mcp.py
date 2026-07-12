@@ -31,7 +31,7 @@ except Exception:  # pragma: no cover - exercised only when SDK import is broken
 
 
 SERVER_NAME = "supafone-labs-mcp"
-SERVER_VERSION = "0.1.0"
+SERVER_VERSION = "0.3.0"
 DEFAULT_PROTOCOL_VERSION = "2024-11-05"
 DEFAULT_HOSTED_API_BASE = "https://api.supafone.ai"
 DEFAULT_LABS_API_BASE = "https://api.labs.supafone.ai"
@@ -51,6 +51,12 @@ AUTH_ARG_KEYS = {
     "labs_api_base_url",
     "labsBaseUrl",
     "labs_base_url",
+    # Main-app (app.supafone.ai account) auth for campaign/call tools.
+    "token",
+    "accessToken",
+    "access_token",
+    "email",
+    "password",
 }
 
 
@@ -76,6 +82,13 @@ def _env(*keys: str) -> Optional[str]:
         if value:
             return value
     return None
+
+
+def _sl_token_env() -> Optional[str]:
+    """One-key auth fallback: SUPAFONE_TOKEN holding an `sl_` Labs key doubles
+    as the Labs API key, so one env var covers the labs AND product lanes."""
+    token = _env("SUPAFONE_TOKEN", "SUPAFONE_ACCESS_TOKEN", "SUPAFONE_JWT")
+    return token if token and token.startswith("sl_") else None
 
 
 def _merge_config(arguments: Mapping[str, Any]) -> dict[str, Any]:
@@ -268,6 +281,92 @@ def _artifact_list_schema() -> dict[str, Any]:
     }
 
 
+# ---------------------------------------------------------------------------
+# Main-app tools (campaigns + real outbound calls) — these hit the Supafone
+# product API (api.supafone.ai /api/v1/*), authenticated with the SAME account
+# login as app.supafone.ai: pass `token` (a JWT, or an `sl_` Labs API key —
+# one-key auth), or set SUPAFONE_TOKEN, or set SUPAFONE_EMAIL +
+# SUPAFONE_PASSWORD and the server logs in for you (and re-logs-in
+# transparently when the token expires).
+# ---------------------------------------------------------------------------
+
+_MAIN_AUTH_PROPS: dict[str, Any] = {
+    "token": {
+        "type": "string",
+        "description": "Supafone account JWT or sl_ Labs API key (one key works on both APIs). Prefer SUPAFONE_TOKEN env.",
+    },
+    "email": {
+        "type": "string",
+        "description": "Account email — used with password to log in when no token is set. Prefer SUPAFONE_EMAIL env.",
+    },
+    "password": {
+        "type": "string",
+        "description": "Account password for login. Prefer SUPAFONE_PASSWORD env.",
+    },
+    "supafoneApiBaseUrl": {
+        "type": "string",
+        "description": "Optional API base URL override (default https://api.supafone.ai).",
+    },
+}
+
+
+def _main_schema(properties: dict[str, Any], required: list[str] | None = None) -> dict[str, Any]:
+    schema: dict[str, Any] = {
+        "type": "object",
+        "properties": {**properties, **_MAIN_AUTH_PROPS},
+        "additionalProperties": True,
+    }
+    if required:
+        schema["required"] = required
+    return schema
+
+
+_CAMPAIGN_ID_PROPS: dict[str, Any] = {
+    "campaignId": {"type": "string", "description": "Campaign id."},
+    "campaign_id": {"type": "string", "description": "Campaign id."},
+}
+
+
+FRAMEWORK_SUPPORT: dict[str, Any] = {
+    "summary": "Silent-context injection support: 10 frameworks possible, Bland impossible, "
+    "cartesia/pipecat not agents. Injection = feed the agent hidden guidance it acts on but never speaks.",
+    "modes": {
+        "A_native_event": "Integrated speech-to-speech models — send a native event that adds silent "
+        "context without triggering speech.",
+        "B_own_the_llm": "STT->LLM->TTS pipelines — Supafone becomes the LLM and splices a system/developer "
+        "message into the prompt before generation.",
+    },
+    "possible": [
+        {"framework": "ultravox", "mode": "A", "primitive": "REST send_data_message, urgency:later", "status": "live/proven"},
+        {"framework": "openai_realtime", "mode": "A", "primitive": "conversation.item.create role:system, no response.create"},
+        {"framework": "grok", "mode": "A", "primitive": "OpenAI-Realtime-compatible, base wss://api.x.ai/v1/realtime"},
+        {"framework": "gemini_live", "mode": "A", "primitive": "clientContent turns role:user, turnComplete:false"},
+        {"framework": "elevenlabs", "mode": "A", "primitive": "contextual_update event"},
+        {"framework": "inworld", "mode": "A", "primitive": "OpenAI-Realtime-compatible item inject"},
+        {"framework": "vapi", "mode": "A+B", "primitive": "add-message triggerResponseEnabled:false, or custom-llm splice"},
+        {"framework": "retell", "mode": "B", "primitive": "custom-llm websocket, system message in messages[]"},
+        {"framework": "deepgram", "mode": "A+B", "primitive": "UpdatePrompt event, or own the think LLM"},
+        {"framework": "livekit", "mode": "B", "primitive": "own the agent loop, chat_ctx.add_message role:assistant"},
+    ],
+    "impossible": [
+        {"framework": "bland", "reason": "Closed box — live-call API is stop/listen/transfer only; no channel to "
+         "inject text mid-call and no custom-LLM. Only a pre-scripted pull webhook exists, which is not live "
+         "silent injection. Vendor limitation, not a Supafone gap."},
+    ],
+    "not_agents": [
+        {"framework": "cartesia", "reason": "A voice (TTS), not a thinking agent — nothing to inject into; used as the voice on another agent."},
+        {"framework": "pipecat", "reason": "A DIY framework you assemble — injection is trivial because you own every step."},
+    ],
+    "caveats": {
+        "delivery": "Injection is POSSIBLE for all 10, but MANAGED delivery is wired today only for Ultravox "
+        "(native) and the pipeline vendors via the backend relay POST /api/v1/labs/relay/chat/completions. "
+        "Speech-to-speech socket relays (openai/grok/gemini/elevenlabs/inworld) are roadmap.",
+        "keys": "A real live test against any vendor needs that vendor's API key. Free/trial tiers exist for "
+        "all except OpenAI Realtime (paid, no free tier).",
+    },
+}
+
+
 TOOLS: list[dict[str, Any]] = [
     {
         "name": "create_inbound_agent",
@@ -440,12 +539,320 @@ TOOLS: list[dict[str, Any]] = [
         "description": "Render a short voice preview. Returns base64 audio plus media type.",
         "inputSchema": _voice_preview_schema(),
     },
+    # --- main-app: campaigns + real calls (Supafone account login) ----------
+    {
+        "name": "list_voice_agents",
+        "description": "List the Supafone account's voice agents (id, name, phone number) — pick an agent_id for campaigns and calls.",
+        "inputSchema": _main_schema({}),
+    },
+    {
+        "name": "place_call",
+        "description": (
+            "PLACE A REAL OUTBOUND PHONE CALL: dials toNumber from the account's calling "
+            "provider and bridges the given Supafone voice agent onto the line. Burns call "
+            "credits and rings a real phone — use deliberately."
+        ),
+        "inputSchema": _main_schema(
+            {
+                "agentId": {"type": "string", "description": "Voice agent to put on the call."},
+                "agent_id": {"type": "string"},
+                "toNumber": {"type": "string", "description": "E.164 destination, e.g. +15551234567."},
+                "to_number": {"type": "string"},
+            },
+        ),
+    },
+    {
+        "name": "list_campaigns",
+        "description": "List outbound campaigns on the Supafone account, with live stats per campaign.",
+        "inputSchema": _main_schema(
+            {"accountId": {"type": "string"}, "account_id": {"type": "string"}},
+        ),
+    },
+    {
+        "name": "create_campaign",
+        "description": "Create a new outbound campaign (draft). Goals: book | qualify | follow_up | reengage.",
+        "inputSchema": _main_schema(
+            {
+                "name": {"type": "string", "description": "Campaign name."},
+                "goal": {"type": "string", "description": "book | qualify | follow_up | reengage."},
+                "agentId": {"type": "string", "description": "Voice agent for the campaign's calls."},
+                "agent_id": {"type": "string"},
+                "accountId": {"type": "string"},
+                "account_id": {"type": "string"},
+            },
+        ),
+    },
+    {
+        "name": "get_campaign",
+        "description": "Fetch one campaign (config, settings, cadence) with live stats.",
+        "inputSchema": _main_schema(dict(_CAMPAIGN_ID_PROPS)),
+    },
+    {
+        "name": "update_campaign",
+        "description": (
+            "Update a campaign: name, goal, agentId, emailSubject, emailBody, cadence "
+            "([{channel:'voice'|'email', delay_hours}]), or settings (merged server-side — e.g. "
+            "qualification_criteria, outbound_prompts, native_signing, caller_id_number)."
+        ),
+        "inputSchema": _main_schema(
+            {
+                **_CAMPAIGN_ID_PROPS,
+                "name": {"type": "string"},
+                "goal": {"type": "string"},
+                "agentId": {"type": "string"},
+                "agent_id": {"type": "string"},
+                "emailSubject": {"type": "string"},
+                "email_subject": {"type": "string"},
+                "emailBody": {"type": "string"},
+                "email_body": {"type": "string"},
+                "cadence": {"type": "array", "items": {"type": "object", "additionalProperties": True}},
+                "settings": {"type": "object", "additionalProperties": True},
+            },
+        ),
+    },
+    {
+        "name": "add_campaign_recipients",
+        "description": (
+            "Add leads to a campaign. Each recipient: {name, phone, email, outreach_consent:'yes', "
+            "...extra fields}. Consent is required before any voice/email touch."
+        ),
+        "inputSchema": _main_schema(
+            {
+                **_CAMPAIGN_ID_PROPS,
+                "recipients": {
+                    "type": "array",
+                    "items": {"type": "object", "additionalProperties": True},
+                    "description": "Lead rows to add.",
+                },
+            },
+        ),
+    },
+    {
+        "name": "list_campaign_recipients",
+        "description": "List a campaign's recipients with their cadence state (queued, in_progress, booked, signed…).",
+        "inputSchema": _main_schema(dict(_CAMPAIGN_ID_PROPS)),
+    },
+    {
+        "name": "launch_campaign",
+        "description": (
+            "LAUNCH a campaign: schedules every consented recipient and starts REAL calls/emails "
+            "on the cadence immediately. Use deliberately."
+        ),
+        "inputSchema": _main_schema(dict(_CAMPAIGN_ID_PROPS)),
+    },
+    {
+        "name": "pause_campaign",
+        "description": "Pause an active campaign — no further dials or emails until relaunched.",
+        "inputSchema": _main_schema(dict(_CAMPAIGN_ID_PROPS)),
+    },
+    {
+        "name": "list_campaign_presets",
+        "description": "List campaign presets: the built-in playbooks plus the account's saved custom presets.",
+        "inputSchema": _main_schema({}),
+    },
+    {
+        "name": "apply_campaign_preset",
+        "description": (
+            "Apply a preset (built-in id like 'appointment_setting', or a custom_… id) to a campaign "
+            "in one atomic write: goal, qualification questions, scripts, and — for custom presets — "
+            "email copy and the signing document."
+        ),
+        "inputSchema": _main_schema(
+            {
+                **_CAMPAIGN_ID_PROPS,
+                "presetId": {"type": "string", "description": "Preset id to apply."},
+                "preset_id": {"type": "string"},
+            },
+        ),
+    },
+    {
+        "name": "create_sign_link",
+        "description": (
+            "Mint a recipient's tracked tap-to-sign link (/w/m/{token}). Inherits the campaign's "
+            "uploaded signing document automatically when one is configured."
+        ),
+        "inputSchema": _main_schema(
+            {
+                **_CAMPAIGN_ID_PROPS,
+                "recipientId": {"type": "string", "description": "Recipient id in the campaign."},
+                "recipient_id": {"type": "string"},
+                "title": {"type": "string"},
+                "message": {"type": "string"},
+            },
+        ),
+    },
+    {
+        "name": "monitor_campaign",
+        "description": (
+            "Watch a campaign as it happens: live funnel stats, the calls in flight RIGHT NOW, "
+            "and recent calls — each with a portal link to open and listen/watch (live transcript "
+            "while the call is in progress), plus the developer-portal link for the whole campaign."
+        ),
+        "inputSchema": _main_schema(dict(_CAMPAIGN_ID_PROPS)),
+    },
+    {
+        "name": "get_call",
+        "description": (
+            "One call's record — while the call is in_progress the transcript grows on every "
+            "poll, so repeated calls of this tool follow the live conversation."
+        ),
+        "inputSchema": _main_schema(
+            {
+                "callId": {"type": "string", "description": "Call record id."},
+                "call_id": {"type": "string"},
+            },
+        ),
+    },
+    {
+        "name": "upload_signing_document",
+        "description": (
+            "Upload the PDF a campaign sends for e-signature (retainer, agreement…) from a "
+            "LOCAL file path. The server auto-detects signature/date/initials lines and returns "
+            "their exact placements (PDF points, origin bottom-left, 612x792 page) — apply them "
+            "with set_signature_fields, adjusting or adding fields as needed."
+        ),
+        "inputSchema": _main_schema(
+            {
+                **_CAMPAIGN_ID_PROPS,
+                "filePath": {"type": "string", "description": "Local path to the PDF file."},
+                "file_path": {"type": "string"},
+            },
+        ),
+    },
+    {
+        "name": "detect_signature_fields",
+        "description": "Re-run signature/date/initials auto-detection on the campaign's uploaded signing PDF.",
+        "inputSchema": _main_schema(dict(_CAMPAIGN_ID_PROPS)),
+    },
+    {
+        "name": "set_signature_fields",
+        "description": (
+            "Place the signing fields on the campaign's uploaded PDF: pass fields "
+            "[{key, type: signature|date|initials|text, label, required, placement: {page (0-indexed), "
+            "x, y, width, height}}] in PDF points (origin bottom-left; US-Letter is 612x792 — e.g. "
+            "a signature line near the bottom is y≈100-140). Start from upload_signing_document's "
+            "detected placements, or place by convention for scanned PDFs. Merges with the stored "
+            "document config and enables signing."
+        ),
+        "inputSchema": _main_schema(
+            {
+                **_CAMPAIGN_ID_PROPS,
+                "fields": {
+                    "type": "array",
+                    "items": {"type": "object", "additionalProperties": True},
+                    "description": "Placed fields with coordinates.",
+                },
+            },
+        ),
+    },
+    {
+        "name": "scan_brand",
+        "description": (
+            "Scan a website for its branding: business name, brand colors, logo, favicon, Open Graph "
+            "title/description/image, page images, and key same-domain pages. The same detection that "
+            "styles agents during onboarding, as plain data — use it to build on-brand agents, widgets, "
+            "and campaign docs."
+        ),
+        "inputSchema": _main_schema(
+            {"url": {"type": "string", "description": "Website URL, e.g. https://acmedental.com."}},
+            ["url"],
+        ),
+    },
+    {
+        "name": "generate_intake_form",
+        "description": (
+            "Generate a guided intake form (an IntakeConfig script of message/ask/choose nodes) from a "
+            "plain-language description of what to collect. Pass agentId to ground it in that agent's "
+            "business + industry, and apply:true to write it onto the agent (switches the agent to "
+            "guided-workflow chat mode)."
+        ),
+        "inputSchema": _main_schema(
+            {
+                "description": {
+                    "type": "string",
+                    "description": "What the form should collect, in plain English.",
+                },
+                "agentId": {"type": "string", "description": "Agent to generate for (see list_voice_agents)."},
+                "agent_id": {"type": "string"},
+                "industry": {"type": "string", "description": "Optional industry key override."},
+                "apply": {
+                    "type": "boolean",
+                    "description": "Write the generated form onto the agent (requires agentId).",
+                },
+            },
+            ["description"],
+        ),
+    },
+    # --- campaign-as-code: the whole campaign as one YAML/JSON document -------
+    {
+        "name": "apply_campaign_config",
+        "description": (
+            "Apply a campaign-as-code YAML/JSON document (validated FIRST — errors come back without "
+            "side effects). Upserts by slug; supports branding: and intake_form: blocks that restyle "
+            "the campaign's agent and generate its intake form on apply. Pass the document as config "
+            "text or filePath to a local file. launch:true starts REAL calls/emails — use deliberately."
+        ),
+        "inputSchema": _main_schema(
+            {
+                "config": {"type": "string", "description": "Campaign-as-code YAML or JSON document text."},
+                "filePath": {
+                    "type": "string",
+                    "description": "Local path to a YAML/JSON campaign config file (alternative to config).",
+                },
+                "file_path": {"type": "string"},
+                "launch": {"type": "boolean", "description": "Override the doc's launch flag."},
+                "accountId": {"type": "string"},
+                "account_id": {"type": "string"},
+            },
+        ),
+    },
+    {
+        "name": "export_campaign_config",
+        "description": (
+            "Export a campaign as its canonical campaign-as-code YAML document — including stored "
+            "branding and intake_form blocks. Round-trips through apply_campaign_config (same slug, "
+            "launch stays false)."
+        ),
+        "inputSchema": _main_schema(dict(_CAMPAIGN_ID_PROPS)),
+    },
+    {
+        "name": "generate_campaign_config",
+        "description": (
+            "Draft a campaign-as-code YAML document from a plain-language description (+ optional CSV "
+            "of leads to inline as recipients). NO side effects — review/edit the doc, then run "
+            "apply_campaign_config."
+        ),
+        "inputSchema": _main_schema(
+            {
+                "prompt": {"type": "string", "description": "Plain-language description of the campaign."},
+                "csv": {"type": "string", "description": "Optional pasted CSV of leads (first row = header)."},
+                "agentId": {"type": "string", "description": "Voice agent to pre-fill into the doc."},
+                "agent_id": {"type": "string"},
+                "accountId": {"type": "string"},
+                "account_id": {"type": "string"},
+            },
+            ["prompt"],
+        ),
+    },
+    {
+        "name": "framework_support",
+        "description": (
+            "The verified silent-context injection support matrix: which voice frameworks Supafone can "
+            "supervise (feed hidden guidance the agent acts on but never speaks), by which mechanism "
+            "(Mode A native event vs Mode B own-the-LLM), which are impossible (Bland), and which are not "
+            "agents (cartesia/pipecat). No arguments; returns static verified knowledge."
+        ),
+        "inputSchema": {"type": "object", "properties": {}, "additionalProperties": False},
+    },
 ]
 
 
 class SupafoneMCPServer:
     def __init__(self, *, sleep: Callable[[float], None] = time.sleep) -> None:
         self._sleep = sleep
+        # Cached main-app JWT per base URL (minted from SUPAFONE_EMAIL/PASSWORD);
+        # cleared + re-minted transparently on a 401.
+        self._main_tokens: dict[str, str] = {}
 
     def handle(self, message: Mapping[str, Any]) -> Optional[dict[str, Any]]:
         message_id = message.get("id")
@@ -595,7 +1002,438 @@ class SupafoneMCPServer:
                 "media_type": media_type,
                 "audio_base64": base64.b64encode(audio).decode("ascii"),
             }
+        # --- main-app: campaigns + real calls --------------------------------
+        if name == "list_voice_agents":
+            return self._main_api("GET", "/api/v1/agents", None, arguments)
+        if name == "place_call":
+            agent_id = _pick(arguments, "agentId", "agent_id")
+            to_number = _pick(arguments, "toNumber", "to_number")
+            if not agent_id:
+                raise ToolError("agentId is required (use list_voice_agents to find one)")
+            if not to_number:
+                raise ToolError("toNumber is required (E.164, e.g. +15551234567)")
+            return self._main_api(
+                "POST",
+                "/api/v1/phone/test-call",
+                {"agent_id": str(agent_id), "to_number": str(to_number)},
+                arguments,
+            )
+        if name == "list_campaigns":
+            account_id = _pick(arguments, "accountId", "account_id")
+            suffix = f"?{parse.urlencode({'account_id': account_id})}" if account_id else ""
+            return self._main_api("GET", f"/api/v1/campaigns{suffix}", None, arguments)
+        if name == "create_campaign":
+            payload = {
+                "name": str(arguments.get("name") or "New campaign"),
+                "goal": str(arguments.get("goal") or "book"),
+            }
+            agent_id = _pick(arguments, "agentId", "agent_id")
+            if agent_id:
+                payload["agent_id"] = str(agent_id)
+            account_id = _pick(arguments, "accountId", "account_id")
+            if account_id:
+                payload["account_id"] = str(account_id)
+            return self._main_api("POST", "/api/v1/campaigns", payload, arguments)
+        if name == "get_campaign":
+            return self._main_api(
+                "GET", f"/api/v1/campaigns/{self._campaign_id(arguments)}", None, arguments
+            )
+        if name == "update_campaign":
+            payload: dict[str, Any] = {}
+            for arg_keys, api_key in (
+                (("name",), "name"),
+                (("goal",), "goal"),
+                (("agentId", "agent_id"), "agent_id"),
+                (("emailSubject", "email_subject"), "email_subject"),
+                (("emailBody", "email_body"), "email_body"),
+            ):
+                value = _pick(arguments, *arg_keys)
+                if value is not None:
+                    payload[api_key] = value
+            if isinstance(arguments.get("cadence"), list):
+                payload["cadence"] = arguments["cadence"]
+            if isinstance(arguments.get("settings"), Mapping):
+                payload["settings"] = dict(arguments["settings"])
+            if not payload:
+                raise ToolError("Nothing to update — pass name, goal, agentId, emailSubject, emailBody, cadence, or settings")
+            return self._main_api(
+                "PUT", f"/api/v1/campaigns/{self._campaign_id(arguments)}", payload, arguments
+            )
+        if name == "add_campaign_recipients":
+            recipients = arguments.get("recipients")
+            if not isinstance(recipients, list) or not recipients:
+                raise ToolError("recipients must be a non-empty array of {name, phone, email, ...} rows")
+            return self._main_api(
+                "POST",
+                f"/api/v1/campaigns/{self._campaign_id(arguments)}/recipients",
+                {"recipients": [dict(r) for r in recipients if isinstance(r, Mapping)]},
+                arguments,
+            )
+        if name == "list_campaign_recipients":
+            return self._main_api(
+                "GET", f"/api/v1/campaigns/{self._campaign_id(arguments)}/recipients", None, arguments
+            )
+        if name == "launch_campaign":
+            return self._main_api(
+                "POST", f"/api/v1/campaigns/{self._campaign_id(arguments)}/launch", {}, arguments
+            )
+        if name == "pause_campaign":
+            return self._main_api(
+                "POST", f"/api/v1/campaigns/{self._campaign_id(arguments)}/pause", {}, arguments
+            )
+        if name == "list_campaign_presets":
+            built_in = self._main_api("GET", "/api/v1/campaigns/outbound-presets", None, arguments)
+            result: dict[str, Any] = {
+                "built_in": built_in.get("presets", built_in) if isinstance(built_in, Mapping) else built_in,
+            }
+            try:
+                custom = self._main_api("GET", "/api/v1/campaigns/custom-presets", None, arguments)
+                result["custom"] = custom.get("presets", custom) if isinstance(custom, Mapping) else custom
+            except ToolError as exc:
+                result["custom"] = []
+                result["custom_presets_error"] = str(exc)
+            return result
+        if name == "apply_campaign_preset":
+            preset_id = _pick(arguments, "presetId", "preset_id")
+            if not preset_id:
+                raise ToolError("presetId is required (see list_campaign_presets)")
+            return self._main_api(
+                "POST",
+                f"/api/v1/campaigns/{self._campaign_id(arguments)}/apply-preset",
+                {"preset_id": str(preset_id)},
+                arguments,
+            )
+        if name == "create_sign_link":
+            recipient_id = _pick(arguments, "recipientId", "recipient_id")
+            if not recipient_id:
+                raise ToolError("recipientId is required (see list_campaign_recipients)")
+            payload = {}
+            for key in ("title", "message"):
+                if arguments.get(key):
+                    payload[key] = str(arguments[key])
+            return self._main_api(
+                "POST",
+                f"/api/v1/campaigns/{self._campaign_id(arguments)}/recipients/{recipient_id}/sign-link",
+                payload,
+                arguments,
+            )
+        if name == "monitor_campaign":
+            campaign_id = self._campaign_id(arguments)
+            activity = self._main_api(
+                "GET", f"/api/v1/campaigns/{campaign_id}/activity", None, arguments
+            )
+            app_url = _env("SUPAFONE_APP_URL") or "https://app.supafone.ai"
+            app_url = app_url.rstrip("/")
+            calls = activity.get("calls") if isinstance(activity, Mapping) else None
+            in_flight: list[dict[str, Any]] = []
+            recent: list[dict[str, Any]] = []
+            for call in calls or []:
+                if not isinstance(call, Mapping):
+                    continue
+                entry = dict(call)
+                call_id = str(entry.get("id") or "")
+                entry["listen_url"] = f"{app_url}/app/calls?call={parse.quote(call_id)}"
+                if str(entry.get("status") or "") in ("initiated", "dialing", "in_progress"):
+                    in_flight.append(entry)
+                else:
+                    recent.append(entry)
+            return {
+                "campaign_id": campaign_id,
+                "stats": activity.get("stats") if isinstance(activity, Mapping) else None,
+                "in_flight": in_flight,
+                "recent_calls": recent[:10],
+                "portal_url": f"{app_url}/app/developer?campaign={parse.quote(campaign_id)}",
+                "how_to_listen": (
+                    "Open portal_url (or a call's listen_url) in the browser — in-flight calls "
+                    "show a live view with the transcript growing as the conversation happens. "
+                    "Or poll the get_call tool with a callId to follow the transcript here."
+                ),
+            }
+        if name == "get_call":
+            call_id = _pick(arguments, "callId", "call_id")
+            if not call_id:
+                raise ToolError("callId is required (see monitor_campaign)")
+            return self._main_api("GET", f"/api/v1/calls/{parse.quote(str(call_id))}", None, arguments)
+        if name == "upload_signing_document":
+            file_path = _pick(arguments, "filePath", "file_path")
+            if not file_path:
+                raise ToolError("filePath is required (local path to the PDF)")
+            path = os.path.expanduser(str(file_path))
+            if not os.path.isfile(path):
+                raise ToolError(f"No file at {path}")
+            with open(path, "rb") as handle:
+                data = handle.read()
+            if not data.lstrip()[:5].startswith(b"%PDF-"):
+                raise ToolError("That file doesn't look like a PDF")
+            return self._main_upload(
+                f"/api/v1/campaigns/{self._campaign_id(arguments)}/signing/document",
+                filename=os.path.basename(path) or "document.pdf",
+                data=data,
+                arguments=arguments,
+            )
+        if name == "detect_signature_fields":
+            return self._main_api(
+                "POST",
+                f"/api/v1/campaigns/{self._campaign_id(arguments)}/signing/detect-fields",
+                {},
+                arguments,
+            )
+        if name == "set_signature_fields":
+            fields = arguments.get("fields")
+            if not isinstance(fields, list) or not fields:
+                raise ToolError(
+                    "fields must be a non-empty array of {key, type, label, required, placement:{page,x,y,width,height}}"
+                )
+            campaign_id = self._campaign_id(arguments)
+            # Merge onto the stored config so pdfUrl/storedName survive.
+            current = self._main_api("GET", f"/api/v1/campaigns/{campaign_id}", None, arguments)
+            campaign = current.get("campaign") if isinstance(current, Mapping) else {}
+            settings_bag = dict((campaign or {}).get("settings") or {})
+            native = dict(settings_bag.get("native_signing") or {})
+            if not (native.get("pdfUrl") or native.get("storedName")):
+                raise ToolError("Upload the signing PDF first (upload_signing_document)")
+            native["enabled"] = True
+            native["fields"] = [dict(f) for f in fields if isinstance(f, Mapping)]
+            return self._main_api(
+                "PUT",
+                f"/api/v1/campaigns/{campaign_id}",
+                {"settings": {**settings_bag, "native_signing": native}},
+                arguments,
+            )
+        if name == "scan_brand":
+            url = str(arguments.get("url") or "").strip()
+            if not url:
+                raise ToolError("url is required (the website to scan)")
+            return self._main_api("POST", "/api/v1/agents/brand-scan", {"url": url}, arguments)
+        if name == "generate_intake_form":
+            description = str(arguments.get("description") or "").strip()
+            if not description:
+                raise ToolError("description is required — what should the form collect?")
+            agent_id = _pick(arguments, "agentId", "agent_id")
+            apply = bool(arguments.get("apply"))
+            if apply and not agent_id:
+                raise ToolError("apply:true needs an agentId (use list_voice_agents to find one)")
+            payload: dict[str, Any] = {"description": description}
+            if arguments.get("industry"):
+                payload["industry"] = str(arguments["industry"])
+            if agent_id:
+                payload["apply"] = apply
+                return self._main_api(
+                    "POST",
+                    f"/api/v1/agents/{parse.quote(str(agent_id))}/generate-intake",
+                    payload,
+                    arguments,
+                )
+            return self._main_api("POST", "/api/v1/agents/generate-intake", payload, arguments)
+        # --- campaign-as-code -------------------------------------------------
+        if name == "apply_campaign_config":
+            payload = {"config": self._config_text(arguments)}
+            account_id = _pick(arguments, "accountId", "account_id")
+            if account_id:
+                payload["account_id"] = str(account_id)
+            if isinstance(arguments.get("launch"), bool):
+                payload["launch"] = arguments["launch"]
+            # Dry-run first so a bad document surfaces its full error list
+            # (path-by-path) instead of the apply endpoint's truncated 400.
+            report = self._main_api("POST", "/api/v1/campaigns/config/validate", payload, arguments)
+            if isinstance(report, Mapping) and not report.get("valid", False):
+                raise ToolError(
+                    _json_dumps(
+                        {
+                            "valid": False,
+                            "errors": report.get("errors") or [],
+                            "warnings": report.get("warnings") or [],
+                            "hint": "Fix the document and re-run apply_campaign_config — nothing was applied.",
+                        }
+                    )
+                )
+            return self._main_api("POST", "/api/v1/campaigns/config/apply", payload, arguments)
+        if name == "export_campaign_config":
+            return self._main_api(
+                "GET", f"/api/v1/campaigns/{self._campaign_id(arguments)}/config", None, arguments
+            )
+        if name == "generate_campaign_config":
+            prompt = str(arguments.get("prompt") or "").strip()
+            if not prompt:
+                raise ToolError("prompt is required — describe the campaign to draft")
+            payload = {"prompt": prompt}
+            if arguments.get("csv"):
+                payload["csv"] = str(arguments["csv"])
+            agent_id = _pick(arguments, "agentId", "agent_id")
+            if agent_id:
+                payload["agent_id"] = str(agent_id)
+            account_id = _pick(arguments, "accountId", "account_id")
+            if account_id:
+                payload["account_id"] = str(account_id)
+            return self._main_api("POST", "/api/v1/campaigns/config/generate", payload, arguments)
+        if name == "framework_support":
+            return FRAMEWORK_SUPPORT
         raise ToolError(f"Unknown tool: {name}")
+
+    def _config_text(self, arguments: Mapping[str, Any]) -> str:
+        """The campaign-as-code document text: inline `config`, or read from a
+        local `filePath` (same local-file seam as upload_signing_document)."""
+        config = arguments.get("config")
+        if isinstance(config, str) and config.strip():
+            return config
+        if isinstance(config, Mapping):  # tolerate an object — YAML is a JSON superset
+            return json.dumps(config, indent=2)
+        file_path = _pick(arguments, "filePath", "file_path")
+        if not file_path:
+            raise ToolError("Pass config (YAML/JSON document text) or filePath (a local .yaml/.yml/.json file)")
+        path = os.path.expanduser(str(file_path))
+        if not os.path.isfile(path):
+            raise ToolError(f"No file at {path}")
+        with open(path, "r", encoding="utf-8") as handle:
+            text = handle.read()
+        if not text.strip():
+            raise ToolError(f"{path} is empty")
+        return text
+
+    def _main_upload(
+        self, path: str, *, filename: str, data: bytes, arguments: Mapping[str, Any]
+    ) -> Any:
+        """Multipart file POST to the main API with the same auth/retry as _main_api."""
+        base = self._main_base(arguments)
+        explicit = _pick(arguments, "token", "accessToken", "access_token") or _env(
+            "SUPAFONE_TOKEN", "SUPAFONE_ACCESS_TOKEN", "SUPAFONE_JWT"
+        )
+        token = str(explicit) if explicit else (self._main_tokens.get(base) or self._main_login(base, arguments))
+        status, body = self._main_upload_http(base + path, filename, data, token)
+        if status == 401 and not explicit:
+            self._main_tokens.pop(base, None)
+            status, body = self._main_upload_http(base + path, filename, data, self._main_login(base, arguments))
+        if status >= 400:
+            raise ToolError(_json_dumps({"status": status, "body": body}))
+        return body
+
+    def _main_upload_http(self, url: str, filename: str, data: bytes, token: str) -> tuple[int, Any]:
+        boundary = f"----supafone{os.urandom(12).hex()}"
+        safe_name = filename.replace('"', "").replace("\\", "")[:120] or "document.pdf"
+        body = b"".join(
+            [
+                f"--{boundary}\r\n".encode(),
+                f'Content-Disposition: form-data; name="file"; filename="{safe_name}"\r\n'.encode(),
+                b"Content-Type: application/pdf\r\n\r\n",
+                data,
+                f"\r\n--{boundary}--\r\n".encode(),
+            ]
+        )
+        headers = {
+            "Accept": "application/json",
+            "Content-Type": f"multipart/form-data; boundary={boundary}",
+        }
+        if token:
+            headers["Authorization"] = f"Bearer {token}"
+        req = request.Request(url, data=body, headers=headers, method="POST")
+        try:
+            with request.urlopen(req, timeout=120) as resp:
+                raw = resp.read().decode("utf-8")
+                return resp.status, (json.loads(raw) if raw else {})
+        except error.HTTPError as exc:
+            raw = exc.read().decode("utf-8", errors="replace")
+            try:
+                parsed: Any = json.loads(raw)
+            except json.JSONDecodeError:
+                parsed = raw
+            return exc.code, parsed
+        except error.URLError as exc:
+            raise ToolError(f"Network error calling {url}: {exc.reason}") from exc
+
+    # --- main-app auth + HTTP (campaigns / calls) ----------------------------
+
+    def _campaign_id(self, arguments: Mapping[str, Any]) -> str:
+        campaign_id = _pick(arguments, "campaignId", "campaign_id")
+        if not campaign_id:
+            raise ToolError("campaignId is required (use list_campaigns to find one)")
+        return str(campaign_id)
+
+    def _main_base(self, arguments: Mapping[str, Any]) -> str:
+        base = (
+            _pick(
+                arguments,
+                "supafoneApiBaseUrl",
+                "supafone_api_base_url",
+                "supafoneBaseUrl",
+                "supafone_base_url",
+            )
+            or _env("SUPAFONE_API_BASE_URL", "SUPAFONE_BASE_URL")
+            or DEFAULT_HOSTED_API_BASE
+        )
+        return str(base).rstrip("/")
+
+    def _main_login(self, base: str, arguments: Mapping[str, Any]) -> str:
+        email = _pick(arguments, "email") or _env("SUPAFONE_EMAIL")
+        password = _pick(arguments, "password") or _env("SUPAFONE_PASSWORD")
+        if not (email and password):
+            raise ToolError(
+                "Not authenticated: set SUPAFONE_TOKEN (an app.supafone.ai JWT), or "
+                "SUPAFONE_EMAIL + SUPAFONE_PASSWORD, or pass token/email/password."
+            )
+        status, body = self._main_http(
+            "POST", f"{base}/api/v1/auth/login", {"email": str(email), "password": str(password)}, None
+        )
+        if status != 200 or not isinstance(body, Mapping):
+            raise ToolError(_json_dumps({"login_failed": True, "status": status, "body": body}))
+        token = body.get("access_token") or body.get("token")
+        if not token:
+            raise ToolError("Login succeeded but no token was returned")
+        self._main_tokens[base] = str(token)
+        return str(token)
+
+    def _main_api(
+        self,
+        method: str,
+        path: str,
+        payload: Optional[dict[str, Any]],
+        arguments: Mapping[str, Any],
+    ) -> Any:
+        base = self._main_base(arguments)
+        explicit = _pick(arguments, "token", "accessToken", "access_token") or _env(
+            "SUPAFONE_TOKEN", "SUPAFONE_ACCESS_TOKEN", "SUPAFONE_JWT"
+        )
+        token = str(explicit) if explicit else (self._main_tokens.get(base) or self._main_login(base, arguments))
+
+        status, body = self._main_http(method, base + path, payload, token)
+        # An expired minted token gets one transparent re-login; an explicit
+        # token is the caller's to refresh.
+        if status == 401 and not explicit:
+            self._main_tokens.pop(base, None)
+            token = self._main_login(base, arguments)
+            status, body = self._main_http(method, base + path, payload, token)
+        if status >= 400:
+            raise ToolError(_json_dumps({"status": status, "body": body}))
+        return body
+
+    def _main_http(
+        self,
+        method: str,
+        url: str,
+        payload: Optional[dict[str, Any]],
+        token: Optional[str],
+    ) -> tuple[int, Any]:
+        """(status, parsed_json_or_text) — never raises on HTTP status codes so
+        the caller can implement the 401 re-login without string-parsing."""
+        body = json.dumps(payload).encode("utf-8") if payload is not None else None
+        headers: dict[str, str] = {"Accept": "application/json"}
+        if token:
+            headers["Authorization"] = f"Bearer {token}"
+        if payload is not None:
+            headers["Content-Type"] = "application/json"
+        req = request.Request(url, data=body, headers=headers, method=method)
+        try:
+            with request.urlopen(req, timeout=60) as resp:
+                raw = resp.read().decode("utf-8")
+                return resp.status, (json.loads(raw) if raw else {})
+        except error.HTTPError as exc:
+            raw = exc.read().decode("utf-8", errors="replace")
+            try:
+                parsed: Any = json.loads(raw)
+            except json.JSONDecodeError:
+                parsed = raw
+            return exc.code, parsed
+        except error.URLError as exc:
+            raise ToolError(f"Network error calling {url}: {exc.reason}") from exc
 
     def _number_id(self, arguments: Mapping[str, Any]) -> str:
         number_id = _pick(arguments, "numberId", "number_id")
@@ -610,6 +1448,7 @@ class SupafoneMCPServer:
         api_key = (
             _pick(arguments, "apiKey", "api_key", "supafoneApiKey", "supafone_api_key")
             or _env("SUPAFONE_API_KEY", "SUPAFONE_LABS_API_KEY")
+            or _sl_token_env()
         )
         if not api_key:
             raise ToolError("Set SUPAFONE_API_KEY or pass apiKey to create hosted agents")
@@ -684,6 +1523,7 @@ class SupafoneMCPServer:
         api_key = (
             _pick(arguments, "apiKey", "api_key", "labsApiKey", "labs_api_key")
             or _env("SUPAFONE_LABS_API_KEY", "SUPAFONE_API_KEY")
+            or _sl_token_env()
         )
         if not api_key:
             raise ToolError("Set SUPAFONE_LABS_API_KEY or pass apiKey to read usage/logs")

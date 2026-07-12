@@ -22,7 +22,7 @@
 
 export interface SupafoneLabsOptions {
   /** Your key from https://labs.supafone.ai/get-key.html */
-  apiKey: string;
+  apiKey?: string;
   /** Override the gateway (default: the hosted cloud). */
   baseUrl?: string;
   /** Supafone app/API key for hosted agent provisioning. Defaults to apiKey. */
@@ -33,6 +33,37 @@ export interface SupafoneLabsOptions {
   timeoutMs?: number;
   /** Optional pre-obtained session token (else use login()). */
   sessionToken?: string;
+  /**
+   * Account (app.supafone.ai) auth — powers campaigns + real calls. Pass a
+   * JWT (or an `sl_` Labs key — one key works on both APIs) directly, or
+   * accountEmail + accountPassword and the client logs in lazily (and
+   * re-logs-in once when the token expires). With account auth present,
+   * apiKey becomes optional; an `sl_` apiKey also fills this lane by itself.
+   */
+  accountToken?: string;
+  accountEmail?: string;
+  accountPassword?: string;
+  /** Portal base for listen/monitor links (default https://app.supafone.ai). */
+  appUrl?: string;
+  /**
+   * Automatic post-call analysis. When true, reportCall() with a transcript
+   * (or structured messages) first classifies the finished call against the
+   * agent's objective — generating labels (achieved/missed, per-criterion
+   * verdicts, failure reasons) — and files the enriched report server-side.
+   * Billed one oracle call per analyzed call; reports without a transcript
+   * fall back to the plain zero-billed report.
+   */
+  postCallAnalysis?: boolean;
+  /**
+   * Run provisioned agents under Supafone's Voice Watcher framework — live
+   * supervision, QA, and call scoring (default true). Set false for a raw
+   * agent with no watcher. `voice_watcher` (snake) and the deprecated `labs`
+   * are accepted aliases, resolved voiceWatcher > voice_watcher > labs > true.
+   */
+  voiceWatcher?: boolean;
+  voice_watcher?: boolean;
+  /** @deprecated alias for voiceWatcher. */
+  labs?: boolean;
 }
 
 export interface ChatMessage {
@@ -820,6 +851,64 @@ export interface CallReportInput {
   nudges?: number;
   turns?: number;
   language?: string;
+  /** Full "role: text" transcript — enables automatic post-call analysis. */
+  transcript?: string;
+  /** Structured turns (alternative to transcript) for post-call analysis. */
+  messages?: ClassifyMessage[];
+  /** Deterministic runtime signals blended into the objective value. */
+  ground_truth?: GroundTruthInput;
+  [extra: string]: unknown;
+}
+
+/** One turn of a finished call handed to the classifier. */
+export interface ClassifyMessage {
+  role: "caller" | "agent" | "whisper" | string;
+  text: string;
+}
+
+/** Deterministic runtime ground truth (the same signals postcall scoring reads). */
+export interface GroundTruthInput {
+  booking_requested?: boolean;
+  booking_verified?: boolean;
+  delivery_requested?: boolean;
+  delivery_verified?: boolean;
+  end_call_claims_verified?: boolean;
+  unverified_claims?: string[];
+}
+
+export interface ClassifyCallInput {
+  sessionId?: string;
+  agent?: string;
+  transcript?: string;
+  messages?: ClassifyMessage[];
+  groundTruth?: GroundTruthInput;
+  nudges?: number;
+}
+
+/** The labels post-call analysis generates for one finished call. */
+export interface CallClassification {
+  /** Did the call achieve the agent's objective? */
+  achieved: boolean;
+  objective_achieved: boolean;
+  /** LLM objective score in [0,1] (before ground-truth blending). */
+  objective_score: number;
+  /** Blended objective value: (1-w)*LLM + w*ground-truth when supplied. */
+  objective_value: number;
+  ground_truth_score: number | null;
+  /** Per-criterion verdicts keyed by the objective's criterion names. */
+  criteria: Record<string, boolean | string>;
+  failure_reasons: string[];
+  summary: string;
+  /** Standing-directive version in force during the call (for A/B trends). */
+  directive_version: number;
+  agent: string;
+  [extra: string]: unknown;
+}
+
+export interface CallReportResult {
+  recorded: boolean;
+  /** Present when automatic post-call analysis ran — the generated labels. */
+  analysis?: CallClassification;
   [extra: string]: unknown;
 }
 
@@ -836,6 +925,51 @@ export interface BuilderChatResult {
   intent?: string;
   oracle_ms?: number;
   standing_version?: number;
+}
+
+/** One auto-generated adversarial scenario (from the agent's own prompt). */
+export interface QAScenario {
+  title: string;
+  persona: string;
+  opener: string;
+  assertion: string;
+}
+
+/** The 5-level SSR nominal scale. */
+export type SSRLabel = "poorly" | "ok" | "good" | "great" | "perfectly";
+
+/** An SSR grade: nominal label -> deterministic score + bucket distribution. */
+export interface SSRGrade {
+  label: SSRLabel;
+  score: number;
+  /** Probability mass over 10 score buckets [0-0.1, ..., 0.9-1.0]. */
+  distribution: number[];
+  rationale: string;
+}
+
+/** Result of qa.suite(): generated scenarios played vs the real agent config. */
+export interface QASuiteResult {
+  agent: string;
+  objective: string;
+  supervised: boolean;
+  turns: number;
+  results: Array<{
+    scenario: string;
+    title: string;
+    persona: string;
+    assertion: string;
+    passed: boolean;
+    evidence: string;
+    ssr: SSRGrade;
+    transcript: BuilderTurn[];
+  }>;
+  summary: {
+    tests: number;
+    passed: number;
+    avg_ssr_score: number;
+    ssr_histogram: Record<SSRLabel, number>;
+    oracle_calls_billed: number;
+  };
 }
 
 export interface QAResult {
@@ -881,28 +1015,58 @@ const COACH_SYSTEM =
 export class SupafoneLabs {
   readonly baseUrl: string;
   readonly supafoneApiBaseUrl: string;
+  readonly appUrl: string;
   private readonly apiKey: string;
   private readonly supafoneApiKey: string;
   private readonly timeoutMs: number;
+  private readonly postCallAnalysis: boolean;
+  /** Client default for the Voice Watcher framework (supervision + QA + scoring). */
+  readonly voiceWatcher: boolean;
   private sessionToken?: string;
+  private accountToken?: string;
+  private accountSessionToken?: string;
+  private readonly accountEmail?: string;
+  private readonly accountPassword?: string;
 
   readonly labs: LabsNamespace;
   readonly builder: BuilderNamespace;
   readonly qa: QANamespace;
   readonly optimizer: OptimizerNamespace;
+  readonly campaigns: CampaignsNamespace;
 
   constructor(opts: SupafoneLabsOptions) {
-    if (!opts?.apiKey) throw new SupafoneLabsError("apiKey is required");
-    this.apiKey = opts.apiKey;
+    const hasAccountAuth = !!(opts?.accountToken || (opts?.accountEmail && opts?.accountPassword));
+    if (!opts?.apiKey && !hasAccountAuth) {
+      throw new SupafoneLabsError(
+        "apiKey is required — or, for campaigns/calls, pass accountToken or accountEmail + accountPassword",
+      );
+    }
+    this.apiKey = opts.apiKey ?? "";
     this.baseUrl = (opts.baseUrl ?? DEFAULT_BASE).replace(/\/$/, "");
-    this.supafoneApiKey = opts.supafoneApiKey ?? opts.apiKey;
+    this.supafoneApiKey = opts.supafoneApiKey ?? this.apiKey;
     this.supafoneApiBaseUrl = (opts.supafoneApiBaseUrl ?? DEFAULT_SUPAFONE_API_BASE).replace(/\/$/, "");
+    this.appUrl = (opts.appUrl ?? "https://app.supafone.ai").replace(/\/$/, "");
     this.timeoutMs = opts.timeoutMs ?? 30_000;
+    this.postCallAnalysis = opts.postCallAnalysis ?? false;
+    // Precedence: explicit voiceWatcher > voice_watcher (snake) > labs (deprecated) > true.
+    this.voiceWatcher = opts.voiceWatcher ?? opts.voice_watcher ?? opts.labs ?? true;
     this.sessionToken = opts.sessionToken;
+    this.accountToken = opts.accountToken;
+    this.accountEmail = opts.accountEmail;
+    this.accountPassword = opts.accountPassword;
+    // One-key auth: the product API accepts `sl_` Labs keys as bearer
+    // credentials, so a lone sl_ credential fills whichever lane wasn't given.
+    if (!this.accountToken && this.apiKey.startsWith("sl_")) {
+      this.accountToken = this.apiKey;
+    }
+    if (!this.apiKey && this.accountToken?.startsWith("sl_")) {
+      this.apiKey = this.accountToken;
+    }
     this.labs = new LabsNamespace(this);
     this.builder = new BuilderNamespace(this);
     this.qa = new QANamespace(this);
     this.optimizer = new OptimizerNamespace(this);
+    this.campaigns = new CampaignsNamespace(this);
   }
 
   /** True once login() (or a passed sessionToken) is in effect. */
@@ -965,6 +1129,164 @@ export class SupafoneLabs {
     } finally {
       clearTimeout(timer);
     }
+  }
+
+  /**
+   * Exchange the account email/password for a product-API JWT (the same login
+   * as app.supafone.ai). Called lazily by campaigns/calls — call directly only
+   * to fail fast.
+   */
+  async accountLogin(email?: string, password?: string): Promise<string> {
+    const useEmail = email ?? this.accountEmail;
+    const usePassword = password ?? this.accountPassword;
+    if (!useEmail || !usePassword) {
+      throw new SupafoneLabsError(
+        "Not authenticated: pass accountToken, or accountEmail + accountPassword",
+      );
+    }
+    const body = await this.accountHttp<{ token?: string; access_token?: string }>(
+      "POST",
+      "/api/v1/auth/login",
+      { email: useEmail, password: usePassword },
+      "",
+    );
+    const token = body.access_token || body.token;
+    if (!token) throw new SupafoneLabsError("Login succeeded but returned no token");
+    this.accountSessionToken = token;
+    return token;
+  }
+
+  /**
+   * @internal JSON request to the Supafone product API with the ACCOUNT JWT
+   * (campaigns + real calls). A minted token that expires gets one transparent
+   * re-login; an explicit accountToken is the caller's to refresh.
+   */
+  async requestAccountApi<T>(method: string, path: string, body?: unknown): Promise<T> {
+    const token = this.accountToken || this.accountSessionToken || (await this.accountLogin());
+    try {
+      return await this.accountHttp<T>(method, path, body, token);
+    } catch (err) {
+      const expired = err instanceof SupafoneLabsError && err.status === 401;
+      if (expired && !this.accountToken && this.accountEmail && this.accountPassword) {
+        this.accountSessionToken = undefined;
+        return this.accountHttp<T>(method, path, body, await this.accountLogin());
+      }
+      throw err;
+    }
+  }
+
+  /** @internal Multipart file POST with the same auth/re-login as requestAccountApi. */
+  async requestAccountUpload<T>(path: string, file: Uint8Array | ArrayBuffer | Blob, filename: string): Promise<T> {
+    const token = this.accountToken || this.accountSessionToken || (await this.accountLogin());
+    const send = async (bearer: string): Promise<T> => {
+      const blob = file instanceof Blob ? file : new Blob([file as BlobPart], { type: "application/pdf" });
+      const form = new FormData();
+      form.append("file", blob, filename);
+      const res = await fetch(this.supafoneApiBaseUrl + path, {
+        method: "POST",
+        headers: { Authorization: `Bearer ${bearer}` },
+        body: form,
+      });
+      const text = await res.text();
+      const parsed = text ? safeJson(text) : {};
+      if (!res.ok) {
+        const detail = (parsed as { detail?: string })?.detail ?? text ?? `HTTP ${res.status}`;
+        throw new SupafoneLabsError(`POST ${path}: ${detail}`, res.status, parsed);
+      }
+      return parsed as T;
+    };
+    try {
+      return await send(token);
+    } catch (err) {
+      const expired = err instanceof SupafoneLabsError && err.status === 401;
+      if (expired && !this.accountToken && this.accountEmail && this.accountPassword) {
+        this.accountSessionToken = undefined;
+        return send(await this.accountLogin());
+      }
+      throw err;
+    }
+  }
+
+  /** @internal Raw product-API request with an explicit bearer ("" = none). */
+  private async accountHttp<T>(method: string, path: string, body: unknown, token: string): Promise<T> {
+    const ctrl = new AbortController();
+    const timer = setTimeout(() => ctrl.abort(), this.timeoutMs);
+    try {
+      const headers: Record<string, string> = { "Content-Type": "application/json" };
+      if (token) headers.Authorization = `Bearer ${token}`;
+      const res = await fetch(this.supafoneApiBaseUrl + path, {
+        method,
+        signal: ctrl.signal,
+        headers,
+        body: body === undefined ? undefined : JSON.stringify(body),
+      });
+      const text = await res.text();
+      const parsed = text ? safeJson(text) : {};
+      if (!res.ok) {
+        const detail = (parsed as { detail?: string })?.detail ?? text ?? `HTTP ${res.status}`;
+        throw new SupafoneLabsError(`${method} ${path}: ${detail}`, res.status, parsed);
+      }
+      return parsed as T;
+    } finally {
+      clearTimeout(timer);
+    }
+  }
+
+  /**
+   * PLACE A REAL OUTBOUND PHONE CALL: dials toNumber from the account's
+   * calling provider and bridges the voice agent onto the line.
+   */
+  async placeCall(opts: { agentId: string; toNumber: string }): Promise<PlaceCallResult> {
+    if (!opts?.agentId) throw new SupafoneLabsError("agentId is required (see listVoiceAgents())");
+    if (!opts?.toNumber) throw new SupafoneLabsError("toNumber is required (E.164, e.g. +15551234567)");
+    return this.requestAccountApi<PlaceCallResult>("POST", "/api/v1/phone/test-call", {
+      agent_id: opts.agentId,
+      to_number: opts.toNumber,
+    });
+  }
+
+  /** The account's voice agents — pick an agent id for campaigns/calls. */
+  async listVoiceAgents(): Promise<{ agents: Record<string, unknown>[] }> {
+    return this.requestAccountApi("GET", "/api/v1/agents");
+  }
+
+  /**
+   * Scan a website for its branding: business name, brand colors, logo,
+   * favicon, Open Graph metadata, page images, and key same-domain pages.
+   */
+  async scanBrand(url: string): Promise<BrandScanResult> {
+    if (!url?.trim()) throw new SupafoneLabsError("url is required (the website to scan)");
+    return this.requestAccountApi("POST", "/api/v1/agents/brand-scan", { url: url.trim() });
+  }
+
+  /**
+   * Generate a guided intake form (IntakeConfig) from a plain-language
+   * description. Pass agentId to ground it in that agent's business, and
+   * apply:true to write it onto the agent.
+   */
+  async generateIntakeForm(opts: {
+    description: string;
+    agentId?: string;
+    industry?: string;
+    apply?: boolean;
+  }): Promise<GenerateIntakeResult> {
+    if (!opts?.description?.trim()) {
+      throw new SupafoneLabsError("description is required — what should the form collect?");
+    }
+    if (opts.apply && !opts.agentId) {
+      throw new SupafoneLabsError("apply:true needs an agentId (see listVoiceAgents())");
+    }
+    const payload: Record<string, unknown> = { description: opts.description.trim() };
+    if (opts.industry) payload.industry = opts.industry;
+    if (opts.agentId) {
+      payload.apply = Boolean(opts.apply);
+      return this.requestAccountApi(
+        "POST",
+        `/api/v1/agents/${encodeURIComponent(opts.agentId)}/generate-intake`,
+        payload,
+      );
+    }
+    return this.requestAccountApi("POST", "/api/v1/agents/generate-intake", payload);
   }
 
   /** Raw oracle completion — full control over messages and model. */
@@ -1134,9 +1456,59 @@ export class SupafoneLabs {
     return this.request("POST", "/v1/events/nudge", event);
   }
 
-  /** File a post-call report — the fuel optimizer.improve() learns from. */
-  reportCall(report: CallReportInput): Promise<Record<string, unknown>> {
-    return this.request("POST", "/v1/events/call_report", report);
+  /**
+   * File a post-call report — the fuel optimizer.improve() learns from.
+   *
+   * With `postCallAnalysis: true` on the client and a transcript (or
+   * messages) present, the call is automatically classified first: the
+   * oracle labels it against the agent's objective (achieved/missed,
+   * per-criterion verdicts, failure reasons) and files the enriched report
+   * server-side. The generated labels come back on `analysis`. Analysis is
+   * best-effort — on any failure the plain zero-billed report still lands.
+   */
+  async reportCall(report: CallReportInput): Promise<CallReportResult> {
+    const { transcript, messages, ground_truth, ...plain } = report;
+    const analyzable = !!transcript || !!(messages && messages.length);
+    if (this.postCallAnalysis && analyzable) {
+      try {
+        const analysis = await this.classifyCall({
+          sessionId: report.session_id,
+          agent: report.agent,
+          transcript,
+          messages,
+          groundTruth: ground_truth,
+          nudges: report.nudges,
+        });
+        // classifyCall files the enriched report server-side — don't double-file.
+        return { recorded: true, analysis };
+      } catch {
+        /* analysis is best-effort — fall through to the plain report */
+      }
+    }
+    const out = await this.request<Record<string, unknown>>("POST", "/v1/events/call_report", plain);
+    return { recorded: true, ...out };
+  }
+
+  /**
+   * Post-call analysis for one finished call: classify it against the agent's
+   * objective and get labels back — achieved/missed, per-criterion verdicts,
+   * failure reasons, and the blended objective value. Files an enriched call
+   * report server-side (feeding optimizer.improve() and objective stats).
+   * Billed one oracle call.
+   */
+  classifyCall(input: ClassifyCallInput): Promise<CallClassification> {
+    return this.request<CallClassification>(
+      "POST",
+      "/v1/calls/classify",
+      compact({
+        session_id: input.sessionId,
+        agent: input.agent ?? "builder",
+        transcript: input.transcript,
+        messages: input.messages,
+        ground_truth: input.groundTruth,
+        nudges: input.nudges,
+      }),
+    );
   }
 
   /** Available oracle model ids (live vendor catalog). */
@@ -1227,6 +1599,355 @@ class LiveTranscription {
 }
 
 /** Programmatic hosted Supafone agents, inside the Supafone API. */
+// ---------------------------------------------------------------------------
+// Campaigns — the outbound AI campaign engine the app.supafone.ai builder
+// drives, packaged. Account-JWT authenticated (accountToken / accountEmail +
+// accountPassword on the client options).
+// ---------------------------------------------------------------------------
+
+export interface PlaceCallResult {
+  success: boolean;
+  simulated?: boolean;
+  call_sid?: string | null;
+  provider?: string;
+}
+
+export interface CampaignRecipientInput {
+  name?: string;
+  phone?: string;
+  email?: string;
+  /** Warm-outreach consent — required before any voice/email touch. */
+  outreach_consent?: string;
+  [field: string]: unknown;
+}
+
+export interface CampaignSummary {
+  id: string;
+  name: string;
+  goal: string;
+  status: string;
+  agent_id?: string | null;
+  stats?: Record<string, unknown>;
+  settings?: Record<string, unknown>;
+  [field: string]: unknown;
+}
+
+export interface CampaignLiveCall {
+  id: string;
+  status: string;
+  /** Portal deep link to watch this call (live transcript while in flight). */
+  listen_url: string;
+  [field: string]: unknown;
+}
+
+export interface CampaignLiveView {
+  campaign_id: string;
+  in_flight: CampaignLiveCall[];
+  /** Developer-portal link showing this campaign's agents/calls live. */
+  portal_url: string;
+  stats?: Record<string, unknown> | null;
+}
+
+export interface CampaignUpdateInput {
+  name?: string;
+  goal?: string;
+  agentId?: string;
+  emailSubject?: string;
+  emailBody?: string;
+  cadence?: { channel: "voice" | "email"; delay_hours: number }[];
+  settings?: Record<string, unknown>;
+}
+
+export interface BrandScanResult {
+  url: string;
+  business_name: string;
+  colors: string[];
+  primary_color: string;
+  theme_color: string;
+  css_brand_colors: string[];
+  logo_url: string;
+  favicon_url: string;
+  og: { title: string; description: string; image: string };
+  images: string[];
+  key_urls: string[];
+  scrape_source: string;
+  fallback_used: boolean;
+  error?: string | null;
+}
+
+export interface GenerateIntakeResult {
+  intake: Record<string, unknown>;
+  /** false means the deterministic industry-workflow fallback was used. */
+  generated: boolean;
+  applied: boolean;
+  agent?: Record<string, unknown>;
+}
+
+export interface CampaignConfigReport {
+  valid: boolean;
+  errors: string[];
+  warnings: string[];
+  summary: Record<string, unknown>;
+}
+
+export interface CampaignConfigApplyResult {
+  campaign: CampaignSummary;
+  created: boolean;
+  added: number;
+  launched: boolean;
+  /** Branding scan / intake generation results for the doc's agent-facing blocks. */
+  extras?: Record<string, unknown> | null;
+  report: CampaignConfigReport;
+}
+
+/**
+ * Typical flow:
+ * ```ts
+ * const sf = new Supafone({ accountEmail, accountPassword });
+ * const { agents } = await sf.listVoiceAgents();
+ * const { campaign } = await sf.campaigns.create({ name: "Q3 win-back", goal: "reengage", agentId: agents[0].id });
+ * await sf.campaigns.applyPreset(campaign.id, "win_back");
+ * await sf.campaigns.addRecipients(campaign.id, [{ name: "Jane", phone: "+15551234567", outreach_consent: "yes" }]);
+ * await sf.campaigns.launch(campaign.id);
+ * const live = await sf.campaigns.live(campaign.id); // in-flight calls + portal links
+ * ```
+ */
+class CampaignsNamespace {
+  constructor(private sm: SupafoneLabs) {}
+
+  list(opts: { accountId?: string } = {}): Promise<{ campaigns: CampaignSummary[] }> {
+    const query = opts.accountId ? `?${new URLSearchParams({ account_id: opts.accountId })}` : "";
+    return this.sm.requestAccountApi("GET", `/api/v1/campaigns${query}`);
+  }
+
+  create(opts: { name?: string; goal?: string; agentId?: string; accountId?: string } = {}): Promise<{ campaign: CampaignSummary }> {
+    return this.sm.requestAccountApi("POST", "/api/v1/campaigns", compact({
+      name: opts.name ?? "New campaign",
+      goal: opts.goal ?? "book",
+      agent_id: opts.agentId,
+      account_id: opts.accountId,
+    }));
+  }
+
+  get(campaignId: string): Promise<{ campaign: CampaignSummary }> {
+    return this.sm.requestAccountApi("GET", `/api/v1/campaigns/${encodeURIComponent(campaignId)}`);
+  }
+
+  update(campaignId: string, input: CampaignUpdateInput): Promise<{ campaign: CampaignSummary }> {
+    const payload = compact({
+      name: input.name,
+      goal: input.goal,
+      agent_id: input.agentId,
+      email_subject: input.emailSubject,
+      email_body: input.emailBody,
+      cadence: input.cadence,
+      settings: input.settings,
+    });
+    if (!Object.keys(payload as Record<string, unknown>).length) {
+      throw new SupafoneLabsError("Nothing to update — pass name, goal, agentId, emailSubject, emailBody, cadence, or settings");
+    }
+    return this.sm.requestAccountApi("PUT", `/api/v1/campaigns/${encodeURIComponent(campaignId)}`, payload);
+  }
+
+  /** Add consented leads: [{name, phone, email, outreach_consent: "yes"}]. */
+  addRecipients(campaignId: string, recipients: CampaignRecipientInput[]): Promise<{ added: number; stats: Record<string, unknown> }> {
+    if (!Array.isArray(recipients) || !recipients.length) {
+      throw new SupafoneLabsError("recipients must be a non-empty array of lead rows");
+    }
+    return this.sm.requestAccountApi("POST", `/api/v1/campaigns/${encodeURIComponent(campaignId)}/recipients`, { recipients });
+  }
+
+  recipients(campaignId: string): Promise<{ recipients: Record<string, unknown>[] }> {
+    return this.sm.requestAccountApi("GET", `/api/v1/campaigns/${encodeURIComponent(campaignId)}/recipients`);
+  }
+
+  /** Starts REAL calls/emails on the cadence immediately. */
+  launch(campaignId: string): Promise<{ campaign: CampaignSummary }> {
+    return this.sm.requestAccountApi("POST", `/api/v1/campaigns/${encodeURIComponent(campaignId)}/launch`, {});
+  }
+
+  pause(campaignId: string): Promise<{ campaign: CampaignSummary }> {
+    return this.sm.requestAccountApi("POST", `/api/v1/campaigns/${encodeURIComponent(campaignId)}/pause`, {});
+  }
+
+  /** Built-in playbooks + the account's saved custom presets. */
+  async presets(): Promise<{ built_in: Record<string, unknown>[]; custom: Record<string, unknown>[] }> {
+    const builtIn = await this.sm.requestAccountApi<{ presets: Record<string, unknown>[] }>(
+      "GET",
+      "/api/v1/campaigns/outbound-presets",
+    );
+    let custom: Record<string, unknown>[] = [];
+    try {
+      const mine = await this.sm.requestAccountApi<{ presets: Record<string, unknown>[] }>(
+        "GET",
+        "/api/v1/campaigns/custom-presets",
+      );
+      custom = mine.presets ?? [];
+    } catch {
+      /* custom presets need account scope — built-ins still return */
+    }
+    return { built_in: builtIn.presets ?? [], custom };
+  }
+
+  /** Materialize a preset (goal, questions, scripts, signing doc) in one write. */
+  applyPreset(campaignId: string, presetId: string): Promise<{ campaign: CampaignSummary }> {
+    return this.sm.requestAccountApi("POST", `/api/v1/campaigns/${encodeURIComponent(campaignId)}/apply-preset`, {
+      preset_id: presetId,
+    });
+  }
+
+  stats(campaignId: string): Promise<{ stats: Record<string, unknown> }> {
+    return this.sm.requestAccountApi("GET", `/api/v1/campaigns/${encodeURIComponent(campaignId)}/stats`);
+  }
+
+  /** The live funnel + the campaign's most recent calls (newest first). */
+  activity(campaignId: string): Promise<{ stats?: Record<string, unknown>; calls?: Record<string, unknown>[] }> {
+    return this.sm.requestAccountApi("GET", `/api/v1/campaigns/${encodeURIComponent(campaignId)}/activity`);
+  }
+
+  /**
+   * In-flight calls right now, each with a portal link to watch/listen. Poll
+   * getCall(callId) (or open the link) for the transcript as it grows.
+   */
+  async live(campaignId: string): Promise<CampaignLiveView> {
+    const activity = await this.activity(campaignId);
+    const inFlight: CampaignLiveCall[] = [];
+    for (const call of activity.calls ?? []) {
+      const status = String((call as { status?: unknown }).status ?? "");
+      if (status === "initiated" || status === "dialing" || status === "in_progress") {
+        const id = String((call as { id?: unknown }).id ?? "");
+        inFlight.push({
+          ...(call as Record<string, unknown>),
+          id,
+          status,
+          listen_url: `${this.sm.appUrl}/app/calls?call=${encodeURIComponent(id)}`,
+        });
+      }
+    }
+    return {
+      campaign_id: campaignId,
+      in_flight: inFlight,
+      portal_url: `${this.sm.appUrl}/app/developer?campaign=${encodeURIComponent(campaignId)}`,
+      stats: activity.stats ?? null,
+    };
+  }
+
+  /** One call — while in_progress the transcript grows on each poll. */
+  getCall(callId: string): Promise<{ call: Record<string, unknown> }> {
+    return this.sm.requestAccountApi("GET", `/api/v1/calls/${encodeURIComponent(callId)}`);
+  }
+
+  /** Mint a recipient's tracked tap-to-sign link (inherits the campaign's signing PDF). */
+  createSignLink(
+    campaignId: string,
+    recipientId: string,
+    opts: { title?: string; message?: string } = {},
+  ): Promise<{ link: Record<string, unknown> }> {
+    return this.sm.requestAccountApi(
+      "POST",
+      `/api/v1/campaigns/${encodeURIComponent(campaignId)}/recipients/${encodeURIComponent(recipientId)}/sign-link`,
+      compact({ title: opts.title, message: opts.message }),
+    );
+  }
+
+  /**
+   * Upload the PDF this campaign sends for e-signature. Pass raw bytes
+   * (Uint8Array/ArrayBuffer/Blob — in Node: fs.readFileSync(path)). The server
+   * auto-detects signature/date/initials lines and returns their placements —
+   * apply them with setSignatureFields.
+   */
+  uploadSigningDocument(
+    campaignId: string,
+    file: Uint8Array | ArrayBuffer | Blob,
+    filename = "document.pdf",
+  ): Promise<{ campaign: CampaignSummary; asset: Record<string, unknown>; detected_fields: Record<string, unknown>[] }> {
+    return this.sm.requestAccountUpload(
+      `/api/v1/campaigns/${encodeURIComponent(campaignId)}/signing/document`,
+      file,
+      filename,
+    );
+  }
+
+  detectSignatureFields(campaignId: string): Promise<{ fields: Record<string, unknown>[]; detected: boolean }> {
+    return this.sm.requestAccountApi("POST", `/api/v1/campaigns/${encodeURIComponent(campaignId)}/signing/detect-fields`, {});
+  }
+
+  /**
+   * Place the signing fields: [{key, type: "signature"|"date"|"initials"|"text",
+   * label, required, placement: {page, x, y, width, height}}] in PDF points
+   * (origin bottom-left, 612x792 page). Merges onto the stored doc config.
+   */
+  async setSignatureFields(
+    campaignId: string,
+    fields: Record<string, unknown>[],
+  ): Promise<{ campaign: CampaignSummary }> {
+    if (!Array.isArray(fields) || !fields.length) {
+      throw new SupafoneLabsError("fields must be a non-empty array of placed fields");
+    }
+    const { campaign } = await this.get(campaignId);
+    const settings = { ...((campaign.settings as Record<string, unknown>) ?? {}) };
+    const native = { ...((settings.native_signing as Record<string, unknown>) ?? {}) };
+    if (!native.pdfUrl && !native.storedName) {
+      throw new SupafoneLabsError("Upload the signing PDF first (uploadSigningDocument)");
+    }
+    native.enabled = true;
+    native.fields = fields;
+    return this.update(campaignId, { settings: { ...settings, native_signing: native } });
+  }
+
+  // -- campaign-as-code (one YAML/JSON document per campaign) ----------------
+
+  /** Pure dry-run: {valid, errors[], warnings[], summary} — no side effects. */
+  validateConfig(
+    config: string,
+    opts: { accountId?: string; launch?: boolean } = {},
+  ): Promise<CampaignConfigReport> {
+    return this.sm.requestAccountApi("POST", "/api/v1/campaigns/config/validate", {
+      config,
+      ...compact({ account_id: opts.accountId, launch: opts.launch }),
+    });
+  }
+
+  /**
+   * Upsert a campaign from a campaign-as-code YAML/JSON document (by slug).
+   * The doc's branding:/intake_form: blocks restyle the campaign's agent and
+   * generate its intake form on apply. launch:true starts REAL calls/emails.
+   */
+  applyConfig(
+    config: string,
+    opts: { accountId?: string; launch?: boolean } = {},
+  ): Promise<CampaignConfigApplyResult> {
+    return this.sm.requestAccountApi("POST", "/api/v1/campaigns/config/apply", {
+      config,
+      ...compact({ account_id: opts.accountId, launch: opts.launch }),
+    });
+  }
+
+  /** The campaign as its canonical YAML document — round-trips through applyConfig. */
+  exportConfig(campaignId: string): Promise<{ config: string; format: string; slug: string }> {
+    return this.sm.requestAccountApi("GET", `/api/v1/campaigns/${encodeURIComponent(campaignId)}/config`);
+  }
+
+  /**
+   * Draft a campaign-as-code YAML document from a plain-language description
+   * (+ optional CSV of leads). No side effects — review, then applyConfig.
+   */
+  generateConfig(opts: {
+    prompt: string;
+    csv?: string;
+    agentId?: string;
+    accountId?: string;
+  }): Promise<{ config: string; format: string; recipients_parsed: number; generated: boolean }> {
+    if (!opts?.prompt?.trim()) {
+      throw new SupafoneLabsError("prompt is required — describe the campaign to draft");
+    }
+    return this.sm.requestAccountApi("POST", "/api/v1/campaigns/config/generate", {
+      prompt: opts.prompt.trim(),
+      ...compact({ csv: opts.csv, agent_id: opts.agentId, account_id: opts.accountId }),
+    });
+  }
+}
+
 class LabsNamespace {
   readonly agents: LabsAgentsNamespace;
   readonly presets: LabsPresetsNamespace;
@@ -1264,8 +1985,23 @@ class LabsAgentsNamespace {
     return this.sm.requestSupafoneApi<CreateLabsAgentResponse>(
       "POST",
       "/api/v1/labs/agents",
-      labsAgentPayload(input),
+      labsAgentPayload(this.withVoiceWatcher(input)),
     );
+  }
+
+  /** Default the agent onto the client's Voice Watcher setting (live supervision
+   * + QA + scoring) unless the caller set it explicitly; mirror into
+   * labs.voice_watcher when a labs block exists. Never overwrites a caller value. */
+  private withVoiceWatcher(input: CreateLabsAgentRequest): CreateLabsAgentRequest {
+    const out: CreateLabsAgentRequest = { ...input };
+    if (out.voice_watcher === undefined && out.voiceWatcher === undefined) {
+      out.voice_watcher = this.sm.voiceWatcher;
+    }
+    const labs = out.labs;
+    if (labs && labs.voice_watcher === undefined && labs.voiceWatcher === undefined) {
+      out.labs = { ...labs, voice_watcher: this.sm.voiceWatcher };
+    }
+    return out;
   }
 
   /** Create an inbound receptionist/intake agent. No Twilio account is required. */
@@ -1640,6 +2376,36 @@ class QANamespace {
       true,
     );
   }
+  /**
+   * Auto-generate adversarial test scenarios from the agent's own prompt
+   * (key-scoped). Each scenario carries a persona, an opener, and the one
+   * assertion the agent must (or must not) satisfy.
+   */
+  generate(opts: { agentPrompt: string; count?: number }): Promise<{ scenarios: QAScenario[] }> {
+    return this.sm.request("POST", "/v1/qa/generate", {
+      agent_prompt: opts.agentPrompt,
+      count: opts.count ?? 5,
+    });
+  }
+  /**
+   * Build + run a bespoke adversarial suite in one call: scenarios are
+   * generated from the agent's own objective, each is played as a mock call
+   * against the REAL configured agent, and every call is judged twice —
+   * pass/fail on the scenario's assertion AND an SSR grade (poorly/ok/good/
+   * great/perfectly) against the objective. Session-scoped — login() first.
+   */
+  suite(opts: { count?: number; turns?: number; supervised?: boolean } = {}): Promise<QASuiteResult> {
+    return this.sm.request<QASuiteResult>(
+      "POST",
+      "/v1/qa/suite",
+      {
+        count: opts.count ?? 4,
+        turns: opts.turns ?? 2,
+        supervised: opts.supervised ?? false,
+      },
+      true,
+    );
+  }
   /** Past QA runs (works with the API key). */
   history(agent = "builder", limit = 40): Promise<unknown> {
     return this.sm.request("GET", `/v1/qa/runs?agent=${encodeURIComponent(agent)}&limit=${limit}`);
@@ -1981,6 +2747,10 @@ function byokPayload(input: LabsProviderKeys | LabsByokConfig): Record<string, u
     return compact({
       provider_keys: providerKeysPayload(structured.provider_keys ?? structured.providerKeys ?? {}),
       agent_provider: providerConfigPayload(structured.agent_provider ?? structured.agentProvider ?? structured.runtime),
+      // Native (BYOK) Ultravox runtime key — forwarded verbatim so
+      // byok.ultravox = {api_key, base_url?} round-trips even when the block
+      // also carries an agentProvider / telephony / *tts etc.
+      ultravox: structured.ultravox,
       telephony: structured.telephony ? telephonyPayload(structured.telephony) : undefined,
       tts: providerConfigPayload(structured.tts),
       stt: providerConfigPayload(structured.stt),

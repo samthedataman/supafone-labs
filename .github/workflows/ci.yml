@@ -35,4 +35,4 @@ jobs:
         run: python -c "import supafone_labs, supafone_labs.runtime; print('ok')"
 
       - name: Test
-        run: pytest tests -q -m "not live"
+        run: pytest tests -q

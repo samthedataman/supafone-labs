@@ -1,4 +1,4 @@
-# BYOK Providers
+# 🎛️ BYOK Providers
 
 BYOK means "bring your own keys." It is powerful, but it should not be the
 default path. The default path is Supafone-managed infrastructure with one
@@ -39,6 +39,66 @@ Each lane can be managed by Supafone or brought by the customer. For example,
 a customer can bring Telnyx telephony and Cartesia TTS while still using
 Supafone's managed watcher, or bring an entire Ultravox stack and use Supafone
 only for self-healing directives and logs.
+
+## Native / BYOK Ultravox Runtime
+
+The hosted-agent **runtime** — where Supafone actually places and monitors the
+call — runs on Ultravox. By default it uses Supafone's managed platform key
+(managed billing). You can instead run agents on your **own** Ultravox account:
+your key, your billing. The agent is then both **placed and monitored** on your
+key, and `runtime_mode` becomes `"byok"`. Managed remains the default.
+
+Two ways to connect it:
+
+**1. At agent create**, in the `byok` block:
+
+```json
+{
+  "byok": {
+    "ultravox": {
+      "api_key": "uvx_...",
+      "base_url": "https://api.ultravox.ai/api"
+    }
+  }
+}
+```
+
+`base_url` is optional. A `byok.credentials` object is also accepted as the key
+holder. The key is stored **encrypted on your account, never in the agent doc**.
+
+**2. Later or standalone**, via `PUT /api/v1/labs/runtime`:
+
+```bash
+curl https://api.supafone.ai/api/v1/labs/runtime \
+  -X PUT \
+  -H "Authorization: Bearer $SUPAFONE_LABS_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "provider": "ultravox",
+    "credentials": { "api_key": "uvx_...", "base_url": "https://api.ultravox.ai/api" }
+  }'
+```
+
+A blank `api_key` keeps the stored key, so you can re-save other fields. A
+non-`ultravox` provider returns **400 "coming soon"** — Ultravox is the only
+runtime today, managed or BYOK. `GET /api/v1/labs/runtime` returns the same
+status shape:
+
+```json
+{
+  "account_id": "...",
+  "provider": "ultravox",
+  "managed": false,
+  "byok_connected": true,
+  "base_url": "https://api.ultravox.ai/api",
+  "updated_at": "2026-07-11T00:00:00Z"
+}
+```
+
+This runtime lane is distinct from the watcher provider keys below: those bring
+your own STT/LLM/TTS for supervision, while this runs the agent itself on your
+Ultravox account. See [Hosted Agents API](hosted-agents-api.md) for the full
+create/runtime contract and the runtime block returned on agent create.
 
 ## BYOK Watcher Providers
 

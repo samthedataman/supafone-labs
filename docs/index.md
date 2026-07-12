@@ -31,9 +31,12 @@ Supafone Labs gives you two product pillars:
   number, agent/provider stack, TTS/STT/LLM defaults, multistage state machine,
   tools, recordings, transcripts, widget, usage, and Supafone Pro watcher. No
   developer vendor account is required in the default path.
-- **Self-healing Labs watcher** -- keep Vapi, Retell, Bland, ElevenLabs,
-  OpenAI Realtime, Grok, Ultravox, Twilio, Telnyx, LiveKit, Pipecat, SIP, or
-  another stack, then let Supafone Labs supervise and coach the live call.
+- **Self-healing Labs watcher** -- keep Vapi, Retell, ElevenLabs, OpenAI
+  Realtime, Grok, Ultravox, Gemini Live, Inworld, Deepgram, LiveKit, or another
+  stack, then let Supafone Labs supervise and coach the live call. Ten frameworks
+  accept a live silent directive; **Bland** can be supervised and scored but not
+  coached live (closed live-call API). See
+  [providers.md](providers.md) and `gitbook/framework-support.md`.
 
 BYOK is optional and split into three lanes: agent/provider stack, telephony,
 and TTS. Those lanes can be mixed with Supafone-managed defaults.

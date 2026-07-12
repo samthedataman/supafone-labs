@@ -1,4 +1,4 @@
-# Voices and Previews
+# 🗣️ Voices and Previews
 
 The builder and SDKs should make voice selection feel instant: list all voices,
 filter by provider, preview audio, then export the selected voice into code.

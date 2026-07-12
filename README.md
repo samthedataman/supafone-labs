@@ -31,7 +31,9 @@ brain = supafone_labs.supercharge(my_agent)   # that's the whole integration
 ```ts
 import { Supafone } from "supafone-labs";
 
-const supafone = new Supafone({ apiKey: process.env.SUPAFONE_API_KEY! });
+const supafone = new Supafone({ apiKey: process.env.SUPAFONE_API_KEY!, voiceWatcher: true });
+// voiceWatcher is on by default (Python: voice_watcher) — agents provision under
+// the Voice Watcher framework (live supervision + QA + scoring). Set false for a raw agent.
 
 const agent = await supafone.labs.agents.createInboundWithNumber({
   agentKey: "northline-intake",
@@ -178,6 +180,20 @@ result = await brain.observe(raw_event)     # feed your platform's events
 # result.actions -> the compiled native whisper (or [] if the oracle is quiet)
 ```
 
+Want every finished call automatically labeled? Construct the brain with
+`post_call_analysis=True` and each session end is classified against your
+objective — achieved/missed, per-criterion verdicts, failure reasons — with
+the enriched report filed for the optimizer:
+
+```python
+from supafone_labs import SupafoneLabs
+
+brain = SupafoneLabs(agent=my_agent, post_call_analysis=True)
+# ...calls happen...
+brain.analysis("session-123")   # -> {"achieved": True, "criteria": {...}, "failure_reasons": []}
+brain.last_analysis             # labels for the most recently classified call
+```
+
 With the key set, the oracle, TTS, and live multilingual STT all run on
 Supafone Labs' hosted infrastructure. Without it, everything runs on **your own
 vendor keys** — or fully offline on deterministic fakes. Same code, all three
@@ -234,6 +250,71 @@ await supafone.labs.telephony.configure({
 });
 ```
 
+## The MCP server — run Supafone in natural language
+
+`mcp/supafone_mcp.py` is a dependency-light MCP (Model Context Protocol) stdio
+server. Point Claude Desktop, Claude Code, or any MCP client at it and the
+whole platform becomes conversational — no code required:
+
+> "Create a win-back campaign with my Northline agent, add these five leads,
+> launch it, and show me the calls as they happen."
+
+Claude builds the campaign, launches real calls, and replies with links to the
+developer portal (`app.supafone.ai/app/developer`) where you watch the calls
+live — in-flight calls surface with a growing transcript as the conversation
+happens.
+
+### Hook it up (Claude Desktop / Claude Code)
+
+```json
+{
+  "mcpServers": {
+    "supafone": {
+      "command": "python3",
+      "args": ["<repo>/services/supafone-labs/mcp/supafone_mcp.py"],
+      "env": {
+        "SUPAFONE_EMAIL": "you@company.com",
+        "SUPAFONE_PASSWORD": "...",
+        "SUPAFONE_API_KEY": "sf_live_...",
+        "SUPAFONE_LABS_API_KEY": "sl_live_..."
+      }
+    }
+  }
+}
+```
+
+Two independent auth lanes — set the ones you use:
+
+| Lane | Env | Unlocks |
+| --- | --- | --- |
+| Account login (same as app.supafone.ai) | `SUPAFONE_EMAIL` + `SUPAFONE_PASSWORD`, or `SUPAFONE_TOKEN` (a JWT) | Campaigns, real calls, live monitoring, sign links |
+| API keys | `SUPAFONE_API_KEY` / `SUPAFONE_LABS_API_KEY` | Hosted-agent provisioning, numbers, Labs logs/usage/voices |
+
+The server logs in lazily with the email/password and transparently re-logs-in
+when the token expires — a long Claude session never goes stale.
+
+### What Claude can do with it
+
+- **Campaigns end to end** — `create_campaign`, `apply_campaign_preset`
+  (built-in playbooks or your saved custom presets), `add_campaign_recipients`
+  (consented leads), `launch_campaign` / `pause_campaign`, `update_campaign`
+  (scripts, cadence, settings — including the e-sign document config).
+- **Real phone calls** — `place_call` dials any number from your calling
+  provider and bridges your voice agent onto the line. `list_voice_agents`
+  picks the agent.
+- **Live monitoring** — `monitor_campaign` returns the live funnel, the calls
+  in flight *right now*, and a listen link per call plus the campaign's
+  developer-portal link; `get_call` polled during a call follows the live
+  transcript turn by turn.
+- **E-sign** — `create_sign_link` mints a recipient's tracked tap-to-sign page
+  (inherits the campaign's uploaded PDF + placed signature fields).
+- **Hosted agents & numbers** — create inbound/outbound agents (with number
+  provisioning), search/assign/release numbers, tail Labs logs, preview voices.
+
+Full tool reference: [`gitbook/mcp-server.md`](gitbook/mcp-server.md). The same
+campaign surface is available in code via `supafone_labs` (PyPI) and
+`supafone-labs` (npm) — `client.campaigns.*` + `placeCall()`.
+
 ## How it works
 
 ```
@@ -269,6 +350,19 @@ minute; every request itemized.
 | `GET  /v1/usage` | Today's request counts |
 | `GET  /v1/billing/balance` | Minutes remaining + top-up links |
 | `GET  /v1/logs` | The audit trail: every whisper, timestamped and billed |
+| `POST /v1/qa/generate` | Adversarial test scenarios generated from your agent's own prompt |
+| `POST /v1/qa/suite` | One-call auto QA suite: mock calls vs your real config, pass/fail + SSR grades |
+| `POST /v1/calls/classify` | Post-call analysis: label a finished call against your objective |
+
+**Adversarial QA, built in.** `POST /v1/qa/suite` generates a bespoke test
+suite from your agent's own objective, plays each scenario as a mock call
+against your real configuration, and judges every call twice — pass/fail on
+the scenario's assertion **and** an SSR grade (the judge picks one of five
+nominal levels, *poorly/ok/good/great/perfectly*, mapped deterministically to
+a score + distribution). `POST /v1/qa/run` plays every scenario A/B —
+supervised vs unsupervised — and reports the watcher's measured lift. How
+this stacks up against Hamming, Coval, Roark, Cekura, and the rest of the
+2026 voice-QA field: [gitbook/voice-qa-landscape.md](gitbook/voice-qa-landscape.md).
 
 <details>
 <summary><b>Python</b></summary>
@@ -330,29 +424,56 @@ and rendered at [labs.supafone.ai/pricing.html](https://labs.supafone.ai/pricing
 BYO vendor keys always win when present — leaving the cloud is deleting one
 environment variable.
 
-## Works with every voice platform
+## Supported frameworks
 
-Speech-to-speech models, STT→LLM→TTS pipelines, frameworks, and raw speech
-engines each get the injection channel they actually have:
+Silent injection means feeding the live agent hidden guidance it *acts on but
+never speaks*. Whether a framework can receive one depends on the door that
+vendor exposes, so the answer is per-framework. There are two mechanisms:
 
-| Platform | Kind | Whisper delivery |
-|---|---|---|
-| Ultravox | S2S agent | `inject_message` |
-| OpenAI GPT-Realtime · xAI Grok | S2S agents | `session.update` prompt patch |
-| Vapi | pipeline agent | `assistant_override` |
-| Retell | custom-LLM WS | system message into your LLM turn |
-| ElevenLabs Agents | pipeline agent | `contextual_update` |
-| Deepgram Voice Agent | pipeline agent | `UpdatePrompt` |
-| Pipecat · LiveKit Agents | frameworks | context frame / chat-context append |
-| Bland · Cartesia · Inworld | tap-only | observed, honestly not injectable |
-| Anything else | webhook | `GenericWebhookAdapter`, configurable |
+- **Mode A — native silent event.** Speech-to-speech models accept a vendor
+  event that adds context to the session without triggering speech.
+- **Mode B — own the LLM.** For STT→LLM→TTS pipelines, Supafone plugs in as the
+  LLM and splices a `system`/`developer` message into the prompt before
+  generation.
 
-Five providers are verified against **live APIs** in the repeatable test suite
-(`pytest -m live`); the rest are built to current official docs with citations
-— [docs/providers.md](docs/providers.md) marks which is which. Telephony is
-transport-agnostic: Twilio, Telnyx, SignalWire, Vonage, Plivo, LiveKit SIP,
-Jambonz, FreeSWITCH/Asterisk, and SIPREC forks all feed the same tap
-([SIP matrix](https://labs.supafone.ai/docs.html#sip)).
+**Possible — 10 frameworks**, each with a real injection door:
+
+| Framework | Mode | Exact primitive |
+|---|:--:|---|
+| Ultravox | A | `send_data_message` (`urgency:"later"`) — **live/proven today** |
+| OpenAI Realtime | A | `conversation.item.create` (role `system`, no `response.create`) |
+| Grok (xAI) | A | OpenAI-Realtime-compatible item inject |
+| Gemini Live | A | `clientContent` (`turnComplete:false`, role `user`) |
+| ElevenLabs | A | `contextual_update` |
+| Inworld | A | OpenAI-Realtime-compatible item inject |
+| Vapi | A+B | `add-message` (`triggerResponseEnabled:false`) or custom-LLM splice |
+| Retell | B | `system` message into the custom-LLM turn |
+| Deepgram | A+B | `UpdatePrompt`, or own the `think` LLM |
+| LiveKit | B | inject into `chat_ctx` in-process |
+
+**Impossible — 1 framework:** **Bland** is a closed box — its live-call API is
+stop/listen/transfer only, with no mid-call inject channel and no custom-LLM.
+You can observe and score a Bland call, but not whisper to it live. This is a
+permanent vendor limitation, not a Supafone gap.
+
+**Not conversational agents (n/a):** **Cartesia** is a voice (TTS) used on
+another agent, not an agent itself; **Pipecat** is a DIY framework where you own
+every step, so injection is trivial and needs no vendor door.
+
+> **Honest caveats:** injection is *possible* for all 10, but managed delivery
+> is wired end-to-end **only for Ultravox today** — the other nine are supported
+> via their native primitive, with managed delivery rolling out / BYO. A live
+> test against any vendor needs that vendor's key; free/trial tiers exist for all
+> **except OpenAI Realtime** (paid, no free tier).
+
+The full matrix with citations lives in
+[gitbook/framework-support.md](gitbook/framework-support.md); the per-adapter
+capability receipts are in [docs/providers.md](docs/providers.md). *(The PyPI/npm
+package-page copy updates on the next release.)*
+
+Telephony is transport-agnostic and separate from injection: Twilio, Telnyx,
+SignalWire, Vonage, Plivo, LiveKit SIP, Jambonz, FreeSWITCH/Asterisk, and SIPREC
+forks all feed the same tap ([SIP matrix](https://labs.supafone.ai/docs.html#sip)).
 
 Runnable integrations for every permutation live in [`examples/`](examples/).
 
@@ -424,6 +545,13 @@ optimization ([OPRO](https://arxiv.org/abs/2309.03409), [DSPy](https://arxiv.org
 meta-analysis plus the formal runtime treatment — is the
 [**whitepaper (PDF)**](https://labs.supafone.ai/whitepaper.pdf)
 ([LaTeX source](paper/whitepaper.tex)).
+
+The QA methodology has its own paper: **Grading the Call** — objective-derived
+adversarial suites, SSR nominal-scale judging with deterministic score
+distributions, and supervision-lift A/B testing, situated against the
+2025–2026 voice-QA landscape (Coval, Hamming, Roark, Cekura, Bluejay,
+platform-native suites, τ-bench, VoiceBench) —
+[PDF](paper/voice-qa.pdf) ([LaTeX source](paper/voice-qa.tex)).
 
 ## Repo layout
 

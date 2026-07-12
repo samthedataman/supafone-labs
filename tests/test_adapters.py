@@ -13,6 +13,7 @@ from supafone_labs.runtime.adapters import (
     CartesiaAdapter,
     DeepgramAdapter,
     ElevenLabsAdapter,
+    GeminiLiveAdapter,
     GenericWebhookAdapter,
     GPTRealtimeAdapter,
     GrokAdapter,
@@ -88,7 +89,9 @@ CASES: dict[str, ProviderCase] = {
             "message": {"type": "end-of-call-report", "endedReason": "hangup"},
             "call": {"id": "c2"},
         },
-        inject_kind="assistant_override",
+        # Live Call Control "add-message" with triggerResponseEnabled:false —
+        # the system turn lands in context silently (not spoken, no forced reply).
+        inject_kind="control_add_message",
     ),
     # Doc-verified: live speech arrives as webhook_events "call" lines; the
     # end-of-call webhook carries the transcripts array. Bland documents NO
@@ -119,7 +122,32 @@ CASES: dict[str, ProviderCase] = {
             "name": "book_appointment",
             "session_id": "c4",
         },
-        inject_kind="session_update",
+        # One-shot conversation.item.create (system item, no response.create) —
+        # a per-turn silent steer, not a durable session_update prompt patch.
+        inject_kind="conversation_item_create",
+    ),
+    # Gemini Live API bidi frames: serverContent carries inputTranscription
+    # (caller STT) + outputTranscription (model audio) + streamed modelTurn;
+    # toolCall.functionCalls for tools; goAway signals close. Roles are only
+    # user/model, so a silent steer is a user-role send_client_content turn
+    # with turnComplete:false.
+    "gemini": ProviderCase(
+        adapter=GeminiLiveAdapter(),
+        start={"setupComplete": {}, "session_id": "c14"},
+        caller={
+            "serverContent": {"inputTranscription": {"text": CALLER_TEXT}},
+            "session_id": "c14",
+        },
+        agent={
+            "serverContent": {"outputTranscription": {"text": AGENT_TEXT}},
+            "session_id": "c14",
+        },
+        tool_call={
+            "toolCall": {"functionCalls": [{"name": "book_appointment", "args": {}}]},
+            "session_id": "c14",
+        },
+        end={"goAway": {"timeLeft": "5s"}, "session_id": "c14"},
+        inject_kind="send_client_content",
     ),
     "retell": ProviderCase(
         adapter=RetellAdapter(),

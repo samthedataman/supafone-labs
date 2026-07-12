@@ -19,6 +19,7 @@ from supafone_labs.runtime.adapters import (
     CartesiaAdapter,
     DeepgramAdapter,
     ElevenLabsAdapter,
+    GeminiLiveAdapter,
     GenericWebhookAdapter,
     GPTRealtimeAdapter,
     GrokAdapter,
@@ -57,6 +58,7 @@ def _default_adapters() -> list[Any]:
         VapiAdapter(),
         BlandAdapter(),
         GPTRealtimeAdapter(),
+        GeminiLiveAdapter(),
         RetellAdapter(),
         GrokAdapter(),
         ElevenLabsAdapter(),
@@ -222,6 +224,7 @@ class SupafoneLabs:
         directive_prompt: Optional[str] = None,
         inject_via: Optional[str] = None,
         telemetry: bool = True,
+        post_call_analysis: bool = False,
         agent_label: str = "default",
     ) -> None:
         self.config = config or get_settings()
@@ -234,6 +237,15 @@ class SupafoneLabs:
         # the Ultravox/Vapi agent actually running the call.
         self.inject_via = inject_via
         self.telemetry = telemetry
+        # post_call_analysis=True: when a session ends, the finished call is
+        # automatically classified against the agent's objective — generating
+        # labels (achieved/missed, per-criterion verdicts, failure reasons) —
+        # and the enriched report is filed instead of the plain one. Results
+        # land in self.analyses / self.last_analysis. Billed one oracle call
+        # per analyzed call; falls back to the plain report on any failure.
+        self.post_call_analysis = post_call_analysis
+        self.analyses: dict[str, dict] = {}
+        self.last_analysis: Optional[dict] = None
         # The self-optimizing loop: calls are scored + reported under this
         # label, and its hosted standing directive is injected at call start.
         self.agent_label = agent_label
@@ -375,12 +387,17 @@ class SupafoneLabs:
         )
 
     def _maybe_finish_session(self, session_id: str, state: RuntimeState, events: list) -> None:
-        """On session end: score the call and report it (fire-and-forget)."""
+        """On session end: score the call and report it (fire-and-forget).
+        With post_call_analysis=True the call is classified instead — labels
+        generated against the objective, enriched report filed server-side."""
         if not any(getattr(e, "type", "") == "session.ended" for e in events):
             return
         try:
             report = self.report(session_id)
             if report is None or not self.telemetry:
+                return
+            if self.post_call_analysis:
+                self._schedule_post_call_analysis(report, state)
                 return
             from supafone_labs.telemetry import report_call_soon
 
@@ -395,6 +412,60 @@ class SupafoneLabs:
                 language=report.language,
             )
         except Exception:
+            pass
+
+    def analysis(self, session_id: str) -> Optional[dict]:
+        """The post-call analysis labels for one session (None until classified)."""
+        return self.analyses.get(session_id)
+
+    def _schedule_post_call_analysis(self, report: Any, state: RuntimeState) -> None:
+        """Fire-and-forget post-call analysis: classify the finished call
+        against the agent's objective (generating labels + the enriched
+        report), falling back to the plain deterministic report on failure.
+        Never blocks the call path, never raises."""
+        import asyncio
+
+        from supafone_labs.telemetry import classify_call_report, report_call
+
+        transcript = "\n".join(f"{t.actor}: {t.text}" for t in state.transcript if t.text)
+        truth = state.truth_state
+        ground_truth = {
+            "booking_requested": truth.booking_requested,
+            "booking_verified": truth.booking_verified,
+            "delivery_requested": truth.delivery_requested,
+            "delivery_verified": truth.delivery_verified,
+            "end_call_claims_verified": truth.end_call_claims_verified,
+            "unverified_claims": list(truth.last_unverified_claims),
+        }
+
+        async def _run() -> None:
+            analysis = await classify_call_report(
+                session_id=report.session_id,
+                agent=report.agent,
+                transcript=transcript,
+                ground_truth=ground_truth,
+                nudges=report.nudges,
+            )
+            if analysis:
+                self.analyses[report.session_id] = analysis
+                self.last_analysis = analysis
+                return
+            # Analysis unavailable (offline / no oracle) — the plain
+            # zero-billed deterministic report still lands.
+            await report_call(
+                session_id=report.session_id,
+                agent=report.agent,
+                score=report.score,
+                outcome=report.outcome,
+                summary=report.summary,
+                nudges=report.nudges,
+                turns=report.turns,
+                language=report.language,
+            )
+
+        try:
+            asyncio.get_running_loop().create_task(_run())
+        except RuntimeError:
             pass
 
     def _report_nudge(

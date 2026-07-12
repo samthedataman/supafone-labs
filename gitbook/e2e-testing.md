@@ -1,4 +1,4 @@
-# E2E Testing
+# 🧪 E2E Testing
 
 Use focused tests for each surface: SDK, Labs Cloud, hosted-agent API, builder,
 and live provider paths.
@@ -7,7 +7,7 @@ and live provider paths.
 
 ```bash
 cd supafone-labs
-SUPAFONE_API_KEY=sf_live_... \
+SUPAFONE_API_KEY=sl_live_... \
 SUPAFONE_API_BASE_URL=https://api.supafone.ai \
 npx tsx examples/smoke-hosted-agent.ts
 ```
@@ -19,8 +19,8 @@ The script verifies:
 - Supafone-managed voices are discoverable,
 - a web intake agent can be created,
 - the agent can be fetched by key,
-- `provider_accounts.mode` is `supafone_managed`,
-- developer provider keys are not required,
+- `runtime.telephony.mode` is `supafone_managed`,
+- the runtime is managed (`runtime.managed === true`, no developer Ultravox key required),
 - a widget snippet is returned.
 
 ## Python SDK Tests
@@ -108,7 +108,7 @@ The hosted-agent voice catalog should also work with the hosted-agent key:
 
 ```bash
 curl "https://api.supafone.ai/api/v1/labs/voices?provider=cartesia" \
-  -H "Authorization: Bearer $SUPAFONE_API_KEY"
+  -H "Authorization: Bearer $SUPAFONE_LABS_API_KEY"
 ```
 
 ## Agent Factory E2E Matrix

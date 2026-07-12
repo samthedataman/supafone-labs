@@ -4,20 +4,22 @@ Local MCP server for Claude Desktop. It lets Claude create hosted Supafone voice
 agents, provision numbers, and inspect Supafone Labs usage/logs through a
 dependency-light Python stdio JSON-RPC server.
 
-The server uses:
+**One-key setup (0.4.4+):** set `SUPAFONE_TOKEN=sl_live_...` and every tool
+works — a single `sl_` Labs key authenticates on both APIs (one-key auth: the
+product API introspects the key against Labs Cloud and maps it to the
+app.supafone.ai account with the same email).
+
+The explicit per-surface variables still work and take precedence when set:
 
 - `SUPAFONE_API_KEY` for hosted agent and number provisioning on `api.supafone.ai`
 - `SUPAFONE_LABS_API_KEY` for Labs Cloud usage/logs on `api.labs.supafone.ai`
-
-If one key works for both surfaces in your environment, setting only that key is
-enough. For production, keep the two env vars explicit.
 
 ## Run Locally
 
 From this monorepo:
 
 ```bash
-python3.12 /Users/samsavage/Downloads/voice-mono/supafone-labs/mcp/supafone_mcp.py
+python3.12 /path/to/supafone-labs/mcp/supafone_mcp.py
 ```
 
 The process reads newline-delimited JSON-RPC MCP messages from stdin and writes
@@ -33,13 +35,10 @@ Add this to `~/Library/Application Support/Claude/claude_desktop_config.json`:
     "supafone-labs": {
       "command": "python3.12",
       "args": [
-        "/Users/samsavage/Downloads/voice-mono/supafone-labs/mcp/supafone_mcp.py"
+        "/path/to/supafone-labs/mcp/supafone_mcp.py"
       ],
       "env": {
-        "SUPAFONE_API_KEY": "sf_live_...",
-        "SUPAFONE_LABS_API_KEY": "sl_live_...",
-        "SUPAFONE_API_BASE_URL": "https://api.supafone.ai",
-        "SUPAFONE_LABS_API_BASE_URL": "https://api.labs.supafone.ai"
+        "SUPAFONE_TOKEN": "sl_live_..."
       }
     }
   }
@@ -108,6 +107,14 @@ so this intentionally polls instead of keeping an infinite stream open:
   "intervalSeconds": 2
 }
 ```
+
+`framework_support`
+
+Returns the verified silent-context injection support matrix — which voice
+frameworks Supafone can supervise and by which mechanism (Mode A native event
+vs Mode B own-the-LLM), which are impossible (Bland), and which are not agents
+(Cartesia/Pipecat). No arguments; static verified knowledge, so an agent can ask
+"can we inject into X?" without reading the docs.
 
 ## BYOK Provider Config
 

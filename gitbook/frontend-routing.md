@@ -1,4 +1,4 @@
-# Frontend Routing
+# 🧭 Frontend Routing
 
 This page is for the Labs frontend docs and builder navigation. It explains how
 the static frontend should route users through the developer experience.

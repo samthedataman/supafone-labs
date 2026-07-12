@@ -151,6 +151,63 @@ def report_call_soon(**kwargs: Any) -> None:
     loop.create_task(report_call(**kwargs))
 
 
+async def classify_call_report(
+    *,
+    session_id: str,
+    agent: str = "default",
+    transcript: str = "",
+    messages: list[dict] | None = None,
+    ground_truth: dict | None = None,
+    nudges: int = 0,
+    client: Any = None,
+) -> dict | None:
+    """Post-call analysis: POST one finished call to ``/v1/calls/classify``.
+
+    The oracle labels the call against the agent's objective — achieved/missed,
+    per-criterion verdicts, failure reasons — and files the enriched report
+    server-side (the fuel objective stats and the optimizer learn from).
+    Billed one oracle call. Never raises; returns None on any failure so the
+    caller can fall back to the plain zero-billed report.
+    """
+    if not _enabled():
+        return None
+    base = (os.getenv("SUPAFONE_LABS_API_BASE") or DEFAULT_API_BASE).rstrip("/")
+    owns_client = client is None
+    try:
+        if owns_client:
+            import httpx
+
+            client = httpx.AsyncClient(timeout=30)
+        payload: dict[str, Any] = {
+            "session_id": session_id,
+            "agent": agent,
+            "transcript": transcript,
+            "nudges": nudges,
+        }
+        if messages:
+            payload["messages"] = messages
+        if ground_truth is not None:
+            payload["ground_truth"] = ground_truth
+        resp = await client.post(
+            f"{base}/calls/classify",
+            headers={"Authorization": f"Bearer {license_key()}"},
+            json=payload,
+        )
+        if resp.status_code not in (200, 201):
+            return None
+        data = resp.json()
+        return data if isinstance(data, dict) else None
+    except Exception:
+        logger.debug("post-call analysis failed (call unaffected)", exc_info=True)
+        return None
+    finally:
+        if owns_client and client is not None:
+            try:
+                await client.aclose()
+            except Exception:
+                pass
+
+
 async def fetch_standing(agent: str = "default", client: Any = None) -> str:
     """Fetch the current self-optimized standing directive for this agent ('' on any failure)."""
     if not _enabled():

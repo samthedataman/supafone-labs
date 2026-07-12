@@ -1,4 +1,4 @@
-# Developer Workflows
+# 🧑‍💻 Developer Workflows
 
 Supafone Labs has two equal product pillars. Keep them mentally separate, then
 combine them when the user wants the complete product.
@@ -33,7 +33,8 @@ advanced BYOK.
 import { Supafone } from "supafone-labs";
 
 const supafone = new Supafone({
-  apiKey: process.env.SUPAFONE_API_KEY!,
+  apiKey: process.env.SUPAFONE_LABS_API_KEY!,
+  voiceWatcher: true, // default on — provisions agents under the Voice Watcher framework
 });
 
 const agent = await supafone.labs.agents.createInboundWithNumber({
@@ -51,7 +52,7 @@ Python has the matching hosted-agent helpers:
 ```python
 from supafone_labs import Supafone
 
-supafone = Supafone(api_key="sf_live_...")
+supafone = Supafone(api_key="sl_live_...", voice_watcher=True)  # one key; watcher on by default
 
 agent = supafone.labs.agents.create_inbound_with_number({
     "agentKey": "northline-intake",
@@ -65,10 +66,10 @@ agent = supafone.labs.agents.create_inbound_with_number({
 
 ## Which One Should the UI Lead With?
 
-The hosted builder should lead with the Supafone API key because that is the
-lowest-friction happy path:
+The hosted builder should lead with the one `sl_` Labs key because that is the
+lowest-friction happy path — it authenticates every surface:
 
-1. Paste `SUPAFONE_API_KEY`.
+1. Paste your `sl_live_...` key (as `SUPAFONE_LABS_API_KEY` / `SUPAFONE_TOKEN`).
 2. Choose inbound or outbound.
 3. Describe the agent.
 4. Pick a voice and preview it.
@@ -94,11 +95,60 @@ When BYOK is selected, group it into three lanes:
 
 | Work | Key | Base URL |
 | --- | --- | --- |
-| Agent Factory, numbers, hosted voices | `sf_live_...` | `https://api.supafone.ai/api/v1/labs` |
-| Oracle, TTS previews, STT, usage, logs | `sl_live_...` | `https://api.labs.supafone.ai` |
+| Agent Factory, numbers, hosted voices | `sl_live_...` (or scoped `sf_live_...`) | `https://api.supafone.ai/api/v1/labs` |
+| Oracle, TTS previews, STT, usage, logs, QA | `sl_live_...` | `https://api.labs.supafone.ai` |
+| Campaigns, dialing, calls | `sl_live_...` (or account JWT) | `https://api.supafone.ai` |
 
-Some development environments may use one key for both surfaces, but production
-docs and UI should show the two surfaces explicitly.
+Since 0.4.4, one `sl_` key authenticates on **both** APIs
+([one-key auth](api-keys-and-auth.md)): both SDK constructors cross-fill every
+credential lane from a lone `sl_` key, and `SUPAFONE_TOKEN=sl_live_...` is
+enough for the MCP server end to end. Scoped `sf_` keys remain supported for
+hosted-agent-only deployments.
+
+## Campaigns as Code
+
+Outbound campaigns are fully drivable from a YAML/JSON config — including
+`branding:` and `intake_form:` blocks:
+
+```yaml
+slug: quote-follow-up
+name: Quote follow-up
+goal: book
+agent: northline-outbound
+branding:
+  url: https://northline.example   # scanned on apply; explicit values win
+intake_form:
+  description: Roofing quote follow-up intake
+  industry: home_services
+recipients:
+  - {name: Jane Doe, phone: "+15551234567", consent: yes}
+```
+
+Endpoints (product API, account JWT or `sl_` key):
+
+```http
+POST /api/v1/campaigns/config/validate
+POST /api/v1/campaigns/config/apply
+POST /api/v1/campaigns/config/generate
+GET  /api/v1/campaigns/{campaign_id}/config
+```
+
+SDK methods: `campaigns.validate_config` / `apply_config` / `export_config` /
+`generate_config` (TS: `validateConfig` / `applyConfig` / `exportConfig` /
+`generateConfig`). The same flow is exposed as MCP tools
+(`generate_campaign_config`, `apply_campaign_config`,
+`export_campaign_config`) — see [MCP Server](mcp-server.md).
+
+Branding and intake generation are also available standalone:
+
+```http
+POST /api/v1/agents/brand-scan                 # {url} → colors, logo, OG data
+POST /api/v1/agents/generate-intake            # description → intake form
+POST /api/v1/agents/{agent_id}/generate-intake # generate + apply to an agent
+```
+
+(SDK: `scan_brand` / `scanBrand`, `generate_intake_form` /
+`generateIntakeForm`.)
 
 ## Export Contract
 

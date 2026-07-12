@@ -1,4 +1,4 @@
-# Call Stages
+# 🪜 Call Stages
 
 Call stages keep agents from behaving like one giant prompt. Supafone should
 generate stages by default from the smallest useful metadata: title, direction,

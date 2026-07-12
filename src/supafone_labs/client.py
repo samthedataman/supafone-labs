@@ -52,8 +52,28 @@ class Supafone:
         supafone_api_base_url: str = DEFAULT_SUPAFONE_API_BASE,
         labs_api_key: Optional[str] = None,
         labs_api_base_url: str = DEFAULT_LABS_API_BASE,
+        # Account (app.supafone.ai) auth — powers campaigns + real calls.
+        # Provide a JWT directly, or email+password and the client logs in
+        # lazily (and re-logs-in once when the token expires).
+        token: Optional[str] = None,
+        email: Optional[str] = None,
+        password: Optional[str] = None,
         timeout: float = 30.0,
         transport: Optional[Transport] = None,
+        # Automatic post-call analysis. When True, report_call() with a
+        # transcript (or structured messages) first classifies the finished
+        # call against the agent's objective — generating labels
+        # (achieved/missed, per-criterion verdicts, failure reasons) — and
+        # files the enriched report server-side. Billed one oracle call per
+        # analyzed call; reports without a transcript fall back to the plain
+        # zero-billed report.
+        post_call_analysis: bool = False,
+        # voice_watcher (default True): run provisioned agents under Supafone's
+        # Voice Watcher framework — live supervision, QA, and call scoring. Set
+        # False for a raw agent with no watcher.
+        voice_watcher: bool = True,
+        # Deprecated alias for voice_watcher — old `labs=` callers keep working.
+        labs: Optional[bool] = None,
     ) -> None:
         self.api_key = (
             api_key
@@ -61,15 +81,35 @@ class Supafone:
             or os.getenv("SUPAFONE_LABS_API_KEY")
             or ""
         )
-        if not self.api_key:
-            raise ValueError("api_key is required, or set SUPAFONE_API_KEY")
+        self.token = token or os.getenv("SUPAFONE_TOKEN") or os.getenv("SUPAFONE_ACCESS_TOKEN") or ""
+        self.email = email or os.getenv("SUPAFONE_EMAIL") or ""
+        self.password = password or os.getenv("SUPAFONE_PASSWORD") or ""
+        # One-key auth: the product API accepts `sl_` Labs keys as bearer
+        # credentials, so a lone sl_ credential fills whichever lane wasn't
+        # given explicitly. SUPAFONE_TOKEN=sl_live_... is enough for everything.
+        if not self.api_key and self.token.startswith("sl_"):
+            self.api_key = self.token
+        if not self.token and self.api_key.startswith("sl_"):
+            self.token = self.api_key
+        if not self.api_key and not (self.token or (self.email and self.password)):
+            raise ValueError(
+                "api_key is required (or set SUPAFONE_API_KEY) — or, for campaigns/calls, "
+                "pass token, or email + password (SUPAFONE_TOKEN / SUPAFONE_EMAIL + SUPAFONE_PASSWORD)"
+            )
         self.supafone_api_key = supafone_api_key or self.api_key
         self.supafone_api_base_url = supafone_api_base_url.rstrip("/")
         self.labs_api_key = labs_api_key or os.getenv("SUPAFONE_LABS_API_KEY") or self.api_key
         self.labs_api_base_url = labs_api_base_url.rstrip("/")
         self.timeout = timeout
         self._transport = transport
+        self.post_call_analysis = post_call_analysis
+        # `labs=` is the deprecated alias; an explicit value on it wins.
+        self.voice_watcher = bool(voice_watcher if labs is None else labs)
+        self._session_token: str = ""  # minted from email/password, refreshed on 401
+        self._labs_session_token: str = ""  # minted by labs_login() for session-scoped QA
         self.labs = LabsNamespace(self)
+        self.campaigns = CampaignsNamespace(self)
+        self.qa = QANamespace(self)
 
     def _request_supafone_api(
         self, method: str, path: str, payload: Optional[dict[str, Any]] = None
@@ -104,12 +144,222 @@ class Supafone:
             detail = parsed.get("detail") if isinstance(parsed, dict) else parsed
             raise SupafoneError(str(detail or exc.reason), status=exc.code, body=parsed) from exc
 
-    def _request_labs_api(
+    # --- account API (campaigns + real calls) --------------------------------
+    # Same product base URL as _request_supafone_api but authenticated with the
+    # ACCOUNT JWT (app.supafone.ai login), not an API key. Honors the same
+    # `transport` test seam.
+
+    def login(self, email: Optional[str] = None, password: Optional[str] = None) -> str:
+        """Log in to the Supafone account and cache the JWT. Called lazily by
+        the campaign/call methods — call it directly only to fail fast."""
+        email = email or self.email
+        password = password or self.password
+        if not (email and password):
+            raise SupafoneError(
+                "Not authenticated: pass token=..., or email= + password= "
+                "(or set SUPAFONE_TOKEN / SUPAFONE_EMAIL + SUPAFONE_PASSWORD)"
+            )
+        body = self._request_account_http(
+            "POST", "/api/v1/auth/login", {"email": email, "password": password}, token=""
+        )
+        token = body.get("access_token") or body.get("token") if isinstance(body, dict) else None
+        if not token:
+            raise SupafoneError("Login succeeded but no token was returned", body=body)
+        self._session_token = str(token)
+        return self._session_token
+
+    def _request_account_api(
         self, method: str, path: str, payload: Optional[dict[str, Any]] = None
     ) -> Any:
+        if self._transport:
+            return self._transport(method, path, payload)
+        token = self.token or self._session_token or self.login()
+        try:
+            return self._request_account_http(method, path, payload, token=token)
+        except SupafoneError as exc:
+            # A minted token that expired gets one transparent re-login; an
+            # explicit token is the caller's to refresh.
+            if exc.status == 401 and not self.token and self.email and self.password:
+                self._session_token = ""
+                return self._request_account_http(method, path, payload, token=self.login())
+            raise
+
+    def _request_account_upload(self, path: str, *, filename: str, data: bytes) -> Any:
+        """Multipart file POST with the same auth/re-login behavior as
+        _request_account_api. Honors the `transport` test seam (method "UPLOAD")."""
+        if self._transport:
+            return self._transport("UPLOAD", path, {"filename": filename, "size": len(data)})
+        token = self.token or self._session_token or self.login()
+        try:
+            return self._account_upload_http(path, filename, data, token=token)
+        except SupafoneError as exc:
+            if exc.status == 401 and not self.token and self.email and self.password:
+                self._session_token = ""
+                return self._account_upload_http(path, filename, data, token=self.login())
+            raise
+
+    def _account_upload_http(self, path: str, filename: str, data: bytes, *, token: str) -> Any:
+        boundary = f"----supafone{os.urandom(12).hex()}"
+        safe_name = filename.replace('"', "").replace("\\", "")[:120] or "document.pdf"
+        body = b"".join(
+            [
+                f"--{boundary}\r\n".encode(),
+                f'Content-Disposition: form-data; name="file"; filename="{safe_name}"\r\n'.encode(),
+                b"Content-Type: application/pdf\r\n\r\n",
+                data,
+                f"\r\n--{boundary}--\r\n".encode(),
+            ]
+        )
+        headers = {
+            "Accept": "application/json",
+            "Content-Type": f"multipart/form-data; boundary={boundary}",
+        }
+        if token:
+            headers["Authorization"] = f"Bearer {token}"
+        req = request.Request(
+            self.supafone_api_base_url + path, data=body, headers=headers, method="POST"
+        )
+        try:
+            with request.urlopen(req, timeout=max(self.timeout, 120.0)) as resp:
+                raw = resp.read().decode("utf-8")
+                return json.loads(raw) if raw else {}
+        except error.HTTPError as exc:
+            raw = exc.read().decode("utf-8", errors="replace")
+            try:
+                parsed: Any = json.loads(raw)
+            except json.JSONDecodeError:
+                parsed = raw
+            detail = parsed.get("detail") if isinstance(parsed, dict) else parsed
+            raise SupafoneError(str(detail or exc.reason), status=exc.code, body=parsed) from exc
+
+    def _request_account_http(
+        self, method: str, path: str, payload: Optional[dict[str, Any]], *, token: str
+    ) -> Any:
+        body = None
+        headers = {"Accept": "application/json"}
+        if token:
+            headers["Authorization"] = f"Bearer {token}"
+        if payload is not None:
+            body = json.dumps(payload).encode("utf-8")
+            headers["Content-Type"] = "application/json"
+        req = request.Request(
+            self.supafone_api_base_url + path,
+            data=body,
+            headers=headers,
+            method=method,
+        )
+        try:
+            with request.urlopen(req, timeout=self.timeout) as resp:
+                data = resp.read().decode("utf-8")
+                return json.loads(data) if data else {}
+        except error.HTTPError as exc:
+            raw = exc.read().decode("utf-8", errors="replace")
+            try:
+                parsed: Any = json.loads(raw)
+            except json.JSONDecodeError:
+                parsed = raw
+            detail = parsed.get("detail") if isinstance(parsed, dict) else parsed
+            raise SupafoneError(str(detail or exc.reason), status=exc.code, body=parsed) from exc
+
+    def place_call(
+        self,
+        *,
+        agent_id: Optional[str] = None,
+        agentId: Optional[str] = None,
+        to_number: Optional[str] = None,
+        toNumber: Optional[str] = None,
+    ) -> Any:
+        """Place a REAL outbound phone call: dials to_number from the account's
+        calling provider and bridges the voice agent onto the line."""
+        agent = agent_id or agentId
+        number = to_number or toNumber
+        if not agent:
+            raise SupafoneError("agent_id is required (see list_voice_agents())")
+        if not number:
+            raise SupafoneError("to_number is required (E.164, e.g. +15551234567)")
+        return self._request_account_api(
+            "POST", "/api/v1/phone/test-call", {"agent_id": agent, "to_number": number}
+        )
+
+    # camelCase alias
+    placeCall = place_call
+
+    def list_voice_agents(self) -> Any:
+        """The account's voice agents — pick an agent id for campaigns/calls."""
+        return self._request_account_api("GET", "/api/v1/agents")
+
+    listVoiceAgents = list_voice_agents
+
+    def scan_brand(self, url: str) -> Any:
+        """Scan a website for its branding: business name, brand colors, logo,
+        favicon, Open Graph metadata, page images, and key same-domain pages."""
+        if not (url or "").strip():
+            raise SupafoneError("url is required (the website to scan)")
+        return self._request_account_api("POST", "/api/v1/agents/brand-scan", {"url": url.strip()})
+
+    scanBrand = scan_brand
+
+    def generate_intake_form(
+        self,
+        description: str,
+        *,
+        agent_id: Optional[str] = None,
+        agentId: Optional[str] = None,
+        industry: str = "",
+        apply: bool = False,
+    ) -> Any:
+        """Generate a guided intake form (IntakeConfig) from a plain-language
+        description. Pass agent_id to ground it in that agent's business, and
+        apply=True to write it onto the agent."""
+        if not (description or "").strip():
+            raise SupafoneError("description is required — what should the form collect?")
+        agent = agent_id or agentId
+        if apply and not agent:
+            raise SupafoneError("apply=True needs an agent_id (see list_voice_agents())")
+        payload: dict[str, Any] = {"description": description.strip()}
+        if industry:
+            payload["industry"] = industry
+        if agent:
+            payload["apply"] = bool(apply)
+            return self._request_account_api(
+                "POST", f"/api/v1/agents/{parse.quote(str(agent))}/generate-intake", payload
+            )
+        return self._request_account_api("POST", "/api/v1/agents/generate-intake", payload)
+
+    generateIntakeForm = generate_intake_form
+
+    def labs_login(self, email: Optional[str] = None, password: Optional[str] = None) -> str:
+        """Log in to the Labs cloud console and cache the session token.
+        Required by the session-scoped QA methods (qa.run / qa.suite)."""
+        email = email or self.email
+        password = password or self.password
+        if not (email and password):
+            raise SupafoneError(
+                "labs_login needs email + password (or set SUPAFONE_EMAIL + SUPAFONE_PASSWORD)"
+            )
+        body = self._request_labs_api("POST", "/v1/auth/login", {"email": email, "password": password})
+        token = body.get("token") if isinstance(body, dict) else None
+        if not token:
+            raise SupafoneError("Labs login succeeded but no token was returned", body=body)
+        self._labs_session_token = str(token)
+        return self._labs_session_token
+
+    def _request_labs_api(
+        self,
+        method: str,
+        path: str,
+        payload: Optional[dict[str, Any]] = None,
+        *,
+        use_session: bool = False,
+    ) -> Any:
+        token = (
+            self._labs_session_token
+            if use_session and self._labs_session_token
+            else self.labs_api_key
+        )
         body = None
         headers = {
-            "Authorization": f"Bearer {self.labs_api_key}",
+            "Authorization": f"Bearer {token}",
             "Accept": "application/json",
         }
         if payload is not None:
@@ -163,6 +413,69 @@ class Supafone:
                 parsed = raw
             detail = parsed.get("detail") if isinstance(parsed, dict) else parsed
             raise SupafoneError(str(detail or exc.reason), status=exc.code, body=parsed) from exc
+
+    def report_call(self, report: dict[str, Any]) -> dict[str, Any]:
+        """File a post-call report — the fuel the optimizer improves against.
+
+        With ``post_call_analysis=True`` on the client and a ``transcript``
+        (or ``messages``) in the report, the call is automatically classified
+        first: the oracle labels it against the agent's objective
+        (achieved/missed, per-criterion verdicts, failure reasons) and the
+        enriched report is filed server-side. The generated labels come back
+        under ``"analysis"``. Analysis is best-effort — on any failure the
+        plain zero-billed report still lands.
+        """
+        report = dict(report)
+        transcript = report.pop("transcript", None)
+        messages = report.pop("messages", None)
+        ground_truth = report.pop("ground_truth", None)
+        if self.post_call_analysis and (transcript or messages):
+            try:
+                analysis = self.classify_call(
+                    session_id=report.get("session_id"),
+                    agent=report.get("agent"),
+                    transcript=transcript,
+                    messages=messages,
+                    ground_truth=ground_truth,
+                    nudges=report.get("nudges", 0),
+                )
+                # classify_call files the enriched report server-side — don't double-file.
+                return {"recorded": True, "analysis": analysis}
+            except SupafoneError:
+                pass  # analysis is best-effort — fall through to the plain report
+        out = self._request_labs_api("POST", "/v1/events/call_report", report)
+        result = {"recorded": True}
+        if isinstance(out, dict):
+            result.update(out)
+        return result
+
+    def classify_call(
+        self,
+        *,
+        transcript: Optional[str] = None,
+        messages: Optional[list[dict[str, Any]]] = None,
+        session_id: Optional[str] = None,
+        agent: Optional[str] = None,
+        ground_truth: Optional[dict[str, Any]] = None,
+        nudges: int = 0,
+    ) -> dict[str, Any]:
+        """Post-call analysis for one finished call: classify it against the
+        agent's objective and get labels back — achieved/missed, per-criterion
+        verdicts, failure reasons, and the blended objective value. Files an
+        enriched call report server-side. Billed one oracle call."""
+        payload: dict[str, Any] = {"agent": agent or "builder", "nudges": nudges}
+        if session_id:
+            payload["session_id"] = session_id
+        if transcript:
+            payload["transcript"] = transcript
+        if messages:
+            payload["messages"] = messages
+        if ground_truth is not None:
+            payload["ground_truth"] = ground_truth
+        return self._request_labs_api("POST", "/v1/calls/classify", payload)
+
+    reportCall = report_call
+    classifyCall = classify_call
 
     def usage(self) -> Any:
         """Today's Labs usage across oracle/TTS/STT/loggable services."""
@@ -233,6 +546,51 @@ class Supafone:
     streamLogs = stream_logs
 
 
+class QANamespace:
+    """Adversarial QA against the Labs cloud — parity with the TS SDK's `qa.*`."""
+
+    def __init__(self, client: "Supafone") -> None:
+        self._client = client
+
+    def generate(self, agent_prompt: str, count: int = 5) -> dict[str, Any]:
+        """Auto-generate adversarial test scenarios from the agent's own prompt
+        (key-scoped). Each scenario carries a persona, an opener, and the one
+        assertion the agent must (or must not) satisfy."""
+        return self._client._request_labs_api(
+            "POST", "/v1/qa/generate", {"agent_prompt": agent_prompt, "count": count}
+        )
+
+    def run(self, scenarios: Optional[list[str]] = None, turns: int = 2) -> dict[str, Any]:
+        """Run the adversarial QA suite A/B — every scenario plays once
+        unsupervised and once with the Labs watcher whispering; the delta is
+        the measured supervision lift. Session-scoped — labs_login() first."""
+        return self._client._request_labs_api(
+            "POST",
+            "/v1/qa/run",
+            {"scenarios": scenarios or [], "turns": turns},
+            use_session=True,
+        )
+
+    def suite(self, count: int = 4, turns: int = 2, supervised: bool = False) -> dict[str, Any]:
+        """Build + run a bespoke adversarial suite in one call: scenarios are
+        generated from the agent's own objective, each is played as a mock
+        call against the REAL configured agent, and every call is judged
+        twice — pass/fail on the scenario's assertion AND an SSR grade
+        (poorly/ok/good/great/perfectly) against the objective.
+        Session-scoped — labs_login() first."""
+        return self._client._request_labs_api(
+            "POST",
+            "/v1/qa/suite",
+            {"count": count, "turns": turns, "supervised": supervised},
+            use_session=True,
+        )
+
+    def history(self, agent: str = "builder", limit: int = 40) -> dict[str, Any]:
+        """Past QA runs (works with the API key)."""
+        query = parse.urlencode({"agent": agent, "limit": limit})
+        return self._client._request_labs_api("GET", f"/v1/qa/runs?{query}")
+
+
 class LabsNamespace:
     def __init__(self, client: Supafone) -> None:
         self.agents = LabsAgentsNamespace(client)
@@ -247,16 +605,347 @@ class LabsNamespace:
         return self.agents._client._request_supafone_api("GET", "/api/v1/labs/capabilities")
 
 
+class CampaignsNamespace:
+    """Outbound AI campaigns — the same campaign engine the app.supafone.ai
+    builder drives, packaged: create a campaign, add consented leads, apply a
+    preset (built-in or your saved custom preset), launch, and monitor the
+    calls as they happen. Authenticated with the ACCOUNT login (token or
+    email/password on the client), not an API key.
+
+    Typical flow:
+        sf = Supafone(email=..., password=...)
+        agent = sf.list_voice_agents()["agents"][0]
+        c = sf.campaigns.create(name="Q3 win-back", goal="reengage", agent_id=agent["id"])
+        sf.campaigns.apply_preset(c["campaign"]["id"], "win_back")
+        sf.campaigns.add_recipients(c["campaign"]["id"], [
+            {"name": "Jane Doe", "phone": "+15551234567", "outreach_consent": "yes"},
+        ])
+        sf.campaigns.launch(c["campaign"]["id"])
+        live = sf.campaigns.live(c["campaign"]["id"])   # in-flight calls + portal links
+    """
+
+    def __init__(self, client: Supafone) -> None:
+        self._client = client
+
+    # -- CRUD ------------------------------------------------------------
+
+    def list(self, *, account_id: Optional[str] = None, accountId: Optional[str] = None) -> Any:
+        query = _list_query(account_id=account_id or accountId)
+        return self._client._request_account_api("GET", f"/api/v1/campaigns{query}")
+
+    def create(
+        self,
+        *,
+        name: str = "New campaign",
+        goal: str = "book",
+        agent_id: Optional[str] = None,
+        agentId: Optional[str] = None,
+        account_id: Optional[str] = None,
+        accountId: Optional[str] = None,
+    ) -> Any:
+        payload: dict[str, Any] = {"name": name, "goal": goal}
+        if agent_id or agentId:
+            payload["agent_id"] = agent_id or agentId
+        if account_id or accountId:
+            payload["account_id"] = account_id or accountId
+        return self._client._request_account_api("POST", "/api/v1/campaigns", payload)
+
+    def get(self, campaign_id: str) -> Any:
+        return self._client._request_account_api("GET", f"/api/v1/campaigns/{parse.quote(campaign_id)}")
+
+    def update(self, campaign_id: str, **fields: Any) -> Any:
+        """Patch a campaign: name, goal, agent_id, email_subject, email_body,
+        cadence ([{channel, delay_hours}]), settings (merged server-side)."""
+        payload: dict[str, Any] = {}
+        for keys, api_key in (
+            (("name",), "name"),
+            (("goal",), "goal"),
+            (("agent_id", "agentId"), "agent_id"),
+            (("email_subject", "emailSubject"), "email_subject"),
+            (("email_body", "emailBody"), "email_body"),
+            (("cadence",), "cadence"),
+            (("settings",), "settings"),
+        ):
+            value = _pick(fields, *keys)
+            if value is not None:
+                payload[api_key] = value
+        if not payload:
+            raise SupafoneError(
+                "Nothing to update — pass name, goal, agent_id, email_subject, email_body, cadence, or settings"
+            )
+        return self._client._request_account_api(
+            "PUT", f"/api/v1/campaigns/{parse.quote(campaign_id)}", payload
+        )
+
+    # -- recipients --------------------------------------------------------
+
+    def add_recipients(self, campaign_id: str, recipients: list[dict[str, Any]]) -> Any:
+        """Add consented leads: [{name, phone, email, outreach_consent: 'yes', ...}]."""
+        if not isinstance(recipients, list) or not recipients:
+            raise SupafoneError("recipients must be a non-empty list of lead dicts")
+        return self._client._request_account_api(
+            "POST",
+            f"/api/v1/campaigns/{parse.quote(campaign_id)}/recipients",
+            {"recipients": recipients},
+        )
+
+    def recipients(self, campaign_id: str) -> Any:
+        return self._client._request_account_api(
+            "GET", f"/api/v1/campaigns/{parse.quote(campaign_id)}/recipients"
+        )
+
+    # -- lifecycle -----------------------------------------------------------
+
+    def launch(self, campaign_id: str) -> Any:
+        """Starts REAL calls/emails on the cadence immediately."""
+        return self._client._request_account_api(
+            "POST", f"/api/v1/campaigns/{parse.quote(campaign_id)}/launch", {}
+        )
+
+    def pause(self, campaign_id: str) -> Any:
+        return self._client._request_account_api(
+            "POST", f"/api/v1/campaigns/{parse.quote(campaign_id)}/pause", {}
+        )
+
+    # -- presets --------------------------------------------------------------
+
+    def presets(self) -> Any:
+        """Built-in playbooks + the account's saved custom presets."""
+        built_in = self._client._request_account_api("GET", "/api/v1/campaigns/outbound-presets")
+        result: dict[str, Any] = {
+            "built_in": built_in.get("presets", built_in) if isinstance(built_in, dict) else built_in
+        }
+        try:
+            custom = self._client._request_account_api("GET", "/api/v1/campaigns/custom-presets")
+            result["custom"] = custom.get("presets", custom) if isinstance(custom, dict) else custom
+        except SupafoneError:
+            result["custom"] = []
+        return result
+
+    def apply_preset(self, campaign_id: str, preset_id: str) -> Any:
+        """Materialize a preset (goal, questions, scripts, signing doc) in one write."""
+        return self._client._request_account_api(
+            "POST",
+            f"/api/v1/campaigns/{parse.quote(campaign_id)}/apply-preset",
+            {"preset_id": preset_id},
+        )
+
+    # -- monitoring ------------------------------------------------------------
+
+    def stats(self, campaign_id: str) -> Any:
+        return self._client._request_account_api(
+            "GET", f"/api/v1/campaigns/{parse.quote(campaign_id)}/stats"
+        )
+
+    def activity(self, campaign_id: str) -> Any:
+        """The live funnel + the campaign's most recent calls (newest first)."""
+        return self._client._request_account_api(
+            "GET", f"/api/v1/campaigns/{parse.quote(campaign_id)}/activity"
+        )
+
+    def live(self, campaign_id: str, *, app_url: str = "https://app.supafone.ai") -> Any:
+        """In-flight calls right now, each with a portal link to watch/listen.
+        Poll get_call(call_id) (or open the portal link) for the transcript as
+        it grows during the call."""
+        activity = self.activity(campaign_id)
+        calls = activity.get("calls") if isinstance(activity, dict) else None
+        live_calls = []
+        for call in calls or []:
+            if not isinstance(call, dict):
+                continue
+            if str(call.get("status") or "") in ("initiated", "dialing", "in_progress"):
+                live_calls.append(
+                    {
+                        **call,
+                        "listen_url": f"{app_url.rstrip('/')}/app/calls?call={parse.quote(str(call.get('id') or ''))}",
+                    }
+                )
+        return {
+            "campaign_id": campaign_id,
+            "in_flight": live_calls,
+            "portal_url": f"{app_url.rstrip('/')}/app/developer?campaign={parse.quote(campaign_id)}",
+            "stats": activity.get("stats") if isinstance(activity, dict) else None,
+        }
+
+    def get_call(self, call_id: str) -> Any:
+        """One call — while in_progress the transcript grows on each poll."""
+        return self._client._request_account_api("GET", f"/api/v1/calls/{parse.quote(call_id)}")
+
+    def create_sign_link(
+        self, campaign_id: str, recipient_id: str, *, title: str = "", message: str = ""
+    ) -> Any:
+        payload: dict[str, Any] = {}
+        if title:
+            payload["title"] = title
+        if message:
+            payload["message"] = message
+        return self._client._request_account_api(
+            "POST",
+            f"/api/v1/campaigns/{parse.quote(campaign_id)}/recipients/{parse.quote(recipient_id)}/sign-link",
+            payload,
+        )
+
+    # -- e-sign document (upload + place fields) ------------------------------
+
+    def upload_signing_document(self, campaign_id: str, file_path: str) -> Any:
+        """Upload the PDF this campaign sends for e-signature. The server
+        auto-detects signature/date/initials lines and returns their placements
+        (PDF points, origin bottom-left) — apply them with set_signature_fields."""
+        path = os.path.expanduser(str(file_path))
+        with open(path, "rb") as handle:
+            data = handle.read()
+        filename = os.path.basename(path) or "document.pdf"
+        return self._client._request_account_upload(
+            f"/api/v1/campaigns/{parse.quote(campaign_id)}/signing/document",
+            filename=filename,
+            data=data,
+        )
+
+    def detect_signature_fields(self, campaign_id: str) -> Any:
+        return self._client._request_account_api(
+            "POST", f"/api/v1/campaigns/{parse.quote(campaign_id)}/signing/detect-fields", {}
+        )
+
+    def set_signature_fields(self, campaign_id: str, fields: list[dict[str, Any]]) -> Any:
+        """Place the signing fields: [{key, type: signature|date|initials|text,
+        label, required, placement: {page, x, y, width, height}}] in PDF points
+        (origin bottom-left, 612x792 page). Merges onto the stored doc config."""
+        if not isinstance(fields, list) or not fields:
+            raise SupafoneError("fields must be a non-empty list of placed fields")
+        current = self.get(campaign_id)
+        campaign = current.get("campaign") if isinstance(current, dict) else {}
+        settings_bag = dict((campaign or {}).get("settings") or {})
+        native = dict(settings_bag.get("native_signing") or {})
+        if not (native.get("pdfUrl") or native.get("storedName")):
+            raise SupafoneError("Upload the signing PDF first (upload_signing_document)")
+        native["enabled"] = True
+        native["fields"] = [dict(f) for f in fields]
+        return self.update(campaign_id, settings={**settings_bag, "native_signing": native})
+
+    # -- campaign-as-code (one YAML/JSON document per campaign) ---------------
+
+    def _config_payload(
+        self,
+        config: Optional[str],
+        file_path: Optional[str],
+        account_id: Optional[str],
+        launch: Optional[bool],
+    ) -> dict[str, Any]:
+        text = config
+        if not (isinstance(text, str) and text.strip()):
+            if not file_path:
+                raise SupafoneError("Pass config (YAML/JSON document text) or file_path (a local file)")
+            with open(os.path.expanduser(str(file_path)), "r", encoding="utf-8") as handle:
+                text = handle.read()
+            if not text.strip():
+                raise SupafoneError(f"{file_path} is empty")
+        payload: dict[str, Any] = {"config": text}
+        if account_id:
+            payload["account_id"] = account_id
+        if isinstance(launch, bool):
+            payload["launch"] = launch
+        return payload
+
+    def validate_config(
+        self,
+        config: Optional[str] = None,
+        *,
+        file_path: Optional[str] = None,
+        account_id: Optional[str] = None,
+        launch: Optional[bool] = None,
+    ) -> Any:
+        """Pure dry-run: {valid, errors[], warnings[], summary} — no side effects."""
+        return self._client._request_account_api(
+            "POST",
+            "/api/v1/campaigns/config/validate",
+            self._config_payload(config, file_path, account_id, launch),
+        )
+
+    def apply_config(
+        self,
+        config: Optional[str] = None,
+        *,
+        file_path: Optional[str] = None,
+        account_id: Optional[str] = None,
+        launch: Optional[bool] = None,
+    ) -> Any:
+        """Upsert a campaign from a campaign-as-code document (by slug). The
+        doc's branding:/intake_form: blocks restyle the campaign's agent and
+        generate its intake form on apply. launch=True starts REAL calls."""
+        return self._client._request_account_api(
+            "POST",
+            "/api/v1/campaigns/config/apply",
+            self._config_payload(config, file_path, account_id, launch),
+        )
+
+    def export_config(self, campaign_id: str) -> Any:
+        """The campaign as its canonical YAML document — round-trips through
+        apply_config (same slug, launch stays false)."""
+        return self._client._request_account_api(
+            "GET", f"/api/v1/campaigns/{parse.quote(campaign_id)}/config"
+        )
+
+    def generate_config(
+        self,
+        prompt: str,
+        *,
+        csv: Optional[str] = None,
+        agent_id: Optional[str] = None,
+        account_id: Optional[str] = None,
+    ) -> Any:
+        """Draft a campaign-as-code YAML document from a plain-language
+        description (+ optional CSV of leads). No side effects — review, then
+        apply_config."""
+        if not (prompt or "").strip():
+            raise SupafoneError("prompt is required — describe the campaign to draft")
+        payload: dict[str, Any] = {"prompt": prompt.strip()}
+        if csv:
+            payload["csv"] = csv
+        if agent_id:
+            payload["agent_id"] = agent_id
+        if account_id:
+            payload["account_id"] = account_id
+        return self._client._request_account_api(
+            "POST", "/api/v1/campaigns/config/generate", payload
+        )
+
+    # camelCase aliases
+    addRecipients = add_recipients
+    applyPreset = apply_preset
+    createSignLink = create_sign_link
+    getCall = get_call
+    uploadSigningDocument = upload_signing_document
+    detectSignatureFields = detect_signature_fields
+    setSignatureFields = set_signature_fields
+    validateConfig = validate_config
+    applyConfig = apply_config
+    exportConfig = export_config
+    generateConfig = generate_config
+
+
 class LabsAgentsNamespace:
     def __init__(self, client: Supafone) -> None:
         self._client = client
 
     def create(self, config: Optional[Mapping[str, Any]] = None, **kwargs: Any) -> Any:
+        data = _merge(config, kwargs)
+        self._apply_voice_watcher(data)
         return self._client._request_supafone_api(
             "POST",
             "/api/v1/labs/agents",
-            _labs_agent_payload(_merge(config, kwargs)),
+            _labs_agent_payload(data),
         )
+
+    def _apply_voice_watcher(self, data: dict[str, Any]) -> None:
+        """Default the agent onto the client's Voice Watcher setting (live
+        supervision + QA + scoring) unless the caller set voice_watcher
+        explicitly (either casing). Mirrored into labs.voice_watcher when a labs
+        block exists. Never overwrites a caller value."""
+        if "voice_watcher" not in data and "voiceWatcher" not in data:
+            data["voice_watcher"] = self._client.voice_watcher
+        labs = data.get("labs")
+        if isinstance(labs, dict) and "voice_watcher" not in labs and "voiceWatcher" not in labs:
+            labs["voice_watcher"] = self._client.voice_watcher
 
     def create_inbound(self, config: Optional[Mapping[str, Any]] = None, **kwargs: Any) -> Any:
         data = _merge(config, kwargs)
@@ -786,6 +1475,10 @@ def _byok_payload(data: Mapping[str, Any]) -> dict[str, Any]:
                 "agent_provider": _provider_config_payload(
                     _pick(data, "agent_provider", "agentProvider", "runtime") or {}
                 ),
+                # Native (BYOK) Ultravox runtime key — forwarded verbatim so
+                # byok.ultravox = {api_key, base_url?} round-trips even when the
+                # block also carries an agent_provider / telephony / *tts etc.
+                "ultravox": data.get("ultravox"),
                 "telephony": _telephony_payload(data["telephony"]) if data.get("telephony") else None,
                 "tts": _provider_config_payload(data.get("tts") or {}),
                 "stt": _provider_config_payload(data.get("stt") or {}),

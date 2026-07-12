@@ -12,7 +12,7 @@ class VapiAdapter(BaseAdapter):
 
     def capabilities(self) -> ProviderCapabilities:
         return ProviderCapabilities(
-            supports_hidden_instruction_injection=False,
+            supports_hidden_instruction_injection=True,
             supports_mid_call_prompt_patch=True,
             supports_stageful_session_updates=True,
             supports_tool_call_interception=True,
@@ -185,11 +185,19 @@ class VapiAdapter(BaseAdapter):
         state: RuntimeState,
     ) -> list[ProviderAction]:
         if decision.kind == DecisionKinds.INJECT_HIDDEN_INSTRUCTION:
+            # Vapi Live Call Control "add-message" with triggerResponseEnabled
+            # False: the system turn lands in context silently and is NOT spoken
+            # or forced into an immediate reply (an assistant_override without a
+            # silence flag would be voiced back to the caller).
             return [
                 ProviderAction(
                     provider=self.provider_name,
-                    kind="assistant_override",
-                    payload={"instruction": decision.payload["text"]},
+                    kind="control_add_message",
+                    payload={
+                        "type": "add-message",
+                        "message": {"role": "system", "content": decision.payload["text"]},
+                        "triggerResponseEnabled": False,
+                    },
                 )
             ]
         if decision.kind == DecisionKinds.FORCE_STAGE_TRANSITION:

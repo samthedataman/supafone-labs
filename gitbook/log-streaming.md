@@ -1,4 +1,4 @@
-# Log Streaming
+# 📜 Log Streaming
 
 Developers need to see what the system is doing: oracle calls, whispers, TTS,
 STT, call reports, provider metadata, latency, and billing seconds. Supafone

@@ -1,8 +1,16 @@
 # Providers & frameworks
 
-Supafone Labs plugs into **any** voice agent because the runtime normalizes every provider
+> **Injectable at a glance:** ten frameworks accept a silent directive
+> (Ultravox, OpenAI Realtime, Grok, Gemini Live, ElevenLabs, Inworld, Vapi,
+> Retell, Deepgram, LiveKit); **Bland cannot** (closed live-call API), and
+> Cartesia/Pipecat are n/a. The definitive matrix with modes, exact primitives,
+> and honesty caveats is [gitbook/framework-support.md](../gitbook/framework-support.md).
+> This page is the per-adapter capability + test-receipt detail.
+
+Supafone Labs plugs into **almost any** voice agent — the runtime normalizes every provider
 into one canonical event vocabulary and compiles one abstract `inject_hidden_instruction`
-decision into each provider's native control. Three integration kinds:
+decision into each provider's native control. The one exception is Bland, whose live-call
+API exposes no injection door at all. Three integration kinds:
 
 - **Agent platforms** — the provider runs the agent and emits call events (webhook or
   realtime); you inject via their control API. *(Ultravox, Vapi, Bland, Retell,
@@ -24,23 +32,34 @@ best injection path automatically.
 | Vapi | agent | Yes | Yes | Yes | Yes |
 | Bland | agent | — | — | — | Yes⁶ |
 | Retell | agent | Yes² | Yes | Yes | Yes |
-| GPT-Realtime | agent | —¹ | Yes | Yes | Yes |
-| Grok Realtime | agent | —¹ | Yes | Yes | Yes |
+| GPT-Realtime | agent | Yes¹ | Yes | Yes | Yes |
+| Grok Realtime | agent | Yes¹ | Yes | Yes | Yes |
 | ElevenLabs Conversational AI | agent | Yes³ | Yes | Yes | Yes |
 | Deepgram Voice Agent | agent | Yes⁴ | Yes⁴ | Yes | Yes |
 | Pipecat | framework | Yes⁵ | Yes | Yes | Yes |
 | LiveKit Agents | framework | Yes⁵ | Yes | Yes | Yes |
 | Cartesia | TTS/STT | — | — | — | Yes (STT) |
-| Inworld | TTS | — | — | — | — |
+| Inworld | TTS⁷ | — | — | — | — |
 | Generic | webhook | configurable | configurable | configurable | configurable |
 
-¹ Injected via `session.update` instructions-append (no dedicated hidden-message event).
+¹ Silent context is injected via `conversation.item.create` (role `system`,
+  `input_text`) with **no** following `response.create`, so it lands as context
+  the model reads but does not speak. A `session.update` prompt patch is the
+  alternative mid-call path. Grok is OpenAI-Realtime-compatible (same primitive,
+  base `wss://api.x.ai/v1/realtime`).
 ² Retell's custom-LLM loop lets you inject directly into the model context each turn.
 ³ ElevenLabs supports `contextual_update` — text the agent reads but does not speak.
-⁴ Deepgram Voice Agent supports `InjectAgentMessage` and `UpdateInstructions`.
+⁴ Deepgram Voice Agent's silent primitive is the `UpdatePrompt` event (context
+  the agent reads, not speaks); you can also own the `think` LLM and splice the
+  prompt directly. (`InjectAgentMessage` makes the agent *speak* a line, so it is
+  not a silent inject.)
 ⁵ Frameworks inject by appending a system/context frame to the live pipeline.
 ⁶ Bland streams live speech lines via `webhook_events` and a full transcript in the
   end-of-call webhook, but documents **no** mid-call injection/prompt API — tap-only.
+⁷ This row is the Inworld **TTS voice** (tap-only, like any voice). Inworld also
+  ships a **conversational runtime** that is OpenAI-Realtime-compatible — that
+  runtime *is* injectable via the same item-inject door (Mode A). See
+  [gitbook/framework-support.md](../gitbook/framework-support.md).
 
 > **Honesty note:** all 13 adapters ship with unit tests (parse + inject-compile +
 > capability consistency, ~180 tests), and the schemas are backed by two kinds of

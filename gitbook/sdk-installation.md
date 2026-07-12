@@ -1,6 +1,9 @@
-# SDK Installation
+# 📦 SDK Installation
 
 Supafone Labs publishes a Python package and an unscoped TypeScript package.
+Current release: **0.4.6** on both
+[PyPI](https://pypi.org/project/supafone-labs/) and
+[npm](https://www.npmjs.com/package/supafone-labs).
 
 ## Python
 
@@ -56,8 +59,15 @@ import { Supafone } from "supafone-labs";
 
 const supafone = new Supafone({
   apiKey: process.env.SUPAFONE_LABS_API_KEY!,
+  voiceWatcher: true, // default on — provisions agents under the Voice Watcher framework
 });
 ```
+
+The `voiceWatcher` flag (Python: `voice_watcher`) is **on by default**: every
+agent the client provisions runs under Supafone's Voice Watcher framework (live
+supervision + QA + call scoring). Set it to `false` for a raw agent. The TS
+client also accepts `voice_watcher` (snake case); both SDKs keep a deprecated
+`labs` alias.
 
 CommonJS:
 
@@ -65,11 +75,20 @@ CommonJS:
 const { Supafone } = require("supafone-labs");
 ```
 
-Hosted-agent usage:
+Hosted-agent usage — since 0.4.4 a lone `sl_` key cross-fills every credential
+lane (labs, hosted-agent, and account) automatically:
 
 ```ts
 const supafone = new Supafone({
-  apiKey: process.env.SUPAFONE_LABS_API_KEY || process.env.SUPAFONE_API_KEY!,
+  apiKey: process.env.SUPAFONE_TOKEN!, // sl_live_... — one key, both APIs
+});
+```
+
+Explicit per-surface keys are still supported when you want them scoped:
+
+```ts
+const supafone = new Supafone({
+  apiKey: process.env.SUPAFONE_LABS_API_KEY!,
   supafoneApiKey: process.env.SUPAFONE_API_KEY!,
   supafoneApiBaseUrl: "https://api.supafone.ai",
 });

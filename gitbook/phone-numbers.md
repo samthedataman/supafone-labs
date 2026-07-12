@@ -1,4 +1,4 @@
-# Phone Numbers
+# ☎️ Phone Numbers
 
 Supafone-hosted agents support three Supafone-managed number strategies plus a
 BYOK carrier path.
@@ -94,4 +94,3 @@ await supafone.labs.telephony.configure({
 BYOK skips Supafone number rent but still keeps the hosted agent framework,
 stages, tools, transcripts, recordings, account sync, and Supafone Pro watcher
 attached.
-

@@ -1,4 +1,4 @@
-# Pricing and Credits
+# 💰 Pricing and Credits
 
 Labs Cloud uses a prepaid minute ledger. One Supafone minute covers hosted
 agent runtime, self-healing watcher work, managed model/TTS/STT access, logs,
@@ -99,4 +99,3 @@ Dedicated and premium numbers are paid number-month choices:
 
 Product flows should make number purchases explicit. Do not silently upgrade a
 shared-pool user to a dedicated or premium number.
-

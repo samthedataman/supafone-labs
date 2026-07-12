@@ -1,4 +1,4 @@
-# Quickstart
+# 🚀 Quickstart
 
 This page shows both Supafone Labs paths: hosted complete agents and
 bring-your-stack supervision.
@@ -10,28 +10,26 @@ pip install "supafone-labs[all]"
 npm i supafone-labs
 ```
 
-## 2. Get the Right Key
+## 2. Get a Key
 
-For Labs Cloud features:
+One `sl_` Labs key is all you need — since 0.4.4 it authenticates on **both**
+APIs ([one-key auth](api-keys-and-auth.md)): Labs Cloud
+(`api.labs.supafone.ai`) natively, and the product API (`api.supafone.ai`) via
+key introspection, as long as an app.supafone.ai account exists with the same
+email.
 
 ```bash
 curl -X POST https://api.labs.supafone.ai/v1/signup \
   -H "Content-Type: application/json" \
   -d '{"email":"you@example.com"}'
 
-export SUPAFONE_LABS_API_KEY=sl_live_...
+export SUPAFONE_TOKEN=sl_live_...   # one env var: MCP + both SDKs
 ```
 
-For hosted Supafone agents, use an `sf_live_...` key from the Supafone account
-admin flow:
-
-```bash
-export SUPAFONE_API_KEY=sf_live_...
-export SUPAFONE_API_BASE_URL=https://api.supafone.ai
-```
-
-Do not swap these keys. `sl_live_...` is for `api.labs.supafone.ai`.
-`sf_live_...` is for `api.supafone.ai/api/v1/labs`.
+That one `sl_` key is the default for everything below. For hosted-agent-only
+setups you can optionally still mint a scoped `sf_live_...` key from the Supafone
+account-admin flow and point it at `https://api.supafone.ai` — but the `sl_` key
+already covers that surface, so it is the exception, not the default.
 
 ## 3. Create a Hosted Inbound Agent
 
@@ -41,8 +39,8 @@ TypeScript:
 import { Supafone } from "supafone-labs";
 
 const supafone = new Supafone({
-  apiKey: process.env.SUPAFONE_LABS_API_KEY || process.env.SUPAFONE_API_KEY!,
-  supafoneApiKey: process.env.SUPAFONE_API_KEY!,
+  apiKey: process.env.SUPAFONE_TOKEN!, // sl_ key — cross-fills both surfaces
+  voiceWatcher: true, // default on — provisions agents under the Voice Watcher framework; set false for a raw agent
 });
 
 const agent = await supafone.labs.agents.createInboundWithNumber({
@@ -81,7 +79,7 @@ Python:
 ```python
 from supafone_labs import Supafone
 
-supafone = Supafone(api_key="sf_live_...")
+supafone = Supafone(api_key="sl_live_...", voice_watcher=True)  # one key; watcher on by default
 
 agent = supafone.labs.agents.create_inbound_with_number({
     "agentKey": "northline-intake",
@@ -143,7 +141,7 @@ curl https://api.labs.supafone.ai/v1/logs?limit=20 \
 
 ```bash
 cd supafone-labs
-SUPAFONE_API_KEY=sf_live_... \
+SUPAFONE_API_KEY=sl_live_... \
 SUPAFONE_API_BASE_URL=https://api.supafone.ai \
 npx tsx examples/smoke-hosted-agent.ts
 ```

@@ -44,9 +44,50 @@ const directive = await supafone.whisper(
 ```
 
 Feed `directive` back into your agent however your platform injects context
-(Ultravox `inject_message`, Vapi `assistant_override`, ElevenLabs
-`contextual_update`, an OpenAI Realtime `session.update`, …). When it's empty,
-the agent is doing fine — say nothing.
+(Ultravox `send_data_message`, Vapi `add-message`, ElevenLabs
+`contextual_update`, an OpenAI Realtime `conversation.item.create`, …). When
+it's empty, the agent is doing fine — say nothing. Which frameworks accept a
+silent directive, and the exact primitive for each, is in
+[Supported frameworks](#supported-frameworks) below.
+
+## Supported frameworks
+
+Silent injection feeds the live agent hidden guidance it acts on but never
+speaks. Two mechanisms cover every supported framework:
+
+- **Mode A — native silent event:** speech-to-speech models take a vendor event
+  that adds context without triggering speech.
+- **Mode B — own the LLM:** for STT→LLM→TTS pipelines, Supafone plugs in as the
+  LLM and splices a `system`/`developer` message into the prompt.
+
+**Possible — 10 frameworks**, each with a real injection door:
+
+| Framework | Mode | Exact primitive |
+| --- | :--: | --- |
+| Ultravox | A | `send_data_message` (`urgency:"later"`) — **live/proven today** |
+| OpenAI Realtime | A | `conversation.item.create` (role `system`, no `response.create`) |
+| Grok (xAI) | A | OpenAI-Realtime-compatible item inject |
+| Gemini Live | A | `clientContent` (`turnComplete:false`, role `user`) |
+| ElevenLabs | A | `contextual_update` |
+| Inworld | A | OpenAI-Realtime-compatible item inject |
+| Vapi | A+B | `add-message` (`triggerResponseEnabled:false`) or custom-LLM splice |
+| Retell | B | `system` message into the custom-LLM turn |
+| Deepgram | A+B | `UpdatePrompt`, or own the `think` LLM |
+| LiveKit | B | inject into `chat_ctx` in-process |
+
+**Impossible — Bland:** its live-call API is stop/listen/transfer only, with no
+mid-call inject channel and no custom-LLM. Observe and score it, but you cannot
+whisper to it live — a permanent vendor limitation, not a Supafone gap.
+**Cartesia** (a TTS voice) and **Pipecat** (a DIY framework you own end to end)
+are not conversational agents, so there is nothing to inject into.
+
+Injection is *possible* for all 10, but managed delivery is wired end-to-end
+**only for Ultravox today**; the other nine are supported via their native
+primitive with managed delivery rolling out / BYO. A live test against any vendor
+needs that vendor's key — free/trial tiers exist for all except OpenAI Realtime
+(paid, no free tier). Full matrix:
+[gitbook/framework-support.md](../gitbook/framework-support.md). *(The npm
+package-page copy updates on the next release.)*
 
 ## Spawn a hosted Supafone agent
 
@@ -80,6 +121,10 @@ import { Supafone } from "supafone-labs";
 const supafone = new Supafone({
   apiKey: process.env.SUPAFONE_LABS_API_KEY || process.env.SUPAFONE_API_KEY!,
   supafoneApiKey: process.env.SUPAFONE_API_KEY!,
+  // voiceWatcher is on by default (also accepts voice_watcher; deprecated: labs).
+  // Every provisioned agent runs under the Voice Watcher framework (live
+  // supervision + QA + call scoring). Set false for a raw agent.
+  voiceWatcher: true,
   // Defaults to https://api.supafone.ai. Override for staging/local tests.
   // supafoneApiBaseUrl: "http://localhost:8000",
 });
@@ -228,9 +273,9 @@ npx tsx examples/smoke-hosted-agent.ts
 ```
 
 The script discovers capabilities, presets, and voices; creates a web intake
-agent; fetches it back; verifies `provider_accounts.mode` is
-`supafone_managed`; verifies no developer provider keys are required; and prints
-the returned widget snippet.
+agent; fetches it back; verifies `runtime.telephony.mode` is `supafone_managed`
+and the runtime is managed (`runtime.managed === true`, no developer Ultravox key
+required); and prints the returned widget snippet.
 
 ## Hosted voices
 
@@ -269,6 +314,37 @@ await supafone.nudges();           // structured whisper feed
 await supafone.metrics(7);         // injection rate, latency, by-dimension
 ```
 
+### Automatic post-call analysis (`postCallAnalysis: true`)
+
+Turn on `postCallAnalysis` and every `reportCall()` that carries a transcript
+(or structured `messages`) is automatically classified against the agent's
+objective before the report is filed — generating labels: achieved/missed,
+per-criterion verdicts, failure reasons, and the blended objective value.
+
+```ts
+const supafone = new Supafone({
+  apiKey: process.env.SUPAFONE_LABS_API_KEY!,
+  postCallAnalysis: true,
+});
+
+const { analysis } = await supafone.reportCall({
+  session_id: "call-1",
+  agent: "intake",
+  transcript: "agent: Hi, how can I help?\ncaller: I want to book...\nagent: Booked for 3pm.",
+  ground_truth: { booking_requested: true, booking_verified: true },
+});
+// analysis.achieved            -> true
+// analysis.criteria            -> { intent_satisfied: true, actions_verified: true, … }
+// analysis.failure_reasons     -> []
+// analysis.objective_value     -> 0.93 (LLM score blended with ground truth)
+```
+
+The enriched report is filed server-side (feeding `optimizer.improve()` and
+`/v1/optimizer/objective/stats`); billed one oracle call per analyzed call.
+Reports without a transcript — or any analysis failure — fall back to the
+plain zero-billed report. You can also classify explicitly with
+`supafone.classifyCall({ transcript, agent })`.
+
 ## Agent builder & QA (session-scoped — call `login()` first)
 
 The builder and `qa.run` are account features, so authenticate with a console
@@ -289,13 +365,64 @@ await supafone.builder.saveConfig({ agent_prompt: "…", agent_label: "intake" }
 const qa = await supafone.qa.run({ turns: 2 });
 console.log(`+${Math.round(qa.summary.avg_lift * 100)} avg lift`);
 
+// One-call auto suite: scenarios generated from the agent's OWN objective,
+// each played as a mock call vs the real config, judged twice — pass/fail on
+// the scenario's assertion AND an SSR grade (poorly/ok/good/great/perfectly).
+const suite = await supafone.qa.suite({ count: 4, turns: 2 });
+console.log(suite.summary.ssr_histogram);   // { poorly: 0, ok: 1, good: 2, great: 1, perfectly: 0 }
+console.log(suite.summary.avg_ssr_score);   // 0.57
+
+// Or just generate scenarios from any prompt (key-scoped, no login needed).
+const { scenarios } = await supafone.qa.generate({ agentPrompt: "You are…", count: 5 });
+
 // Improve the standing directive from graded calls (OPRO-style).
 const better = await supafone.optimizer.improve("builder");
 const reports = await supafone.optimizer.reports("builder");
 ```
 
+How this compares to Hamming, Coval, Roark, Cekura, and the rest of the 2026
+voice-QA field — and the roadmap it drives — lives in the docs:
+[Testing Voice Agents (QA)](../gitbook/voice-qa-landscape.md).
+
 All errors throw `SupafoneLabsError` (with `.status` and `.body`); catch it to
 inspect gateway responses.
+
+## Campaigns & real calls (account-scoped)
+
+The outbound campaign engine behind app.supafone.ai, packaged. Authenticate
+with your account (not an API key) — pass `accountToken`, or
+`accountEmail` + `accountPassword` and the client logs in lazily (and
+re-logs-in transparently when the token expires):
+
+```ts
+const sf = new Supafone({ accountEmail: "you@company.com", accountPassword: "..." });
+
+const { agents } = await sf.listVoiceAgents();
+const { campaign } = await sf.campaigns.create({ name: "Q3 win-back", goal: "reengage", agentId: agents[0].id });
+await sf.campaigns.applyPreset(campaign.id, "win_back");          // or your custom_… preset
+await sf.campaigns.addRecipients(campaign.id, [
+  { name: "Jane Doe", phone: "+15551234567", outreach_consent: "yes" },
+]);
+await sf.campaigns.launch(campaign.id);                            // real calls + emails begin
+
+const live = await sf.campaigns.live(campaign.id);                 // in-flight calls + listen links
+await sf.placeCall({ agentId: agents[0].id, toNumber: "+15551234567" }); // ring a phone right now
+```
+
+`campaigns.live()` returns a portal link (`app.supafone.ai/app/developer`) and
+a listen link per in-flight call; poll `campaigns.getCall(id)` to follow the
+live transcript while a call is in progress.
+
+## Prefer natural language? Use the MCP server
+
+The repo ships an MCP stdio server (`services/supafone-labs/mcp/supafone_mcp.py`)
+exposing this same surface — plus hosted-agent provisioning — as tools for
+Claude Desktop / Claude Code. Configure it with `SUPAFONE_EMAIL` +
+`SUPAFONE_PASSWORD` (campaigns/calls) and/or `SUPAFONE_API_KEY` (hosted
+agents), then just ask: *"create a win-back campaign, add these leads, launch
+it, and show me the calls as they happen"* — Claude replies with developer-
+portal links to watch the calls live. Full tool reference lives in the repo's
+`gitbook/mcp-server.md`.
 
 ## Module format
 
@@ -318,8 +445,9 @@ and `const { Supafone } = require("supafone-labs")` both work, with full types.
 | `stt(audio, opts?)` | `POST /v1/stt` |
 | `liveTranscribe(opts?)` | `WS /v1/stt/live` |
 | `balance()` · `models()` · `voices()` · `usage()` | reads |
+| `reportCall(report)` · `classifyCall(input)` | `/v1/events/call_report` · `/v1/calls/classify` (auto with `postCallAnalysis: true`) |
 | `builder.chat/finish/config` | `/v1/builder/*` |
-| `qa.run/history` | `/v1/qa/*` |
+| `qa.run/generate/suite/history` | `/v1/qa/*` |
 | `optimizer.improve/standing` | `/v1/optimizer/*` |
 
 Get a key (5 free minutes, no card): <https://labs.supafone.ai/get-key.html>

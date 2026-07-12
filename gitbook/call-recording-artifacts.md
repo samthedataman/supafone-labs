@@ -1,4 +1,4 @@
-# Call Recording and Artifacts
+# 📼 Call Recording and Artifacts
 
 Call recording is an explicit agent policy. Do not silently enable it without a
 user/admin choice and an appropriate consent path.

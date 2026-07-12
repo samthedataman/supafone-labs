@@ -3,10 +3,9 @@ import { Supafone } from "../sdk-ts/src/index";
 declare const process: { env: Record<string, string | undefined> };
 
 type RuntimeShape = {
-  provider_accounts?: {
-    mode?: string;
-    requires_developer_provider_keys?: boolean;
-  };
+  managed?: boolean;
+  key_source?: string;
+  telephony?: { mode?: string; provider?: string };
 };
 
 type WidgetShape = {
@@ -84,19 +83,17 @@ const agent = await supafone.labs.agents.create({
   },
 });
 
-assert(agent.success, "Agent create did not return success=true.");
-assert(agent.agent.agent_key === agentKey, `Expected agent_key ${agentKey}, got ${String(agent.agent.agent_key)}`);
+assert(agent.agent?.agent_key === agentKey, `Expected agent_key ${agentKey}, got ${String(agent.agent?.agent_key)}`);
 
 const runtime = agent.runtime as RuntimeShape;
-assert(runtime.provider_accounts, "Missing provider_accounts in runtime response.");
+assert(runtime.telephony, "Missing telephony in runtime response.");
 assert(
-  runtime.provider_accounts.mode === "supafone_managed",
-  `Expected Supafone-managed providers, got ${String(runtime.provider_accounts.mode)}`,
+  runtime.telephony.mode === "supafone_managed",
+  `Expected Supafone-managed telephony, got ${String(runtime.telephony.mode)}`,
 );
-const providerAccounts = runtime.provider_accounts;
 assert(
-  providerAccounts.requires_developer_provider_keys === false,
-  "Expected requires_developer_provider_keys=false.",
+  runtime.managed === true,
+  "Expected a managed runtime (no developer Ultravox key required).",
 );
 
 const fetched = await supafone.labs.agents.get(agentKey, { agentType: "web" });
@@ -116,8 +113,8 @@ console.log(
       display_name: agent.agent.display_name,
       runtime_mode: agent.agent.runtime_mode,
       preset_key: agent.agent.preset_key,
-      provider_mode: providerAccounts.mode,
-      requires_developer_provider_keys: providerAccounts.requires_developer_provider_keys,
+      provider_mode: runtime.telephony?.mode,
+      managed_runtime: runtime.managed,
       widget_snippet: widget.snippet,
     },
     null,

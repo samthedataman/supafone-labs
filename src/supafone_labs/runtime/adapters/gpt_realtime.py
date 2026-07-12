@@ -12,7 +12,7 @@ class GPTRealtimeAdapter(BaseAdapter):
 
     def capabilities(self) -> ProviderCapabilities:
         return ProviderCapabilities(
-            supports_hidden_instruction_injection=False,
+            supports_hidden_instruction_injection=True,
             supports_mid_call_prompt_patch=True,
             supports_stageful_session_updates=True,
             supports_tool_call_interception=True,
@@ -165,11 +165,23 @@ class GPTRealtimeAdapter(BaseAdapter):
         state: RuntimeState,
     ) -> list[ProviderAction]:
         if decision.kind == DecisionKinds.INJECT_HIDDEN_INSTRUCTION:
+            # One-shot silent steer: append a system message as a conversation
+            # item with NO following response.create, so it lands in context for
+            # the next turn without being spoken. (session_update instructions
+            # is a durable re-steer of the whole prompt, not a per-turn whisper.)
             return [
                 ProviderAction(
                     provider=self.provider_name,
-                    kind="session_update",
-                    payload={"instructions_append": decision.payload["text"]},
+                    kind="conversation_item_create",
+                    payload={
+                        "item": {
+                            "type": "message",
+                            "role": "system",
+                            "content": [
+                                {"type": "input_text", "text": decision.payload["text"]}
+                            ],
+                        }
+                    },
                 )
             ]
         if decision.kind == DecisionKinds.FORCE_STAGE_TRANSITION:
