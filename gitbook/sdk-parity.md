@@ -1,4 +1,4 @@
-# ⚖️ SDK Parity
+# SDK Parity
 
 The Python and TypeScript SDKs should let developers do the same work with the
 same vocabulary. Use camelCase in TypeScript and snake_case in Python, but keep
@@ -86,7 +86,8 @@ agent = supafone.labs.agents.createInboundWithNumber({
 | Usage | `supafone.usage()` | `supafone.usage()` |
 | Log snapshot | `supafone.logs()` | `supafone.logs()` |
 | Log stream | `supafone.streamLogs()` | `supafone.stream_logs()` / `streamLogs()` |
-| Place a real call | `supafone.placeCall()` | `supafone.place_call()` |
+| Call a human from an owned agent | `supafone.callFromAgent()` | `supafone.call_from_agent()` |
+| Grade an existing phone agent | `supafone.tester.gradeAgent()` | `supafone.tester.grade_agent()` |
 | Fetch one call (live transcript) | `supafone.getCall()` | `supafone.get_call()` |
 | Classify a finished call | `supafone.classifyCall()` | `supafone.classify_call()` |
 | Auto post-call analysis | `postCallAnalysis: true` | `post_call_analysis=True` |

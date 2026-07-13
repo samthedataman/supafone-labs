@@ -1,7 +1,7 @@
 # SDK Installation
 
 Supafone Labs publishes a Python package and an unscoped TypeScript package.
-Current release: **0.4.8** on both
+Current release: **0.4.9** on both
 [PyPI](https://pypi.org/project/supafone-labs/) and
 [npm](https://www.npmjs.com/package/supafone-labs).
 
@@ -112,7 +112,7 @@ Python:
 from supafone_labs import Supafone
 
 sf = Supafone()  # SUPAFONE_TOKEN=sl_live_...
-started = sf.tester.call(
+started = sf.tester.grade_agent(
     to_number="+14155550100",
     scenario="price_probe",
     ai_provider="gpt_realtime",
@@ -126,7 +126,7 @@ print(finished["verdict"], finished["transcript"])
 TypeScript:
 
 ```ts
-const started = await supafone.tester.call({
+const started = await supafone.tester.gradeAgent({
   toNumber: "+14155550100",
   scenario: "price_probe",
   aiProvider: "vapi",

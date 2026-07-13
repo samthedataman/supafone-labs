@@ -4,8 +4,7 @@ One voice surface for both tiers:
 
 * **Pro** (``SUPAFONE_LABS_API_KEY`` set): synthesizes on the hosted endpoint with
   Supafone Labs' own voice keys.
-* **Free**: routes to the first BYO backend with a key — Deepgram Aura, then
-  Cartesia Sonic, then ElevenLabs, then Inworld.
+* **Free**: uses Cartesia Sonic when a Cartesia key is configured.
 * **No keys at all**: the offline ``FakeTTSProvider``, so ``synthesize`` always
   returns playable audio.
 
@@ -19,10 +18,7 @@ from typing import Any
 from supafone_labs.tiers import Tier, current_tier
 from supafone_labs.tts.base import FakeTTSProvider, TTSProvider
 from supafone_labs.tts.cartesia_tts import CartesiaTTSProvider
-from supafone_labs.tts.deepgram_tts import DeepgramTTSProvider
-from supafone_labs.tts.elevenlabs_tts import ElevenLabsTTSProvider
 from supafone_labs.tts.hosted_tts import HostedTTSProvider
-from supafone_labs.tts.inworld_tts import InworldTTSProvider
 
 
 class SupafoneLabsTTS:
@@ -43,14 +39,9 @@ class SupafoneLabsTTS:
             chain: list[TTSProvider] = []
             if current_tier() is Tier.PRO:
                 chain.append(HostedTTSProvider(voice=voice, client=client))
-            for backend in (
-                DeepgramTTSProvider(client=client),
-                CartesiaTTSProvider(client=client),
-                ElevenLabsTTSProvider(client=client),
-                InworldTTSProvider(client=client),
-            ):
-                if backend.enabled:
-                    chain.append(backend)
+            cartesia = CartesiaTTSProvider(voice=voice, client=client)
+            if cartesia.enabled:
+                chain.append(cartesia)
             chain.append(FakeTTSProvider())
             self._backends = chain
 

@@ -44,7 +44,7 @@ def get_tts_provider(name: str | None = None, **kwargs: Any) -> TTSProvider:
 
 
 def get_default_tts_provider() -> TTSProvider:
-    """Auto-resolved default: hosted (pro) -> BYO keys -> offline fake."""
+    """Auto-resolved default: managed Cartesia -> BYO Cartesia -> offline fake."""
     return get_tts_provider()
 
 

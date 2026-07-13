@@ -1,6 +1,6 @@
 {
   "name": "supafone-labs",
-  "version": "0.4.8",
+  "version": "0.4.9",
   "description": "The Supafone agent framework: create hosted voice/web/campaign agents with managed numbers, stages, tools, artifacts, and Supafone Pro watcher built in.",
   "type": "module",
   "main": "./dist/cjs/index.js",

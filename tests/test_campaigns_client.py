@@ -65,17 +65,17 @@ def test_campaign_crud_routes():
     assert calls[8][2] == {"preset_id": "win_back"}
 
 
-def test_place_call_and_agent_listing_routes():
+def test_call_from_agent_and_agent_listing_routes():
     calls = []
     sf = _client_with_transport(calls, {"success": True, "agents": []})
-    sf.place_call(agent_id="agent-1", to_number="+15551234567")
+    sf.call_from_agent(agent_id="agent-1", to_number="+15551234567")
     sf.list_voice_agents()
     assert calls == [
         ("POST", "/api/v1/phone/test-call", {"agent_id": "agent-1", "to_number": "+15551234567"}),
         ("GET", "/api/v1/agents", None),
     ]
     with pytest.raises(SupafoneError):
-        sf.place_call(agent_id="agent-1")  # missing number
+        sf.call_from_agent(agent_id="agent-1")  # missing number
 
 
 def test_live_builds_listen_and_portal_links():

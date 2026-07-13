@@ -261,7 +261,7 @@ class Supafone:
             detail = parsed.get("detail") if isinstance(parsed, dict) else parsed
             raise SupafoneError(str(detail or exc.reason), status=exc.code, body=parsed) from exc
 
-    def place_call(
+    def call_from_agent(
         self,
         *,
         agent_id: Optional[str] = None,
@@ -269,8 +269,11 @@ class Supafone:
         to_number: Optional[str] = None,
         toNumber: Optional[str] = None,
     ) -> Any:
-        """Place a REAL outbound phone call: dials to_number from the account's
-        calling provider and bridges the voice agent onto the line."""
+        """Call a person from an owned custom agent through the product API.
+
+        This is distinct from ``tester.grade_agent()``, where Supafone's
+        synthetic caller dials an existing agent and grades its behavior.
+        """
         agent = agent_id or agentId
         number = to_number or toNumber
         if not agent:
@@ -281,8 +284,10 @@ class Supafone:
             "POST", "/api/v1/phone/test-call", {"agent_id": agent, "to_number": number}
         )
 
-    # camelCase alias
-    placeCall = place_call
+    # Explicit names are canonical; the older ambiguous name remains compatible.
+    callFromAgent = call_from_agent
+    place_call = call_from_agent
+    placeCall = call_from_agent
 
     def list_voice_agents(self) -> Any:
         """The account's voice agents — pick an agent id for campaigns/calls."""
@@ -592,7 +597,7 @@ class QANamespace:
 
 
 class TesterNamespace:
-    """Real, provider-neutral phone testing against any authorized E.164 agent."""
+    """Grade existing phone agents with Supafone's synthetic caller."""
 
     _TERMINAL = {
         "done", "completed", "failed", "busy", "no_answer", "no-answer",
@@ -606,7 +611,7 @@ class TesterNamespace:
         """Return managed grader readiness and supported scenarios."""
         return self._client._request_labs_api("GET", "/v1/tester/capabilities")
 
-    def call(
+    def grade_agent(
         self,
         *,
         to_number: str,
@@ -616,7 +621,7 @@ class TesterNamespace:
         telephony_provider: str = "unknown",
         authorized: bool = False,
     ) -> dict[str, Any]:
-        """Start a real synthetic call to an agent you own or may test.
+        """Have the synthetic tester call and grade an existing phone agent.
 
         ``ai_provider`` and ``telephony_provider`` are target metadata only.
         Supafone's managed PSTN leg is independent of both.
@@ -637,6 +642,9 @@ class TesterNamespace:
                 "authorized": True,
             },
         )
+
+    gradeAgent = grade_agent
+    call = grade_agent
 
     def session(self, session_id: str) -> dict[str, Any]:
         """Read live carrier state, transcript, and verdict for one test."""

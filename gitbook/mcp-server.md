@@ -31,7 +31,7 @@ The older, explicit per-surface variables still work and take precedence when
 set:
 
 ```bash
-export SUPAFONE_API_KEY=sf_live_...       # hosted-agent provisioning
+export SUPAFONE_API_KEY=sl_live_...       # your one sl_ key (or a scoped sf_ hosted-agent key)
 export SUPAFONE_LABS_API_KEY=sl_live_...  # Labs Cloud logs/usage
 export SUPAFONE_API_BASE_URL=https://api.supafone.ai
 export SUPAFONE_LABS_API_BASE_URL=https://api.labs.supafone.ai
@@ -81,25 +81,25 @@ Restart Claude Desktop after saving the config.
 | `list_logs` | Read recent Labs Cloud logs from `/v1/logs`. |
 | `tail_logs` | Poll Labs Cloud logs for a bounded live-looking stream. |
 | `poll_logs` | Alias for `tail_logs`. |
-+| `get_tester_capabilities` | Check managed phone-grader readiness and scenarios. |
-| `test_phone_agent` | Place a real synthetic call to any authorized E.164 voice agent, independent of target runtime/carrier. |
-| `get_phone_test` | Read carrier state, transcript, and verdict for a tester session. |
-| `wait_for_phone_test` | Poll a tester session to a bounded terminal result. |
+| `get_call_modes` | Explain both call directions and check managed phone-grader readiness. |
+| `grade_existing_phone_agent` | Synthetic tester → existing agent. Provider-neutral across target runtime/carrier. |
+| `get_agent_grade` | Read carrier state, transcript, and verdict for an agent-grading session. |
+| `wait_for_agent_grade` | Poll an agent-grading session to a bounded terminal result. |
 | `generate_qa_scenarios` | Generate adversarial scenarios from an agent prompt. |
 | `list_qa_runs` | Read prior QA and Watcher benchmark results. |
 | `run_watcher_qa` | Run every scenario with and without Watcher supervision (Labs login required). |
 
 #### Test any voice stack
 
-`test_phone_agent` uses PSTN as the provider-neutral boundary. The target may
+`grade_existing_phone_agent` uses PSTN as the provider-neutral boundary. The target may
 run Vapi, Retell, Bland, OpenAI Realtime, Grok, LiveKit, a custom runtime, or
 another framework, and its carrier may be Twilio, Telnyx, SignalWire, SIP, or
 another provider. These names are recorded as metadata; Supafone does not need
 to host either side of the target stack.
 
 The tool places a real call and spends tester credits. It rejects the request
-unless `authorized` is exactly `true`. Use `get_phone_test` for one status read
-or `wait_for_phone_test` for bounded polling to the final transcript and
+unless `authorized` is exactly `true`. Use `get_agent_grade` for one status read
+or `wait_for_agent_grade` for bounded polling to the final transcript and
 verdict.
 
 `run_watcher_qa` is a different lane: it runs synthetic A/B conversations
@@ -110,7 +110,7 @@ the saved Builder configuration is session-scoped.
 
 | Tool | Purpose |
 | --- | --- |
-| `place_call` | **Places a real outbound phone call**: dials a number and bridges your voice agent onto the line. |
+| `call_from_owned_agent` | **Owned agent → human**: places a real outbound call and requires `confirmRealCall:true`. |
 | `list_voice_agents` | List the account's voice agents to pick an `agentId` for calls and campaigns. |
 | `list_campaigns` | List outbound campaigns with live stats. |
 | `create_campaign` | Create a draft campaign (`goal`: book / qualify / follow_up / reengage). |
@@ -118,7 +118,7 @@ the saved Builder configuration is session-scoped.
 | `update_campaign` | Update name/goal/agent/email copy/cadence/settings (settings merge server-side). |
 | `add_campaign_recipients` | Add consented leads (`{name, phone, email, outreach_consent:"yes"}`). |
 | `list_campaign_recipients` | List recipients with their cadence state. |
-| `launch_campaign` | **Starts real calls/emails** on the cadence immediately. |
+| `launch_campaign` | **Starts real calls/emails** and requires `confirmLaunch:true`. |
 | `pause_campaign` | Pause an active campaign. |
 | `list_campaign_presets` | Built-in playbooks plus the account's saved custom presets. |
 | `apply_campaign_preset` | Materialize a preset (goal, questions, scripts, signing doc) in one write. |
@@ -131,7 +131,7 @@ the saved Builder configuration is session-scoped.
 | Tool | Purpose |
 | --- | --- |
 | `generate_campaign_config` | Draft a full campaign YAML from a plain-English description. |
-| `apply_campaign_config` | Validate, then apply a YAML/JSON campaign config (inline or `filePath`) — creates or updates the campaign, recipients, branding, and intake form in one write. |
+| `apply_campaign_config` | Validate, then apply a YAML/JSON campaign config. `launch:true` also requires `confirmLaunch:true`. |
 | `export_campaign_config` | Round-trip an existing campaign back out as YAML. |
 
 Campaign configs support `branding:` (`{url}` to scan on apply, and/or explicit
@@ -179,7 +179,7 @@ the cadence within seconds.
 > *"Place a call from my sales agent to my cell, +1 555 000 1111 — I want to
 > hear how it sounds."*
 
-`place_call` rings your phone and bridges the voice agent onto the line. The
+`call_from_owned_agent` rings your phone and bridges the voice agent onto the line. The
 fastest possible demo of your own agent.
 
 ### "Who's on the phone right now? Let me listen"

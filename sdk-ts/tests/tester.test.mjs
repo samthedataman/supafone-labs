@@ -20,14 +20,14 @@ function mockFetch(responses, log) {
   };
 }
 
-test("tester.call starts a provider-neutral authorized PSTN test", async (t) => {
+test("tester.gradeAgent starts a provider-neutral authorized PSTN test", async (t) => {
   const log = [];
   t.mock.method(globalThis, "fetch", mockFetch([
     { body: { session_id: "ts_123", status: "dialing", mode: "phone_grader" } },
   ], log));
 
   const sf = new Supafone({ apiKey: "sl_test" });
-  const result = await sf.tester.call({
+  const result = await sf.tester.gradeAgent({
     toNumber: "+14155550100",
     scenario: "language_switch",
     agentLabel: "grok-agent",
@@ -49,14 +49,14 @@ test("tester.call starts a provider-neutral authorized PSTN test", async (t) => 
   });
 });
 
-test("tester.call rejects missing permission and non-E.164 targets", () => {
+test("tester.gradeAgent rejects missing permission and non-E.164 targets", () => {
   const sf = new Supafone({ apiKey: "sl_test" });
   assert.throws(
-    () => sf.tester.call({ toNumber: "+14155550100", authorized: false }),
+    () => sf.tester.gradeAgent({ toNumber: "+14155550100", authorized: false }),
     SupafoneLabsError,
   );
   assert.throws(
-    () => sf.tester.call({ toNumber: "415-555-0100", authorized: true }),
+    () => sf.tester.gradeAgent({ toNumber: "415-555-0100", authorized: true }),
     SupafoneLabsError,
   );
 });

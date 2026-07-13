@@ -4,6 +4,23 @@ All notable changes to this project are documented here. The format is based on
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project adheres to
 [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.4.9] - 2026-07-12
+
+### Added
+- Explicit SDK and MCP lanes for synthetic tester → existing agent
+  (`grade_agent`/`gradeAgent`) versus owned agent → human
+  (`call_from_agent`/`callFromAgent`).
+- MCP confirmation guards for real calls, campaign launches, deletions, and
+  phone-number release operations, plus one-key product authentication on every
+  product MCP tool.
+
+### Changed
+- Default TTS now uses Cartesia Sonic 3 with a stable UUID voice. ElevenLabs,
+  Deepgram, and Inworld remain explicit BYOK choices.
+
+### Fixed
+- Prevented ElevenLabs or other non-UUID voice IDs from reaching Cartesia.
+
 ## [0.4.8] - 2026-07-12
 
 ### Added

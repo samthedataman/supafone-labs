@@ -47,7 +47,7 @@ from supafone_labs.tts import (
 )
 from supafone_labs.types import BeliefState, Directive, DirectiveKind, directive_to_decision
 
-__version__ = "0.4.8"
+__version__ = "0.4.9"
 
 __all__ = [
     # facade

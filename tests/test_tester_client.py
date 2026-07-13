@@ -16,11 +16,11 @@ def _client(calls, response=None):
     return supafone
 
 
-def test_tester_call_preserves_target_provider_metadata():
+def test_tester_grade_agent_preserves_target_provider_metadata():
     calls = []
     supafone = _client(calls, {"session_id": "ts_123", "status": "dialing"})
 
-    result = supafone.tester.call(
+    result = supafone.tester.grade_agent(
         to_number="+14155550100",
         scenario="language_switch",
         agent_label="grok-agent",
@@ -43,10 +43,10 @@ def test_tester_call_preserves_target_provider_metadata():
 
 
 @pytest.mark.parametrize("authorized,number", [(False, "+14155550100"), (True, "415-555-0100")])
-def test_tester_call_requires_permission_and_e164(authorized, number):
+def test_tester_grade_agent_requires_permission_and_e164(authorized, number):
     supafone = _client([])
     with pytest.raises(ValueError):
-        supafone.tester.call(to_number=number, authorized=authorized)
+        supafone.tester.grade_agent(to_number=number, authorized=authorized)
 
 
 def test_tester_wait_returns_terminal_session_without_vendor_assumptions():

@@ -60,7 +60,7 @@ Creates a hosted inbound voice agent through the Python SDK:
   "assistantName": "Maya",
   "websiteUrl": "https://northline.example",
   "labs": { "enabled": true, "model": "gemma" },
-  "voice": { "provider": "cartesia", "voiceId": "sonic-warm" }
+  "voice": { "provider": "cartesia", "voiceId": "db6b0ed5-d5d3-463d-ae85-518a07d3c2b4" }
 }
 ```
 
@@ -108,14 +108,17 @@ so this intentionally polls instead of keeping an infinite stream open:
 }
 ```
 
-### Universal tester and Watcher QA
+### Two explicit call directions
 
-- `get_tester_capabilities` checks whether the managed phone grader is ready.
-- `test_phone_agent` places a **real** synthetic call to any authorized E.164
+- `get_call_modes` explains both call directions and checks grader readiness.
+- `grade_existing_phone_agent` places a **real** synthetic call to any authorized E.164
   agent, independent of its AI runtime or phone carrier. It requires
   `authorized: true` and spends tester credits.
-- `get_phone_test` reads one live transcript/status snapshot.
-- `wait_for_phone_test` polls to a bounded final transcript and verdict.
+- `get_agent_grade` reads one live transcript/status snapshot.
+- `wait_for_agent_grade` polls to a bounded final transcript and verdict.
+- `call_from_owned_agent` makes the opposite call: one of your custom Supafone
+  agents calls a human. It requires `confirmRealCall: true` and uses the same
+  linked `sl_` key against the product API.
 - `generate_qa_scenarios` creates adversarial cases from an agent prompt.
 - `list_qa_runs` reads prior QA/Watcher results.
 - `run_watcher_qa` runs the saved Builder agent with and without Watcher
@@ -125,6 +128,18 @@ so this intentionally polls instead of keeping an infinite stream open:
 The phone tester records `aiProvider` and `telephonyProvider` as target
 metadata. PSTN is the neutral boundary, so the target can run Vapi, OpenAI
 Realtime, Grok, Retell, Bland, LiveKit, Twilio, Telnyx, SIP, or another stack.
+
+The old `test_phone_agent`, `get_phone_test`, `wait_for_phone_test`, and
+`place_call` names remain callable for compatibility but are intentionally not
+advertised, because their caller and target roles were ambiguous.
+
+### Safety confirmations
+
+MCP will not infer consent for irreversible or credit-burning operations. Real
+agent calls require `confirmRealCall: true`; campaign launches require
+`confirmLaunch: true`; agent/recording deletion requires `confirmDelete: true`;
+and number detach/release/delete operations require `confirmRelease: true`.
+`apply_campaign_config` requires `confirmLaunch: true` only when `launch: true`.
 
 ## BYOK Provider Config
 

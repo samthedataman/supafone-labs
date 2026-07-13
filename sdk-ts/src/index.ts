@@ -1044,6 +1044,25 @@ export interface TesterSession {
 }
 
 export interface TesterCapabilities {
+  call_modes: {
+    grade_existing_agent: {
+      caller: "supafone_synthetic_tester";
+      target: "authorized_agent_phone_number";
+      api_host: "https://api.labs.supafone.ai";
+      endpoint: "/v1/tester/call";
+      requires_product_account: false;
+      custom_agent: false;
+    };
+    call_from_owned_agent: {
+      caller: "owned_supafone_agent";
+      target: "human_phone_number";
+      api_host: "https://api.supafone.ai";
+      endpoint: "/api/v1/phone/test-call";
+      requires_product_account: true;
+      same_labs_key_supported: true;
+      custom_agent: true;
+    };
+  };
   phone_grader: {
     available: boolean;
     target_channel: "pstn";
@@ -1301,13 +1320,18 @@ export class SupafoneLabs {
    * PLACE A REAL OUTBOUND PHONE CALL: dials toNumber from the account's
    * calling provider and bridges the voice agent onto the line.
    */
-  async placeCall(opts: { agentId: string; toNumber: string }): Promise<PlaceCallResult> {
+  async callFromAgent(opts: { agentId: string; toNumber: string }): Promise<PlaceCallResult> {
     if (!opts?.agentId) throw new SupafoneLabsError("agentId is required (see listVoiceAgents())");
     if (!opts?.toNumber) throw new SupafoneLabsError("toNumber is required (E.164, e.g. +15551234567)");
     return this.requestAccountApi<PlaceCallResult>("POST", "/api/v1/phone/test-call", {
       agent_id: opts.agentId,
       to_number: opts.toNumber,
     });
+  }
+
+  /** @deprecated Prefer callFromAgent(), which makes the caller and target roles explicit. */
+  async placeCall(opts: { agentId: string; toNumber: string }): Promise<PlaceCallResult> {
+    return this.callFromAgent(opts);
   }
 
   /** The account's voice agents — pick an agent id for campaigns/calls. */
@@ -2193,7 +2217,7 @@ class LabsToolsNamespace {
 class LabsVoicesNamespace {
   constructor(private sm: SupafoneLabs) {}
 
-  /** Supafone-managed Ultravox, Cartesia, Inworld, and ElevenLabs-compatible voices. */
+  /** Supafone-managed Cartesia voices. Other TTS engines remain explicit BYOK choices. */
   list(opts: LabsVoiceListOptions = {}): Promise<LabsVoiceListResponse> {
     const q = new URLSearchParams();
     if (opts.provider) q.set("provider", opts.provider);
@@ -2436,11 +2460,11 @@ class TesterNamespace {
   }
 
   /**
-   * Dial any authorized voice agent over PSTN and start a synthetic caller.
+   * Have Supafone's synthetic tester call and grade an existing phone agent.
    * The target AI and telephony providers are metadata; neither is required
    * to be hosted by Supafone.
    */
-  call(input: TesterCallInput): Promise<TesterCallStart> {
+  gradeAgent(input: TesterCallInput): Promise<TesterCallStart> {
     if (!input?.authorized) {
       throw new SupafoneLabsError("authorized must be true — only test agents you own or are permitted to call");
     }
@@ -2455,6 +2479,11 @@ class TesterNamespace {
       telephony_provider: input.telephonyProvider ?? "unknown",
       authorized: true,
     });
+  }
+
+  /** @deprecated Prefer gradeAgent(), which makes the caller and target roles explicit. */
+  call(input: TesterCallInput): Promise<TesterCallStart> {
+    return this.gradeAgent(input);
   }
 
   /** Read live transcript, carrier state, and final verdict for one tester call. */

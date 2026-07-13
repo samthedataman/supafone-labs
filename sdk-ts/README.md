@@ -355,7 +355,7 @@ while `aiProvider` and `telephonyProvider` are recorded as metadata.
 const readiness = await supafone.tester.capabilities();
 if (!readiness.phone_grader.available) throw new Error("Phone grader unavailable");
 
-const started = await supafone.tester.call({
+const started = await supafone.tester.gradeAgent({
   toNumber: "+14155550100",
   scenario: "language_switch",
   aiProvider: "grok",
@@ -367,7 +367,7 @@ const finished = await supafone.tester.wait(started.session_id);
 console.log(finished.transcript, finished.verdict);
 ```
 
-`tester.call` places a real call and spends tester credits. It rejects missing
+`tester.gradeAgent` places a real call and spends tester credits. It rejects missing
 permission and non-E.164 numbers before sending a request.
 
 ## Agent builder & QA (session-scoped — call `login()` first)
@@ -431,7 +431,7 @@ await sf.campaigns.addRecipients(campaign.id, [
 await sf.campaigns.launch(campaign.id);                            // real calls + emails begin
 
 const live = await sf.campaigns.live(campaign.id);                 // in-flight calls + listen links
-await sf.placeCall({ agentId: agents[0].id, toNumber: "+15551234567" }); // ring a phone right now
+await sf.callFromAgent({ agentId: agents[0].id, toNumber: "+15551234567" }); // ring a phone right now
 ```
 
 `campaigns.live()` returns a portal link (`app.supafone.ai/app/developer`) and

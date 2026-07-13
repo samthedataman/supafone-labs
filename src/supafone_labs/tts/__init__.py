@@ -1,8 +1,8 @@
 """supafone_labs.tts — Supafone Labs' own text-to-speech layer.
 
-``SupafoneLabsTTS`` is the default voice: hosted on the pro tier, BYO-key
-(Deepgram Aura / Cartesia Sonic / ElevenLabs) on the free tier, offline fake
-with no keys at all.
+``SupafoneLabsTTS`` is the default voice: managed Cartesia on the pro tier,
+BYO Cartesia on the free tier, and an offline fake with no key. Other engines
+remain available only when selected explicitly.
 """
 from supafone_labs.tts.base import FakeTTSProvider, TTSProvider
 from supafone_labs.tts.cartesia_tts import CartesiaTTSProvider

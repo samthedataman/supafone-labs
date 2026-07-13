@@ -297,7 +297,7 @@ when the token expires — a long Claude session never goes stale.
   (built-in playbooks or your saved custom presets), `add_campaign_recipients`
   (consented leads), `launch_campaign` / `pause_campaign`, `update_campaign`
   (scripts, cadence, settings — including the e-sign document config).
-- **Real phone calls** — `place_call` dials any number from your calling
+- **Real phone calls** — `call_from_owned_agent` dials any number from your calling
   provider and bridges your voice agent onto the line. `list_voice_agents`
   picks the agent.
 - **Live monitoring** — `monitor_campaign` returns the live funnel, the calls
@@ -311,7 +311,7 @@ when the token expires — a long Claude session never goes stale.
 
 Full tool reference: [`gitbook/mcp-server.md`](gitbook/mcp-server.md). The same
 campaign surface is available in code via `supafone_labs` (PyPI) and
-`supafone-labs` (npm) — `client.campaigns.*` + `placeCall()`.
+`supafone-labs` (npm) — `client.campaigns.*` + `callFromAgent()`.
 
 ## How it works
 
@@ -341,7 +341,7 @@ minute; every request itemized.
 | `POST /v1/signup` | Self-serve key — 5 free minutes, no card |
 | `POST /v1/oracle/complete` | Hosted LLM completion (Claude / GPT / Grok, prefix-routed) |
 | `GET  /v1/models` | Live model catalog, fetched hourly from vendors — **never stale** |
-| `POST /v1/tts` | Hosted TTS: Deepgram Aura, Cartesia, ElevenLabs, Inworld |
+| `POST /v1/tts` | Managed Cartesia TTS by default; other engines are explicit BYOK choices |
 | `GET  /v1/voices` | The hosted voice catalog |
 | `POST /v1/stt` | Prerecorded transcription (nova-3, 10-language code-switching) |
 | `WS   /v1/stt/live` | Live streaming STT — the multilingual tap, zero Deepgram account |

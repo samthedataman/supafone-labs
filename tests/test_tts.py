@@ -19,6 +19,7 @@ from supafone_labs.tts import (
     available_tts_backends,
     get_tts_provider,
 )
+from supafone_labs.tts.cartesia_tts import CARTESIA_VERSION, DEFAULT_MODEL, DEFAULT_VOICE
 from supafone_labs.types import Directive
 
 ALL_KEYS = (
@@ -103,10 +104,17 @@ def test_available_backends_by_keys(clean_env):
     assert available_tts_backends()[0] == "hosted"
 
 
-def test_supafone_labs_tts_free_tier_prefers_byo_deepgram(clean_env):
+def test_supafone_labs_tts_free_tier_uses_cartesia_not_other_byo_keys(clean_env):
     clean_env.setenv("DEEPGRAM_API_KEY", "dg")
+    clean_env.setenv("ELEVENLABS_API_KEY", "el")
+    clean_env.setenv("CARTESIA_API_KEY", "ca")
     tts = SupafoneLabsTTS()
-    assert isinstance(tts.active_backend, DeepgramTTSProvider)
+    assert isinstance(tts.active_backend, CartesiaTTSProvider)
+
+
+def test_supafone_labs_tts_does_not_auto_select_elevenlabs(clean_env):
+    clean_env.setenv("ELEVENLABS_API_KEY", "el")
+    assert isinstance(SupafoneLabsTTS().active_backend, FakeTTSProvider)
 
 
 def test_supafone_labs_tts_pro_tier_prefers_hosted(clean_env):
@@ -153,13 +161,22 @@ async def test_deepgram_tts_request_shape(clean_env):
 
 async def test_cartesia_tts_request_shape(clean_env):
     client = _MockClient(b"WAV")
-    provider = CartesiaTTSProvider(api_key="ca_key", voice="v-123", client=client)
+    provider = CartesiaTTSProvider(api_key="ca_key", voice=DEFAULT_VOICE, client=client)
     await provider.synthesize("hola")
     call = client.calls[0]
     assert call["url"] == "https://api.cartesia.ai/tts/bytes"
-    assert call["headers"]["X-API-Key"] == "ca_key"
+    assert call["headers"]["Authorization"] == "Bearer ca_key"
+    assert call["headers"]["Cartesia-Version"] == CARTESIA_VERSION
+    assert call["json"]["model_id"] == DEFAULT_MODEL
     assert call["json"]["transcript"] == "hola"
-    assert call["json"]["voice"] == {"mode": "id", "id": "v-123"}
+    assert call["json"]["voice"] == {"id": DEFAULT_VOICE}
+
+
+async def test_cartesia_never_receives_an_elevenlabs_voice_id(clean_env):
+    client = _MockClient(b"WAV")
+    provider = CartesiaTTSProvider(api_key="ca_key", client=client)
+    await provider.synthesize("hello", voice="21m00Tcm4TlvDq8ikWAM")
+    assert client.calls[0]["json"]["voice"] == {"id": DEFAULT_VOICE}
 
 
 async def test_elevenlabs_tts_request_shape(clean_env):

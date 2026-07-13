@@ -10,6 +10,7 @@ from __future__ import annotations
 import json
 import os
 import base64
+import re
 import sys
 import time
 from pathlib import Path
@@ -31,7 +32,7 @@ except Exception:  # pragma: no cover - exercised only when SDK import is broken
 
 
 SERVER_NAME = "supafone-labs-mcp"
-SERVER_VERSION = "0.3.0"
+SERVER_VERSION = "0.4.9"
 DEFAULT_PROTOCOL_VERSION = "2024-11-05"
 DEFAULT_HOSTED_API_BASE = "https://api.supafone.ai"
 DEFAULT_LABS_API_BASE = "https://api.labs.supafone.ai"
@@ -57,6 +58,11 @@ AUTH_ARG_KEYS = {
     "access_token",
     "email",
     "password",
+    # MCP safety controls are never forwarded into product/SDK payloads.
+    "confirmDelete",
+    "confirmRelease",
+    "confirmRealCall",
+    "confirmLaunch",
 }
 
 
@@ -121,6 +127,24 @@ def _safe_float(value: Any, *, default: float, minimum: float, maximum: float) -
     except (TypeError, ValueError):
         parsed = default
     return max(minimum, min(maximum, parsed))
+
+
+def _require_e164(value: Any, *, field: str = "toNumber") -> str:
+    number = str(value or "").strip()
+    if not re.fullmatch(r"\+[1-9]\d{7,14}", number):
+        raise ToolError(f"{field} must be E.164, for example +14155550100")
+    return number
+
+
+def _require_confirmation(arguments: Mapping[str, Any], key: str, action: str) -> None:
+    if arguments.get(key) is not True:
+        raise ToolError(f"{key}=true is required before {action}")
+
+
+def _with_call_mode(value: Any, call_mode: str) -> dict[str, Any]:
+    if isinstance(value, Mapping):
+        return {"call_mode": call_mode, **dict(value)}
+    return {"call_mode": call_mode, "result": value}
 
 
 def _log_key(log: Mapping[str, Any]) -> str:
@@ -242,9 +266,14 @@ def _phone_number_lifecycle_schema() -> dict[str, Any]:
             "agency_id": {"type": "string"},
             "reason": {"type": "string"},
             "metadata": {"type": "object", "additionalProperties": True},
+            "confirmRelease": {
+                "type": "boolean",
+                "description": "Must be true before detaching, releasing, or deleting a number.",
+            },
             "apiKey": {"type": "string", "description": "Optional hosted API key override."},
             "supafoneApiBaseUrl": {"type": "string", "description": "Optional hosted API base URL."},
         },
+        "required": ["confirmRelease"],
         "additionalProperties": True,
     }
 
@@ -291,6 +320,14 @@ def _artifact_list_schema() -> dict[str, Any]:
 # ---------------------------------------------------------------------------
 
 _MAIN_AUTH_PROPS: dict[str, Any] = {
+    "apiKey": {
+        "type": "string",
+        "description": "Linked sl_ Supafone key. The same key works on Labs and product APIs.",
+    },
+    "labsApiKey": {
+        "type": "string",
+        "description": "Alias of apiKey for linked one-key authentication.",
+    },
     "token": {
         "type": "string",
         "description": "Supafone account JWT or sl_ Labs API key (one key works on both APIs). Prefer SUPAFONE_TOKEN env.",
@@ -308,6 +345,59 @@ _MAIN_AUTH_PROPS: dict[str, Any] = {
         "description": "Optional API base URL override (default https://api.supafone.ai).",
     },
 }
+
+
+def _grade_agent_schema() -> dict[str, Any]:
+    return {
+        "type": "object",
+        "properties": {
+            "toNumber": {
+                "type": "string",
+                "description": "Phone number of an existing agent to grade, in E.164 format.",
+            },
+            "to_number": {"type": "string"},
+            "scenario": {
+                "type": "string",
+                "enum": ["price_probe", "false_booking", "language_switch", "distressed"],
+            },
+            "agentLabel": {"type": "string"},
+            "agent_label": {"type": "string"},
+            "aiProvider": {"type": "string", "description": "Target agent runtime metadata."},
+            "ai_provider": {"type": "string"},
+            "telephonyProvider": {"type": "string", "description": "Target agent carrier metadata."},
+            "telephony_provider": {"type": "string"},
+            "authorized": {
+                "type": "boolean",
+                "description": "Must be true: the target is an agent the caller may test.",
+            },
+            "apiKey": {"type": "string"},
+            "labsApiBaseUrl": {"type": "string"},
+        },
+        "required": ["authorized"],
+        "additionalProperties": True,
+    }
+
+
+def _call_from_agent_schema() -> dict[str, Any]:
+    return _main_schema(
+        {
+            "agentId": {
+                "type": "string",
+                "description": "Owned custom agent that will speak on the call.",
+            },
+            "agent_id": {"type": "string"},
+            "toNumber": {
+                "type": "string",
+                "description": "Human destination in E.164 format.",
+            },
+            "to_number": {"type": "string"},
+            "confirmRealCall": {
+                "type": "boolean",
+                "description": "Must be true after the user confirms this real, credit-burning call.",
+            },
+        },
+        ["confirmRealCall"],
+    )
 
 
 def _main_schema(properties: dict[str, Any], required: list[str] | None = None) -> dict[str, Any]:
@@ -355,7 +445,7 @@ TOOLS: list[dict[str, Any]] = [
     },
     {
         "name": "delete_agent",
-        "description": "Delete a hosted Supafone agent. Optionally release assigned numbers.",
+        "description": "Delete a hosted Supafone agent. Requires confirmDelete=true.",
         "inputSchema": {
             "type": "object",
             "properties": {
@@ -363,9 +453,14 @@ TOOLS: list[dict[str, Any]] = [
                 "agent_key": {"type": "string"},
                 "releaseNumbers": {"type": "boolean"},
                 "release_numbers": {"type": "boolean"},
+                "confirmDelete": {
+                    "type": "boolean",
+                    "description": "Must be true after the user confirms permanent deletion.",
+                },
                 "apiKey": {"type": "string"},
                 "supafoneApiBaseUrl": {"type": "string"},
             },
+            "required": ["confirmDelete"],
             "additionalProperties": True,
         },
     },
@@ -388,8 +483,8 @@ TOOLS: list[dict[str, Any]] = [
         },
     },
     {
-        "name": "get_tester_capabilities",
-        "description": "Check whether the managed provider-neutral phone grader is ready and list its scenarios.",
+        "name": "get_call_modes",
+        "description": "Explain the two call directions and report provider-neutral grader readiness.",
         "inputSchema": {
             "type": "object",
             "properties": {
@@ -400,42 +495,18 @@ TOOLS: list[dict[str, Any]] = [
         },
     },
     {
-        "name": "test_phone_agent",
+        "name": "grade_existing_phone_agent",
         "description": (
-            "PLACE A REAL TEST CALL to any authorized E.164 voice-agent number. The synthetic "
+            "SYNTHETIC TESTER -> EXISTING AGENT: call and grade any authorized E.164 voice-agent. The synthetic "
             "caller works across Vapi, Retell, Bland, OpenAI Realtime, Grok, LiveKit, custom "
             "runtimes, Twilio, Telnyx, SIP, and other target stacks because PSTN is the boundary. "
             "Burns tester credits and requires authorized=true."
         ),
-        "inputSchema": {
-            "type": "object",
-            "properties": {
-                "toNumber": {"type": "string", "description": "Authorized target in E.164, e.g. +14155550100."},
-                "to_number": {"type": "string"},
-                "scenario": {
-                    "type": "string",
-                    "enum": ["price_probe", "false_booking", "language_switch", "distressed"],
-                },
-                "agentLabel": {"type": "string"},
-                "agent_label": {"type": "string"},
-                "aiProvider": {"type": "string", "description": "Target runtime metadata."},
-                "ai_provider": {"type": "string"},
-                "telephonyProvider": {"type": "string", "description": "Target carrier metadata."},
-                "telephony_provider": {"type": "string"},
-                "authorized": {
-                    "type": "boolean",
-                    "description": "Must be true: caller owns or has permission to test the target.",
-                },
-                "apiKey": {"type": "string"},
-                "labsApiBaseUrl": {"type": "string"},
-            },
-            "required": ["authorized"],
-            "additionalProperties": True,
-        },
+        "inputSchema": _grade_agent_schema(),
     },
     {
-        "name": "get_phone_test",
-        "description": "Read carrier state, live transcript, and verdict for a provider-neutral phone-test session.",
+        "name": "get_agent_grade",
+        "description": "Read carrier state, live transcript, and verdict for an agent-grading session.",
         "inputSchema": {
             "type": "object",
             "properties": {
@@ -448,8 +519,8 @@ TOOLS: list[dict[str, Any]] = [
         },
     },
     {
-        "name": "wait_for_phone_test",
-        "description": "Poll a real phone test until it returns a final transcript/verdict or the bounded timeout expires.",
+        "name": "wait_for_agent_grade",
+        "description": "Poll an agent-grading call until its final transcript/verdict or the bounded timeout.",
         "inputSchema": {
             "type": "object",
             "properties": {
@@ -578,16 +649,18 @@ TOOLS: list[dict[str, Any]] = [
     },
     {
         "name": "delete_recording",
-        "description": "Delete a hosted-agent recording where backend policy permits it.",
+        "description": "Delete a hosted-agent recording. Requires confirmDelete=true.",
         "inputSchema": {
             "type": "object",
             "properties": {
                 "recordingId": {"type": "string"},
                 "recording_id": {"type": "string"},
                 "reason": {"type": "string"},
+                "confirmDelete": {"type": "boolean"},
                 "apiKey": {"type": "string"},
                 "supafoneApiBaseUrl": {"type": "string"},
             },
+            "required": ["confirmDelete"],
             "additionalProperties": True,
         },
     },
@@ -630,20 +703,13 @@ TOOLS: list[dict[str, Any]] = [
         "inputSchema": _main_schema({}),
     },
     {
-        "name": "place_call",
+        "name": "call_from_owned_agent",
         "description": (
-            "PLACE A REAL OUTBOUND PHONE CALL: dials toNumber from the account's calling "
-            "provider and bridges the given Supafone voice agent onto the line. Burns call "
-            "credits and rings a real phone — use deliberately."
+            "OWNED AGENT -> HUMAN: place a real outbound call from a custom Supafone agent. "
+            "Uses the product API with the same linked sl_ key, burns credits, and requires "
+            "confirmRealCall=true."
         ),
-        "inputSchema": _main_schema(
-            {
-                "agentId": {"type": "string", "description": "Voice agent to put on the call."},
-                "agent_id": {"type": "string"},
-                "toNumber": {"type": "string", "description": "E.164 destination, e.g. +15551234567."},
-                "to_number": {"type": "string"},
-            },
-        ),
+        "inputSchema": _call_from_agent_schema(),
     },
     {
         "name": "list_campaigns",
@@ -722,7 +788,16 @@ TOOLS: list[dict[str, Any]] = [
             "LAUNCH a campaign: schedules every consented recipient and starts REAL calls/emails "
             "on the cadence immediately. Use deliberately."
         ),
-        "inputSchema": _main_schema(dict(_CAMPAIGN_ID_PROPS)),
+        "inputSchema": _main_schema(
+            {
+                **_CAMPAIGN_ID_PROPS,
+                "confirmLaunch": {
+                    "type": "boolean",
+                    "description": "Must be true after the user confirms real campaign calls/emails.",
+                },
+            },
+            ["confirmLaunch"],
+        ),
     },
     {
         "name": "pause_campaign",
@@ -885,6 +960,10 @@ TOOLS: list[dict[str, Any]] = [
                 },
                 "file_path": {"type": "string"},
                 "launch": {"type": "boolean", "description": "Override the doc's launch flag."},
+                "confirmLaunch": {
+                    "type": "boolean",
+                    "description": "Required only when launch:true starts real outreach.",
+                },
                 "accountId": {"type": "string"},
                 "account_id": {"type": "string"},
             },
@@ -1003,6 +1082,7 @@ class SupafoneMCPServer:
                 raise ToolError("supafone_labs SDK import failed; run from the repo or install supafone-labs")
             return {"call_stages": generate_call_stages(_merge_config(arguments))}
         if name == "delete_agent":
+            _require_confirmation(arguments, "confirmDelete", "deleting an agent")
             agent_key = _pick(arguments, "agentKey", "agent_key")
             if not agent_key:
                 raise ToolError("agentKey is required")
@@ -1012,16 +1092,14 @@ class SupafoneMCPServer:
             )
         if name == "get_usage":
             return self._labs_get("/v1/usage", arguments)
-        if name == "get_tester_capabilities":
+        if name in {"get_call_modes", "get_tester_capabilities"}:
             return self._hosted_client(arguments).tester.capabilities()
-        if name == "test_phone_agent":
-            to_number = _pick(arguments, "toNumber", "to_number")
-            if not to_number:
-                raise ToolError("toNumber is required in E.164 format, for example +14155550100")
+        if name in {"grade_existing_phone_agent", "test_phone_agent"}:
+            to_number = _require_e164(_pick(arguments, "toNumber", "to_number"))
             if arguments.get("authorized") is not True:
                 raise ToolError("authorized=true is required — only test agents you own or may call")
-            return self._hosted_client(arguments).tester.call(
-                to_number=str(to_number),
+            result = self._hosted_client(arguments).tester.grade_agent(
+                to_number=to_number,
                 scenario=str(arguments.get("scenario") or "price_probe"),
                 agent_label=str(_pick(arguments, "agentLabel", "agent_label") or "mcp-tester"),
                 ai_provider=str(_pick(arguments, "aiProvider", "ai_provider") or "unknown"),
@@ -1030,14 +1108,20 @@ class SupafoneMCPServer:
                 ),
                 authorized=True,
             )
-        if name in {"get_phone_test", "wait_for_phone_test"}:
+            return _with_call_mode(result, "grade_existing_agent")
+        if name in {
+            "get_agent_grade",
+            "wait_for_agent_grade",
+            "get_phone_test",
+            "wait_for_phone_test",
+        }:
             session_id = _pick(arguments, "sessionId", "session_id")
             if not session_id:
                 raise ToolError("sessionId is required")
             tester = self._hosted_client(arguments).tester
-            if name == "get_phone_test":
-                return tester.session(str(session_id))
-            return tester.wait(
+            if name in {"get_agent_grade", "get_phone_test"}:
+                return _with_call_mode(tester.session(str(session_id)), "grade_existing_agent")
+            result = tester.wait(
                 str(session_id),
                 poll_seconds=_safe_float(
                     _pick(arguments, "pollSeconds", "poll_seconds"),
@@ -1052,6 +1136,7 @@ class SupafoneMCPServer:
                     maximum=240.0,
                 ),
             )
+            return _with_call_mode(result, "grade_existing_agent")
         if name == "generate_qa_scenarios":
             prompt = _pick(arguments, "agentPrompt", "agent_prompt")
             if not prompt:
@@ -1085,18 +1170,22 @@ class SupafoneMCPServer:
         if name == "search_phone_numbers":
             return self._hosted_client(arguments).labs.phone_numbers.search(_merge_config(arguments))
         if name == "unassign_phone_number":
+            _require_confirmation(arguments, "confirmRelease", "detaching a phone number")
             return self._hosted_client(arguments).labs.phone_numbers.unassign(
                 self._number_id(arguments), _merge_config(arguments)
             )
         if name == "release_phone_number":
+            _require_confirmation(arguments, "confirmRelease", "releasing a phone number")
             return self._hosted_client(arguments).labs.phone_numbers.release(
                 self._number_id(arguments), _merge_config(arguments)
             )
         if name == "return_phone_number_to_pool":
+            _require_confirmation(arguments, "confirmRelease", "returning a phone number to the pool")
             return self._hosted_client(arguments).labs.phone_numbers.return_to_pool(
                 self._number_id(arguments), _merge_config(arguments)
             )
         if name == "delete_phone_number":
+            _require_confirmation(arguments, "confirmRelease", "deleting a phone number reservation")
             return self._hosted_client(arguments).labs.phone_numbers.delete(
                 self._number_id(arguments), _merge_config(arguments)
             )
@@ -1117,6 +1206,7 @@ class SupafoneMCPServer:
                 limit=arguments.get("limit"),
             )
         if name == "delete_recording":
+            _require_confirmation(arguments, "confirmDelete", "deleting a recording")
             recording_id = _pick(arguments, "recordingId", "recording_id")
             if not recording_id:
                 raise ToolError("recordingId is required")
@@ -1144,19 +1234,19 @@ class SupafoneMCPServer:
         # --- main-app: campaigns + real calls --------------------------------
         if name == "list_voice_agents":
             return self._main_api("GET", "/api/v1/agents", None, arguments)
-        if name == "place_call":
+        if name in {"call_from_owned_agent", "place_call"}:
+            _require_confirmation(arguments, "confirmRealCall", "placing a real outbound call")
             agent_id = _pick(arguments, "agentId", "agent_id")
-            to_number = _pick(arguments, "toNumber", "to_number")
+            to_number = _require_e164(_pick(arguments, "toNumber", "to_number"))
             if not agent_id:
                 raise ToolError("agentId is required (use list_voice_agents to find one)")
-            if not to_number:
-                raise ToolError("toNumber is required (E.164, e.g. +15551234567)")
-            return self._main_api(
+            result = self._main_api(
                 "POST",
                 "/api/v1/phone/test-call",
-                {"agent_id": str(agent_id), "to_number": str(to_number)},
+                {"agent_id": str(agent_id), "to_number": to_number},
                 arguments,
             )
+            return _with_call_mode(result, "call_from_owned_agent")
         if name == "list_campaigns":
             account_id = _pick(arguments, "accountId", "account_id")
             suffix = f"?{parse.urlencode({'account_id': account_id})}" if account_id else ""
@@ -1213,6 +1303,7 @@ class SupafoneMCPServer:
                 "GET", f"/api/v1/campaigns/{self._campaign_id(arguments)}/recipients", None, arguments
             )
         if name == "launch_campaign":
+            _require_confirmation(arguments, "confirmLaunch", "launching real campaign outreach")
             return self._main_api(
                 "POST", f"/api/v1/campaigns/{self._campaign_id(arguments)}/launch", {}, arguments
             )
@@ -1366,6 +1457,8 @@ class SupafoneMCPServer:
             return self._main_api("POST", "/api/v1/agents/generate-intake", payload, arguments)
         # --- campaign-as-code -------------------------------------------------
         if name == "apply_campaign_config":
+            if arguments.get("launch") is True:
+                _require_confirmation(arguments, "confirmLaunch", "applying and launching real campaign outreach")
             payload = {"config": self._config_text(arguments)}
             account_id = _pick(arguments, "accountId", "account_id")
             if account_id:
@@ -1432,9 +1525,7 @@ class SupafoneMCPServer:
     ) -> Any:
         """Multipart file POST to the main API with the same auth/retry as _main_api."""
         base = self._main_base(arguments)
-        explicit = _pick(arguments, "token", "accessToken", "access_token") or _env(
-            "SUPAFONE_TOKEN", "SUPAFONE_ACCESS_TOKEN", "SUPAFONE_JWT"
-        )
+        explicit = self._main_auth_override(arguments)
         token = str(explicit) if explicit else (self._main_tokens.get(base) or self._main_login(base, arguments))
         status, body = self._main_upload_http(base + path, filename, data, token)
         if status == 401 and not explicit:
@@ -1499,13 +1590,34 @@ class SupafoneMCPServer:
         )
         return str(base).rstrip("/")
 
+    def _main_auth_override(self, arguments: Mapping[str, Any]) -> Any:
+        """Resolve either a product JWT or the same linked sl_ key used by Labs."""
+        return _pick(
+            arguments,
+            "token",
+            "accessToken",
+            "access_token",
+            "apiKey",
+            "api_key",
+            "supafoneApiKey",
+            "supafone_api_key",
+            "labsApiKey",
+            "labs_api_key",
+        ) or _env(
+            "SUPAFONE_TOKEN",
+            "SUPAFONE_ACCESS_TOKEN",
+            "SUPAFONE_JWT",
+            "SUPAFONE_API_KEY",
+            "SUPAFONE_LABS_API_KEY",
+        )
+
     def _main_login(self, base: str, arguments: Mapping[str, Any]) -> str:
         email = _pick(arguments, "email") or _env("SUPAFONE_EMAIL")
         password = _pick(arguments, "password") or _env("SUPAFONE_PASSWORD")
         if not (email and password):
             raise ToolError(
-                "Not authenticated: set SUPAFONE_TOKEN (an app.supafone.ai JWT), or "
-                "SUPAFONE_EMAIL + SUPAFONE_PASSWORD, or pass token/email/password."
+                "Not authenticated: pass apiKey (the same linked sl_ key used for Labs), set "
+                "SUPAFONE_API_KEY/SUPAFONE_TOKEN, or use SUPAFONE_EMAIL + SUPAFONE_PASSWORD."
             )
         status, body = self._main_http(
             "POST", f"{base}/api/v1/auth/login", {"email": str(email), "password": str(password)}, None
@@ -1526,9 +1638,7 @@ class SupafoneMCPServer:
         arguments: Mapping[str, Any],
     ) -> Any:
         base = self._main_base(arguments)
-        explicit = _pick(arguments, "token", "accessToken", "access_token") or _env(
-            "SUPAFONE_TOKEN", "SUPAFONE_ACCESS_TOKEN", "SUPAFONE_JWT"
-        )
+        explicit = self._main_auth_override(arguments)
         token = str(explicit) if explicit else (self._main_tokens.get(base) or self._main_login(base, arguments))
 
         status, body = self._main_http(method, base + path, payload, token)
@@ -1539,6 +1649,14 @@ class SupafoneMCPServer:
             token = self._main_login(base, arguments)
             status, body = self._main_http(method, base + path, payload, token)
         if status >= 400:
+            if status == 401 and str(token).startswith("sl_"):
+                body = {
+                    "detail": body,
+                    "hint": (
+                        "This sl_ key is valid for Labs but is not linked to a product account. "
+                        "Use the unified Labs signup/link flow with the same email, then retry the same key."
+                    ),
+                }
             raise ToolError(_json_dumps({"status": status, "body": body}))
         return body
 
@@ -1583,7 +1701,15 @@ class SupafoneMCPServer:
             raise ToolError("supafone_labs SDK import failed; run from the repo or install supafone-labs")
 
         api_key = (
-            _pick(arguments, "apiKey", "api_key", "supafoneApiKey", "supafone_api_key")
+            _pick(
+                arguments,
+                "apiKey",
+                "api_key",
+                "supafoneApiKey",
+                "supafone_api_key",
+                "labsApiKey",
+                "labs_api_key",
+            )
             or _env("SUPAFONE_API_KEY", "SUPAFONE_LABS_API_KEY")
             or _sl_token_env()
         )

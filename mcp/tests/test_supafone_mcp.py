@@ -23,6 +23,7 @@ def test_initialize_and_list_tools():
         }
     )
     assert init["result"]["serverInfo"]["name"] == "supafone-labs-mcp"
+    assert init["result"]["serverInfo"]["version"] == "0.4.9"
 
     listed = server.handle({"jsonrpc": "2.0", "id": 2, "method": "tools/list"})
     tool_names = {tool["name"] for tool in listed["result"]["tools"]}
@@ -32,10 +33,10 @@ def test_initialize_and_list_tools():
         "create_inbound_agent_with_number",
         "create_outbound_agent_with_number",
         "get_usage",
-        "get_tester_capabilities",
-        "test_phone_agent",
-        "get_phone_test",
-        "wait_for_phone_test",
+        "get_call_modes",
+        "grade_existing_phone_agent",
+        "get_agent_grade",
+        "wait_for_agent_grade",
         "generate_qa_scenarios",
         "list_qa_runs",
         "run_watcher_qa",
@@ -43,6 +44,7 @@ def test_initialize_and_list_tools():
         "tail_logs",
         "poll_logs",
     }.issubset(tool_names)
+    assert {"test_phone_agent", "get_phone_test", "wait_for_phone_test"}.isdisjoint(tool_names)
 
 
 def test_create_inbound_agent_uses_python_sdk(monkeypatch):
@@ -125,11 +127,11 @@ def test_poll_logs_returns_bounded_batches(monkeypatch):
     assert result["latest_logs"][0]["detail"] == "second"
 
 
-def test_phone_agent_requires_authorization_and_preserves_provider_metadata(monkeypatch):
+def test_grade_existing_agent_requires_authorization_and_preserves_provider_metadata(monkeypatch):
     calls = []
 
     class FakeTester:
-        def call(self, **kwargs):
+        def grade_agent(self, **kwargs):
             calls.append(kwargs)
             return {"session_id": "ts_123", "status": "dialing"}
 
@@ -146,7 +148,7 @@ def test_phone_agent_requires_authorization_and_preserves_provider_metadata(monk
             "id": 7,
             "method": "tools/call",
             "params": {
-                "name": "test_phone_agent",
+                "name": "grade_existing_phone_agent",
                 "arguments": {"apiKey": "sl_test", "toNumber": "+14155550100", "authorized": False},
             },
         }
@@ -154,7 +156,7 @@ def test_phone_agent_requires_authorization_and_preserves_provider_metadata(monk
     assert denied["result"]["isError"] is True
 
     result = server.call_tool(
-        "test_phone_agent",
+        "grade_existing_phone_agent",
         {
             "apiKey": "sl_test",
             "toNumber": "+14155550100",
@@ -165,6 +167,7 @@ def test_phone_agent_requires_authorization_and_preserves_provider_metadata(monk
         },
     )
     assert result["session_id"] == "ts_123"
+    assert result["call_mode"] == "grade_existing_agent"
     assert calls == [
         {
             "to_number": "+14155550100",
@@ -178,7 +181,7 @@ def test_phone_agent_requires_authorization_and_preserves_provider_metadata(monk
 
 
 # ---------------------------------------------------------------------------
-# Main-app tools: campaigns + place_call (JWT auth against api.supafone.ai)
+# Main-app tools: campaigns + owned-agent outbound calls
 # ---------------------------------------------------------------------------
 
 def test_tools_list_includes_campaign_and_call_tools():
@@ -186,7 +189,7 @@ def test_tools_list_includes_campaign_and_call_tools():
     listed = server.handle({"jsonrpc": "2.0", "id": 3, "method": "tools/list"})
     tool_names = {tool["name"] for tool in listed["result"]["tools"]}
     assert {
-        "place_call",
+        "call_from_owned_agent",
         "list_voice_agents",
         "list_campaigns",
         "create_campaign",
@@ -210,7 +213,7 @@ def _fake_main_http(requests_log, responses):
     return fake
 
 
-def test_place_call_dials_through_phone_endpoint(monkeypatch):
+def test_call_from_owned_agent_dials_through_phone_endpoint(monkeypatch):
     server = supafone_mcp.SupafoneMCPServer(sleep=lambda _seconds: None)
     log = []
     monkeypatch.setattr(
@@ -220,11 +223,17 @@ def test_place_call_dials_through_phone_endpoint(monkeypatch):
     )
 
     result = server.call_tool(
-        "place_call",
-        {"token": "jwt-abc", "agentId": "agent-1", "toNumber": "+15551234567"},
+        "call_from_owned_agent",
+        {
+            "token": "jwt-abc",
+            "agentId": "agent-1",
+            "toNumber": "+15551234567",
+            "confirmRealCall": True,
+        },
     )
 
     assert result["success"] is True and result["call_sid"] == "CA123"
+    assert result["call_mode"] == "call_from_owned_agent"
     assert log == [
         {
             "method": "POST",
@@ -235,11 +244,16 @@ def test_place_call_dials_through_phone_endpoint(monkeypatch):
     ]
 
 
-def test_place_call_requires_agent_and_number():
+def test_call_from_owned_agent_requires_confirmation_agent_and_e164_number():
     server = supafone_mcp.SupafoneMCPServer(sleep=lambda _seconds: None)
-    for arguments in ({"token": "t", "toNumber": "+15551234567"}, {"token": "t", "agentId": "a"}):
+    for arguments in (
+        {"token": "t", "agentId": "a", "toNumber": "+15551234567"},
+        {"token": "t", "toNumber": "+15551234567", "confirmRealCall": True},
+        {"token": "t", "agentId": "a", "confirmRealCall": True},
+        {"token": "t", "agentId": "a", "toNumber": "203-555-0100", "confirmRealCall": True},
+    ):
         response = server.handle(
-            {"jsonrpc": "2.0", "id": 9, "method": "tools/call", "params": {"name": "place_call", "arguments": arguments}}
+            {"jsonrpc": "2.0", "id": 9, "method": "tools/call", "params": {"name": "call_from_owned_agent", "arguments": arguments}}
         )
         assert response["result"]["isError"] is True
 
@@ -273,7 +287,9 @@ def test_campaign_flow_create_add_launch(monkeypatch):
         },
     )
     assert added["added"] == 1
-    launched = server.call_tool("launch_campaign", {"token": "jwt", "campaignId": "c1"})
+    launched = server.call_tool(
+        "launch_campaign", {"token": "jwt", "campaignId": "c1", "confirmLaunch": True}
+    )
     assert launched["campaign"]["status"] == "active"
 
     assert [entry["url"].split("api.supafone.ai")[1] for entry in log] == [
@@ -315,8 +331,31 @@ def test_main_api_logs_in_and_retries_once_on_401(monkeypatch):
     assert log[3]["token"] == "jwt-second"
 
 
+def test_product_tools_accept_the_same_labs_api_key(monkeypatch):
+    server = supafone_mcp.SupafoneMCPServer(sleep=lambda _seconds: None)
+    log = []
+    monkeypatch.setattr(
+        server,
+        "_main_http",
+        _fake_main_http(log, [(200, {"agents": [{"id": "agent-1"}]})]),
+    )
+
+    result = server.call_tool("list_voice_agents", {"labsApiKey": "sl_live_one_key"})
+
+    assert result["agents"][0]["id"] == "agent-1"
+    assert log[0]["token"] == "sl_live_one_key"
+
+
 def test_main_api_requires_some_auth(monkeypatch):
-    for key in ("SUPAFONE_TOKEN", "SUPAFONE_ACCESS_TOKEN", "SUPAFONE_JWT", "SUPAFONE_EMAIL", "SUPAFONE_PASSWORD"):
+    for key in (
+        "SUPAFONE_TOKEN",
+        "SUPAFONE_ACCESS_TOKEN",
+        "SUPAFONE_JWT",
+        "SUPAFONE_API_KEY",
+        "SUPAFONE_LABS_API_KEY",
+        "SUPAFONE_EMAIL",
+        "SUPAFONE_PASSWORD",
+    ):
         monkeypatch.delenv(key, raising=False)
     server = supafone_mcp.SupafoneMCPServer(sleep=lambda _seconds: None)
     response = server.handle(
@@ -324,6 +363,30 @@ def test_main_api_requires_some_auth(monkeypatch):
     )
     assert response["result"]["isError"] is True
     assert "SUPAFONE_TOKEN" in response["result"]["content"][0]["text"]
+
+
+def test_destructive_and_real_outreach_tools_require_explicit_confirmation():
+    server = supafone_mcp.SupafoneMCPServer(sleep=lambda _seconds: None)
+    cases = (
+        ("delete_agent", {"apiKey": "sl", "agentKey": "agent"}, "confirmDelete"),
+        ("unassign_phone_number", {"apiKey": "sl", "numberId": "num"}, "confirmRelease"),
+        ("release_phone_number", {"apiKey": "sl", "numberId": "num"}, "confirmRelease"),
+        ("return_phone_number_to_pool", {"apiKey": "sl", "numberId": "num"}, "confirmRelease"),
+        ("delete_phone_number", {"apiKey": "sl", "numberId": "num"}, "confirmRelease"),
+        ("delete_recording", {"apiKey": "sl", "recordingId": "rec"}, "confirmDelete"),
+        ("launch_campaign", {"apiKey": "sl", "campaignId": "campaign"}, "confirmLaunch"),
+    )
+    for name, arguments, confirmation in cases:
+        response = server.handle(
+            {
+                "jsonrpc": "2.0",
+                "id": name,
+                "method": "tools/call",
+                "params": {"name": name, "arguments": arguments},
+            }
+        )
+        assert response["result"]["isError"] is True
+        assert confirmation in response["result"]["content"][0]["text"]
 
 
 def test_monitor_campaign_splits_in_flight_and_builds_links(monkeypatch):

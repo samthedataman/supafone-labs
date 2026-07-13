@@ -53,19 +53,19 @@ test("campaign flow emits the product-API routes with the account token", async 
   assert.equal(log[0].auth, "Bearer jwt-abc");
 });
 
-test("placeCall dials through the phone endpoint", async (t) => {
+test("callFromAgent dials through the phone endpoint", async (t) => {
   const log = [];
   t.mock.method(globalThis, "fetch", mockFetch([
     { body: { success: true, call_sid: "CA123", provider: "native" } },
   ], log));
 
   const sf = new Supafone({ accountToken: "jwt-abc" });
-  const result = await sf.placeCall({ agentId: "agent-1", toNumber: "+15551234567" });
+  const result = await sf.callFromAgent({ agentId: "agent-1", toNumber: "+15551234567" });
 
   assert.equal(result.call_sid, "CA123");
   assert.equal(log[0].url.split("api.supafone.ai")[1], "/api/v1/phone/test-call");
   assert.deepEqual(log[0].body, { agent_id: "agent-1", to_number: "+15551234567" });
-  await assert.rejects(() => sf.placeCall({ agentId: "agent-1" }), SupafoneLabsError);
+  await assert.rejects(() => sf.callFromAgent({ agentId: "agent-1" }), SupafoneLabsError);
 });
 
 test("live() surfaces in-flight calls with listen + portal links", async (t) => {
