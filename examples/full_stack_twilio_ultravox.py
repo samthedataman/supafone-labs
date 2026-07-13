@@ -119,11 +119,7 @@ class _WhisperingBrain:
         result = await brain.observe(raw, provider=provider)
         sock = ultravox_sockets.get(self.call_sid)
         if sock is not None and result.actions and result.actions[0].kind == "inject_message":
-            # Ultravox input_text_message with deferred medium = read, not spoken.
-            await sock.send(json.dumps({
-                "type": "input_text_message",
-                "text": result.actions[0].payload["message"],
-                "deferResponse": True,
-            }))
+            # Send the adapter's audited user_text_message unchanged.
+            await sock.send(json.dumps(result.actions[0].payload))
             print(f"[{self.call_sid}] whispered:", result.directive.composed_text())
         return result

@@ -1,9 +1,9 @@
-"""OpenAI Realtime (or xAI Grok) + SupafoneLabs: session.update is the whisper.
+"""OpenAI Realtime + SupafoneLabs with native live controls.
 
-Speech-to-speech models have no out-of-band message channel — the prompt patch
-IS the silent coaching path. Works identically for Grok's Voice Agent API
-(swap the URL for wss://api.x.ai/v1/realtime?model=grok-voice-latest and
-provider="grok").
+OpenAI receives a system-role ``conversation.item.create``. The adapter
+compiles the complete wire message, so this loop sends ``action.payload``
+unchanged. Grok uses a different ``response.create.instructions`` action; use
+the same observe/send loop with ``provider="grok"`` and xAI's Realtime socket.
 
     pip install supafone-labs[all,stt]
     OPENAI_API_KEY=... python gpt_realtime.py
@@ -30,18 +30,13 @@ async def main() -> None:
             "session": {"type": "realtime", "instructions": BASE_INSTRUCTIONS,
                         "audio": {"input": {"transcription": {"model": "whisper-1"}}}},
         }))
-        whispered: list[str] = []
         async for raw in ws:
             event = json.loads(raw)
             result = await brain.observe(event)   # GA + beta event names both parse
-            if result.actions and result.actions[0].kind == "session_update":
-                whispered.append(result.actions[0].payload["instructions_append"])
-                await ws.send(json.dumps({
-                    "type": "session.update",
-                    "session": {"type": "realtime",
-                                "instructions": BASE_INSTRUCTIONS + "\n\n" + "\n".join(whispered[-3:])},
-                }))
-                print("instructions patched:", whispered[-1])
+            for action in result.actions:
+                if action.kind == "conversation_item_create":
+                    await ws.send(json.dumps(action.payload))
+                    print("system context added")
 
 
 asyncio.run(main())

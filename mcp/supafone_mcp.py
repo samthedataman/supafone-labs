@@ -327,46 +327,6 @@ _CAMPAIGN_ID_PROPS: dict[str, Any] = {
 }
 
 
-FRAMEWORK_SUPPORT: dict[str, Any] = {
-    "summary": "Silent-context injection support: 10 frameworks possible, Bland impossible, "
-    "cartesia/pipecat not agents. Injection = feed the agent hidden guidance it acts on but never speaks.",
-    "modes": {
-        "A_native_event": "Integrated speech-to-speech models — send a native event that adds silent "
-        "context without triggering speech.",
-        "B_own_the_llm": "STT->LLM->TTS pipelines — Supafone becomes the LLM and splices a system/developer "
-        "message into the prompt before generation.",
-    },
-    "possible": [
-        {"framework": "ultravox", "mode": "A", "primitive": "REST send_data_message, urgency:later", "status": "live/proven"},
-        {"framework": "openai_realtime", "mode": "A", "primitive": "conversation.item.create role:system, no response.create"},
-        {"framework": "grok", "mode": "A", "primitive": "OpenAI-Realtime-compatible, base wss://api.x.ai/v1/realtime"},
-        {"framework": "gemini_live", "mode": "A", "primitive": "clientContent turns role:user, turnComplete:false"},
-        {"framework": "elevenlabs", "mode": "A", "primitive": "contextual_update event"},
-        {"framework": "inworld", "mode": "A", "primitive": "OpenAI-Realtime-compatible item inject"},
-        {"framework": "vapi", "mode": "A+B", "primitive": "add-message triggerResponseEnabled:false, or custom-llm splice"},
-        {"framework": "retell", "mode": "B", "primitive": "custom-llm websocket, system message in messages[]"},
-        {"framework": "deepgram", "mode": "A+B", "primitive": "UpdatePrompt event, or own the think LLM"},
-        {"framework": "livekit", "mode": "B", "primitive": "own the agent loop, chat_ctx.add_message role:assistant"},
-    ],
-    "impossible": [
-        {"framework": "bland", "reason": "Closed box — live-call API is stop/listen/transfer only; no channel to "
-         "inject text mid-call and no custom-LLM. Only a pre-scripted pull webhook exists, which is not live "
-         "silent injection. Vendor limitation, not a Supafone gap."},
-    ],
-    "not_agents": [
-        {"framework": "cartesia", "reason": "A voice (TTS), not a thinking agent — nothing to inject into; used as the voice on another agent."},
-        {"framework": "pipecat", "reason": "A DIY framework you assemble — injection is trivial because you own every step."},
-    ],
-    "caveats": {
-        "delivery": "Injection is POSSIBLE for all 10, but MANAGED delivery is wired today only for Ultravox "
-        "(native) and the pipeline vendors via the backend relay POST /api/v1/labs/relay/chat/completions. "
-        "Speech-to-speech socket relays (openai/grok/gemini/elevenlabs/inworld) are roadmap.",
-        "keys": "A real live test against any vendor needs that vendor's API key. Free/trial tiers exist for "
-        "all except OpenAI Realtime (paid, no free tier).",
-    },
-}
-
-
 TOOLS: list[dict[str, Any]] = [
     {
         "name": "create_inbound_agent",
@@ -425,6 +385,130 @@ TOOLS: list[dict[str, Any]] = [
                 },
             },
             "additionalProperties": False,
+        },
+    },
+    {
+        "name": "get_tester_capabilities",
+        "description": "Check whether the managed provider-neutral phone grader is ready and list its scenarios.",
+        "inputSchema": {
+            "type": "object",
+            "properties": {
+                "apiKey": {"type": "string"},
+                "labsApiBaseUrl": {"type": "string"},
+            },
+            "additionalProperties": False,
+        },
+    },
+    {
+        "name": "test_phone_agent",
+        "description": (
+            "PLACE A REAL TEST CALL to any authorized E.164 voice-agent number. The synthetic "
+            "caller works across Vapi, Retell, Bland, OpenAI Realtime, Grok, LiveKit, custom "
+            "runtimes, Twilio, Telnyx, SIP, and other target stacks because PSTN is the boundary. "
+            "Burns tester credits and requires authorized=true."
+        ),
+        "inputSchema": {
+            "type": "object",
+            "properties": {
+                "toNumber": {"type": "string", "description": "Authorized target in E.164, e.g. +14155550100."},
+                "to_number": {"type": "string"},
+                "scenario": {
+                    "type": "string",
+                    "enum": ["price_probe", "false_booking", "language_switch", "distressed"],
+                },
+                "agentLabel": {"type": "string"},
+                "agent_label": {"type": "string"},
+                "aiProvider": {"type": "string", "description": "Target runtime metadata."},
+                "ai_provider": {"type": "string"},
+                "telephonyProvider": {"type": "string", "description": "Target carrier metadata."},
+                "telephony_provider": {"type": "string"},
+                "authorized": {
+                    "type": "boolean",
+                    "description": "Must be true: caller owns or has permission to test the target.",
+                },
+                "apiKey": {"type": "string"},
+                "labsApiBaseUrl": {"type": "string"},
+            },
+            "required": ["authorized"],
+            "additionalProperties": True,
+        },
+    },
+    {
+        "name": "get_phone_test",
+        "description": "Read carrier state, live transcript, and verdict for a provider-neutral phone-test session.",
+        "inputSchema": {
+            "type": "object",
+            "properties": {
+                "sessionId": {"type": "string"},
+                "session_id": {"type": "string"},
+                "apiKey": {"type": "string"},
+                "labsApiBaseUrl": {"type": "string"},
+            },
+            "additionalProperties": True,
+        },
+    },
+    {
+        "name": "wait_for_phone_test",
+        "description": "Poll a real phone test until it returns a final transcript/verdict or the bounded timeout expires.",
+        "inputSchema": {
+            "type": "object",
+            "properties": {
+                "sessionId": {"type": "string"},
+                "session_id": {"type": "string"},
+                "pollSeconds": {"type": "number", "minimum": 0.5, "maximum": 10},
+                "timeoutSeconds": {"type": "number", "minimum": 1, "maximum": 240},
+                "apiKey": {"type": "string"},
+                "labsApiBaseUrl": {"type": "string"},
+            },
+            "additionalProperties": True,
+        },
+    },
+    {
+        "name": "generate_qa_scenarios",
+        "description": "Generate adversarial QA scenarios from a voice agent prompt without placing a phone call.",
+        "inputSchema": {
+            "type": "object",
+            "properties": {
+                "agentPrompt": {"type": "string"},
+                "agent_prompt": {"type": "string"},
+                "count": {"type": "integer", "minimum": 1, "maximum": 12},
+                "apiKey": {"type": "string"},
+                "labsApiBaseUrl": {"type": "string"},
+            },
+            "additionalProperties": True,
+        },
+    },
+    {
+        "name": "list_qa_runs",
+        "description": "List prior Supafone QA and Watcher benchmark runs for an agent.",
+        "inputSchema": {
+            "type": "object",
+            "properties": {
+                "agent": {"type": "string"},
+                "limit": {"type": "integer", "minimum": 1, "maximum": 200},
+                "apiKey": {"type": "string"},
+                "labsApiBaseUrl": {"type": "string"},
+            },
+            "additionalProperties": True,
+        },
+    },
+    {
+        "name": "run_watcher_qa",
+        "description": (
+            "Run the A/B Watcher benchmark: every selected scenario runs once without and once "
+            "with supervision. Requires Labs email/password session auth and uses oracle credits."
+        ),
+        "inputSchema": {
+            "type": "object",
+            "properties": {
+                "scenarios": {"type": "array", "items": {"type": "string"}},
+                "turns": {"type": "integer", "minimum": 1, "maximum": 8},
+                "email": {"type": "string"},
+                "password": {"type": "string"},
+                "apiKey": {"type": "string"},
+                "labsApiBaseUrl": {"type": "string"},
+            },
+            "additionalProperties": True,
         },
     },
     {
@@ -834,16 +918,6 @@ TOOLS: list[dict[str, Any]] = [
             ["prompt"],
         ),
     },
-    {
-        "name": "framework_support",
-        "description": (
-            "The verified silent-context injection support matrix: which voice frameworks Supafone can "
-            "supervise (feed hidden guidance the agent acts on but never speaks), by which mechanism "
-            "(Mode A native event vs Mode B own-the-LLM), which are impossible (Bland), and which are not "
-            "agents (cartesia/pipecat). No arguments; returns static verified knowledge."
-        ),
-        "inputSchema": {"type": "object", "properties": {}, "additionalProperties": False},
-    },
 ]
 
 
@@ -938,6 +1012,71 @@ class SupafoneMCPServer:
             )
         if name == "get_usage":
             return self._labs_get("/v1/usage", arguments)
+        if name == "get_tester_capabilities":
+            return self._hosted_client(arguments).tester.capabilities()
+        if name == "test_phone_agent":
+            to_number = _pick(arguments, "toNumber", "to_number")
+            if not to_number:
+                raise ToolError("toNumber is required in E.164 format, for example +14155550100")
+            if arguments.get("authorized") is not True:
+                raise ToolError("authorized=true is required — only test agents you own or may call")
+            return self._hosted_client(arguments).tester.call(
+                to_number=str(to_number),
+                scenario=str(arguments.get("scenario") or "price_probe"),
+                agent_label=str(_pick(arguments, "agentLabel", "agent_label") or "mcp-tester"),
+                ai_provider=str(_pick(arguments, "aiProvider", "ai_provider") or "unknown"),
+                telephony_provider=str(
+                    _pick(arguments, "telephonyProvider", "telephony_provider") or "unknown"
+                ),
+                authorized=True,
+            )
+        if name in {"get_phone_test", "wait_for_phone_test"}:
+            session_id = _pick(arguments, "sessionId", "session_id")
+            if not session_id:
+                raise ToolError("sessionId is required")
+            tester = self._hosted_client(arguments).tester
+            if name == "get_phone_test":
+                return tester.session(str(session_id))
+            return tester.wait(
+                str(session_id),
+                poll_seconds=_safe_float(
+                    _pick(arguments, "pollSeconds", "poll_seconds"),
+                    default=1.4,
+                    minimum=0.5,
+                    maximum=10.0,
+                ),
+                timeout_seconds=_safe_float(
+                    _pick(arguments, "timeoutSeconds", "timeout_seconds"),
+                    default=120.0,
+                    minimum=1.0,
+                    maximum=240.0,
+                ),
+            )
+        if name == "generate_qa_scenarios":
+            prompt = _pick(arguments, "agentPrompt", "agent_prompt")
+            if not prompt:
+                raise ToolError("agentPrompt is required")
+            return self._hosted_client(arguments).qa.generate(
+                str(prompt),
+                count=_safe_int(arguments.get("count"), default=5, minimum=1, maximum=12),
+            )
+        if name == "list_qa_runs":
+            return self._hosted_client(arguments).qa.history(
+                agent=str(arguments.get("agent") or "builder"),
+                limit=_safe_int(arguments.get("limit"), default=40, minimum=1, maximum=200),
+            )
+        if name == "run_watcher_qa":
+            client = self._hosted_client(arguments)
+            email = str(arguments.get("email") or _env("SUPAFONE_EMAIL") or "")
+            password = str(arguments.get("password") or _env("SUPAFONE_PASSWORD") or "")
+            if not email or not password:
+                raise ToolError("Set SUPAFONE_EMAIL and SUPAFONE_PASSWORD (or pass email/password) for session-scoped QA")
+            client.labs_login(email=email, password=password)
+            scenarios = arguments.get("scenarios")
+            return client.qa.run(
+                scenarios=[str(item) for item in scenarios] if isinstance(scenarios, list) else None,
+                turns=_safe_int(arguments.get("turns"), default=2, minimum=1, maximum=8),
+            )
         if name == "list_phone_numbers":
             return self._hosted_client(arguments).labs.phone_numbers.list(
                 agencyId=_pick(arguments, "agencyId", "agency_id"),
@@ -1266,8 +1405,6 @@ class SupafoneMCPServer:
             if account_id:
                 payload["account_id"] = str(account_id)
             return self._main_api("POST", "/api/v1/campaigns/config/generate", payload, arguments)
-        if name == "framework_support":
-            return FRAMEWORK_SUPPORT
         raise ToolError(f"Unknown tool: {name}")
 
     def _config_text(self, arguments: Mapping[str, Any]) -> str:
@@ -1451,7 +1588,7 @@ class SupafoneMCPServer:
             or _sl_token_env()
         )
         if not api_key:
-            raise ToolError("Set SUPAFONE_API_KEY or pass apiKey to create hosted agents")
+            raise ToolError("Set SUPAFONE_TOKEN/SUPAFONE_API_KEY or pass apiKey")
 
         base_url = (
             _pick(
@@ -1464,7 +1601,17 @@ class SupafoneMCPServer:
             or _env("SUPAFONE_API_BASE_URL", "SUPAFONE_BASE_URL")
             or DEFAULT_HOSTED_API_BASE
         )
-        return Supafone(api_key=str(api_key), supafone_api_base_url=str(base_url))
+        labs_base_url = (
+            _pick(arguments, "labsApiBaseUrl", "labs_api_base_url", "labsBaseUrl", "labs_base_url")
+            or _env("SUPAFONE_LABS_API_BASE_URL", "SUPAFONE_LABS_BASE_URL")
+            or DEFAULT_LABS_API_BASE
+        )
+        return Supafone(
+            api_key=str(api_key),
+            labs_api_key=str(api_key),
+            supafone_api_base_url=str(base_url),
+            labs_api_base_url=str(labs_base_url),
+        )
 
     def _labs_get(self, path: str, arguments: Mapping[str, Any]) -> Any:
         return self._http_json("GET", self._labs_url(path, arguments), None, self._labs_key(arguments))

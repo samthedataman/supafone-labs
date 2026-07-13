@@ -32,9 +32,11 @@ def test_create_inbound_serializes_hosted_agent_payload():
     assert payload["preset_key"] == "general_intake_receptionist"
     assert payload["voice"] == {"provider": "cartesia", "voice_id": "sonic-warm"}
     assert payload["telephony"] == {"mode": "supafone_managed", "provider": "supafone"}
-    # voice_watcher defaults on and is mirrored into the labs block.
-    assert payload["voice_watcher"] is True
-    assert payload["labs"] == {"enabled": True, "model": "gemma", "voice_watcher": True}
+    assert payload["labs"] == {
+        "enabled": True,
+        "model": "gemma",
+        "voice_watcher": True,
+    }
     assert payload["call_stages"][0]["key"] == "greeting"
     assert payload["call_stages"][-1]["key"] == "close"
 
@@ -128,6 +130,45 @@ def test_byok_labs_payload_matches_typescript_contract():
         "tts": {"provider": "cartesia"},
         "provider_keys": {"deepgram": "deepgram-key"},
     }
+
+
+def test_agent_factory_preserves_watcher_default_and_ultravox_byok():
+    calls = []
+
+    def transport(method, path, payload):
+        calls.append((method, path, payload))
+        return {"success": True, "agent": {"agent_key": "byok-agent"}, "runtime": {}}
+
+    supafone = Supafone(api_key="sf_test", transport=transport)
+    supafone.labs.agents.create(
+        {
+            "agentKey": "byok-agent",
+            "byok": {
+                "ultravox": {"api_key": "uv_test", "base_url": "https://api.ultravox.ai"},
+                "tts": {"provider": "cartesia", "api_key": "cartesia_test"},
+            },
+        }
+    )
+
+    payload = calls[0][2]
+    assert payload["voice_watcher"] is True
+    assert payload["byok"]["ultravox"] == {
+        "api_key": "uv_test",
+        "base_url": "https://api.ultravox.ai",
+    }
+
+
+def test_agent_factory_honors_watcher_override():
+    calls = []
+
+    def transport(method, path, payload):
+        calls.append((method, path, payload))
+        return {"success": True, "agent": {"agent_key": "raw-agent"}, "runtime": {}}
+
+    supafone = Supafone(api_key="sf_test", voice_watcher=False, transport=transport)
+    supafone.labs.agents.create({"agentKey": "raw-agent"})
+
+    assert calls[0][2]["voice_watcher"] is False
 
 
 def test_python_client_reads_labs_logs_and_stream(monkeypatch):
@@ -253,9 +294,11 @@ def test_camelcase_agent_methods_match_typescript_contract():
     assert payload["direction"] == "inbound"
     assert payload["preset_key"] == "general_intake_receptionist"
     assert payload["telephony"] == {"mode": "supafone_managed", "provider": "supafone"}
-    # voice_watcher defaults on and is mirrored into the labs block.
-    assert payload["voice_watcher"] is True
-    assert payload["labs"] == {"enabled": True, "model": "gemma", "voice_watcher": True}
+    assert payload["labs"] == {
+        "enabled": True,
+        "model": "gemma",
+        "voice_watcher": True,
+    }
     assert payload["call_stages"][0]["metadata"]["auto_generated"] is True
     assert calls[1] == (
         "POST",
@@ -563,52 +606,3 @@ def test_call_stages_can_be_customized_or_disabled():
         {"key": "verify", "name": "Verify caller", "exit_criteria": ["done"]}
     ]
     assert "call_stages" not in calls[1][2]
-
-
-# ---------------------------------------------------------------------------
-# voice_watcher client flag (Voice Watcher framework: supervision + QA + scoring)
-# ---------------------------------------------------------------------------
-
-def test_voice_watcher_defaults_on_and_injects_into_payload():
-    calls = []
-
-    def transport(method, path, payload):
-        calls.append((method, path, payload))
-        return {"success": True, "agent": {"agent_key": payload["agent_key"]}, "runtime": {}}
-
-    supafone = Supafone(api_key="sf_test", transport=transport)
-    assert supafone.voice_watcher is True
-    supafone.labs.agents.create_inbound({"agentKey": "vw-default", "name": "VW default"})
-    assert calls[0][2]["voice_watcher"] is True
-
-
-def test_voice_watcher_false_stored_and_injected():
-    calls = []
-
-    def transport(method, path, payload):
-        calls.append((method, path, payload))
-        return {"success": True, "agent": {"agent_key": payload["agent_key"]}, "runtime": {}}
-
-    supafone = Supafone(api_key="sf_test", transport=transport, voice_watcher=False)
-    assert supafone.voice_watcher is False
-    supafone.labs.agents.create_outbound({"agentKey": "vw-off", "name": "VW off"})
-    assert calls[0][2]["voice_watcher"] is False
-
-
-def test_voice_watcher_explicit_caller_value_preserved():
-    calls = []
-
-    def transport(method, path, payload):
-        calls.append((method, path, payload))
-        return {"success": True, "agent": {"agent_key": payload["agent_key"]}, "runtime": {}}
-
-    # Client default is on, but the caller explicitly disables it on this agent.
-    supafone = Supafone(api_key="sf_test", transport=transport, voice_watcher=True)
-    supafone.labs.agents.create({"agentKey": "vw-explicit", "name": "VW explicit", "voice_watcher": False})
-    assert calls[0][2]["voice_watcher"] is False
-
-
-def test_voice_watcher_deprecated_labs_alias():
-    # Old callers passing labs=False keep working (alias for voice_watcher).
-    supafone = Supafone(api_key="sf_test", transport=lambda *a: {}, labs=False)
-    assert supafone.voice_watcher is False

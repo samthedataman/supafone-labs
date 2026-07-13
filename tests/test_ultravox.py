@@ -22,7 +22,9 @@ async def test_supercharge_ultravox_end_to_end(ultravox_event):
     action = result.actions[0]
     assert action.provider == "ultravox"
     assert action.kind == "inject_message"
-    assert "<instruction>" in action.payload["message"]
+    assert action.payload["type"] == "user_text_message"
+    assert action.payload["urgency"] == "later"
+    assert "<instruction>" in action.payload["text"]
 
 
 async def test_directive_compiles_via_ultravox_adapter():
@@ -36,7 +38,9 @@ async def test_directive_compiles_via_ultravox_adapter():
     state = build_initial_state(provider="ultravox", session_id="c1")
     actions = await UltravoxAdapter().compile(decision, state)
     assert actions and actions[0].kind == "inject_message"
-    assert "Slow down" in actions[0].payload["message"]
+    assert actions[0].payload["type"] == "user_text_message"
+    assert actions[0].payload["urgency"] == "later"
+    assert "Slow down" in actions[0].payload["text"]
 
 
 def test_low_confidence_is_suppressed():

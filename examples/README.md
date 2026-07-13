@@ -14,11 +14,11 @@ Vapi/Retell/ElevenLabs.
 |---|---|---|---|
 | `full_stack_twilio_ultravox.py` | **Twilio + Ultravox + Supafone Labs** | full deployment | tap audio, `inject_via` the agent |
 | `ultravox_end_to_end.py` | Ultravox | S2S agent | `inject_message` on the call WS |
-| `vapi_webhook_server.py` | Vapi | pipeline agent | `assistant_override` in the webhook reply |
+| `vapi_webhook_server.py` | Vapi | pipeline agent | `add-message` posted to the call `controlUrl` |
 | `retell_custom_llm.py` | Retell | custom-LLM WS | system message prepended to your LLM turn |
 | `elevenlabs_agent.py` | ElevenLabs Agents | pipeline agent | `contextual_update` frame |
 | `deepgram_voice_agent.py` | Deepgram Voice Agent | pipeline agent | `UpdatePrompt` message |
-| `gpt_realtime.py` | OpenAI Realtime / xAI Grok | S2S agent | `session.update` instructions patch |
+| `gpt_realtime.py` | OpenAI Realtime | S2S agent | system `conversation.item.create` |
 | `pipecat_pipeline.py` | Pipecat | framework | `LLMMessagesAppendFrame` |
 | `livekit_agent.py` | LiveKit Agents | framework | chat-context append |
 | `twilio_sip_multilingual_tap.py` | Twilio media streams | telephony | tap + your delivery |

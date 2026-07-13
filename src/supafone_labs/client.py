@@ -9,6 +9,8 @@ from __future__ import annotations
 
 import json
 import os
+import re
+import time
 from dataclasses import dataclass
 from typing import Any, Callable, Iterator, Mapping, Optional
 from urllib import error, parse, request
@@ -68,11 +70,9 @@ class Supafone:
         # analyzed call; reports without a transcript fall back to the plain
         # zero-billed report.
         post_call_analysis: bool = False,
-        # voice_watcher (default True): run provisioned agents under Supafone's
-        # Voice Watcher framework — live supervision, QA, and call scoring. Set
-        # False for a raw agent with no watcher.
+        # Run provisioned agents under the Voice Watcher framework by default.
         voice_watcher: bool = True,
-        # Deprecated alias for voice_watcher — old `labs=` callers keep working.
+        # Deprecated alias retained for callers from before voice_watcher.
         labs: Optional[bool] = None,
     ) -> None:
         self.api_key = (
@@ -103,13 +103,13 @@ class Supafone:
         self.timeout = timeout
         self._transport = transport
         self.post_call_analysis = post_call_analysis
-        # `labs=` is the deprecated alias; an explicit value on it wins.
         self.voice_watcher = bool(voice_watcher if labs is None else labs)
         self._session_token: str = ""  # minted from email/password, refreshed on 401
         self._labs_session_token: str = ""  # minted by labs_login() for session-scoped QA
         self.labs = LabsNamespace(self)
         self.campaigns = CampaignsNamespace(self)
         self.qa = QANamespace(self)
+        self.tester = TesterNamespace(self)
 
     def _request_supafone_api(
         self, method: str, path: str, payload: Optional[dict[str, Any]] = None
@@ -591,6 +591,83 @@ class QANamespace:
         return self._client._request_labs_api("GET", f"/v1/qa/runs?{query}")
 
 
+class TesterNamespace:
+    """Real, provider-neutral phone testing against any authorized E.164 agent."""
+
+    _TERMINAL = {
+        "done", "completed", "failed", "busy", "no_answer", "no-answer",
+        "canceled", "cancelled", "error",
+    }
+
+    def __init__(self, client: "Supafone") -> None:
+        self._client = client
+
+    def capabilities(self) -> dict[str, Any]:
+        """Return managed grader readiness and supported scenarios."""
+        return self._client._request_labs_api("GET", "/v1/tester/capabilities")
+
+    def call(
+        self,
+        *,
+        to_number: str,
+        scenario: str = "price_probe",
+        agent_label: str = "sdk-tester",
+        ai_provider: str = "unknown",
+        telephony_provider: str = "unknown",
+        authorized: bool = False,
+    ) -> dict[str, Any]:
+        """Start a real synthetic call to an agent you own or may test.
+
+        ``ai_provider`` and ``telephony_provider`` are target metadata only.
+        Supafone's managed PSTN leg is independent of both.
+        """
+        if not authorized:
+            raise ValueError("authorized=True is required — only test agents you own or may call")
+        if not re.fullmatch(r"\+[1-9]\d{7,14}", str(to_number or "")):
+            raise ValueError("to_number must be E.164, for example +14155550100")
+        return self._client._request_labs_api(
+            "POST",
+            "/v1/tester/call",
+            {
+                "to_number": to_number,
+                "scenario": scenario,
+                "agent_label": agent_label,
+                "ai_provider": ai_provider,
+                "telephony_provider": telephony_provider,
+                "authorized": True,
+            },
+        )
+
+    def session(self, session_id: str) -> dict[str, Any]:
+        """Read live carrier state, transcript, and verdict for one test."""
+        if not str(session_id or "").strip():
+            raise ValueError("session_id is required")
+        return self._client._request_labs_api(
+            "GET", f"/v1/tester/session/{parse.quote(str(session_id), safe='')}"
+        )
+
+    def wait(
+        self,
+        session_id: str,
+        *,
+        poll_seconds: float = 1.4,
+        timeout_seconds: float = 240.0,
+    ) -> dict[str, Any]:
+        """Poll until the real call reaches a terminal state."""
+        poll_seconds = max(0.25, float(poll_seconds))
+        timeout_seconds = max(poll_seconds, float(timeout_seconds))
+        deadline = time.monotonic() + timeout_seconds
+        while True:
+            result = self.session(session_id)
+            if str(result.get("status") or "").lower() in self._TERMINAL:
+                return result
+            if time.monotonic() >= deadline:
+                raise TimeoutError(
+                    f"tester session {session_id} did not finish within {timeout_seconds:g}s"
+                )
+            time.sleep(poll_seconds)
+
+
 class LabsNamespace:
     def __init__(self, client: Supafone) -> None:
         self.agents = LabsAgentsNamespace(client)
@@ -937,10 +1014,7 @@ class LabsAgentsNamespace:
         )
 
     def _apply_voice_watcher(self, data: dict[str, Any]) -> None:
-        """Default the agent onto the client's Voice Watcher setting (live
-        supervision + QA + scoring) unless the caller set voice_watcher
-        explicitly (either casing). Mirrored into labs.voice_watcher when a labs
-        block exists. Never overwrites a caller value."""
+        """Apply the client watcher default without overwriting agent config."""
         if "voice_watcher" not in data and "voiceWatcher" not in data:
             data["voice_watcher"] = self._client.voice_watcher
         labs = data.get("labs")
@@ -1475,9 +1549,8 @@ def _byok_payload(data: Mapping[str, Any]) -> dict[str, Any]:
                 "agent_provider": _provider_config_payload(
                     _pick(data, "agent_provider", "agentProvider", "runtime") or {}
                 ),
-                # Native (BYOK) Ultravox runtime key — forwarded verbatim so
-                # byok.ultravox = {api_key, base_url?} round-trips even when the
-                # block also carries an agent_provider / telephony / *tts etc.
+                # Preserve native Ultravox BYOK runtime credentials alongside
+                # structured telephony/TTS/STT/LLM configuration.
                 "ultravox": data.get("ultravox"),
                 "telephony": _telephony_payload(data["telephony"]) if data.get("telephony") else None,
                 "tts": _provider_config_payload(data.get("tts") or {}),

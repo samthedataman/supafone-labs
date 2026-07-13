@@ -45,8 +45,10 @@ class GPTRealtimeAdapter(BaseAdapter):
         if event_type in {"conversation.item.created", "conversation.item.done"}:
             item = raw_event.get("item", {})
             role = str(item.get("role") or "").lower()
-            text = str(item.get("text") or item.get("content", "") or "")
+            text = self._item_text(item)
             if not text:
+                return []
+            if role == "system":
                 return []
             if role == "user":
                 mapped = EventTypes.CALLER_TRANSCRIPT_FINAL
@@ -159,28 +161,40 @@ class GPTRealtimeAdapter(BaseAdapter):
             ]
         return []
 
+    @staticmethod
+    def _item_text(item: dict) -> str:
+        if item.get("text"):
+            return str(item["text"])
+        content = item.get("content")
+        if isinstance(content, str):
+            return content
+        if not isinstance(content, list):
+            return ""
+        return "".join(
+            str(part.get("text") or part.get("transcript") or "")
+            for part in content
+            if isinstance(part, dict)
+        )
+
     async def compile(
         self,
         decision: RuntimeDecision,
         state: RuntimeState,
     ) -> list[ProviderAction]:
         if decision.kind == DecisionKinds.INJECT_HIDDEN_INSTRUCTION:
-            # One-shot silent steer: append a system message as a conversation
-            # item with NO following response.create, so it lands in context for
-            # the next turn without being spoken. (session_update instructions
-            # is a durable re-steer of the whole prompt, not a per-turn whisper.)
             return [
                 ProviderAction(
                     provider=self.provider_name,
                     kind="conversation_item_create",
                     payload={
+                        "type": "conversation.item.create",
                         "item": {
                             "type": "message",
                             "role": "system",
                             "content": [
                                 {"type": "input_text", "text": decision.payload["text"]}
                             ],
-                        }
+                        },
                     },
                 )
             ]
@@ -213,7 +227,10 @@ class GPTRealtimeAdapter(BaseAdapter):
                 ProviderAction(
                     provider=self.provider_name,
                     kind="response_create",
-                    payload={"instructions": decision.payload["message"]},
+                    payload={
+                        "type": "response.create",
+                        "response": {"instructions": decision.payload["message"]},
+                    },
                 )
             ]
         if decision.kind == DecisionKinds.RECONCILE_CALL_SUMMARY:

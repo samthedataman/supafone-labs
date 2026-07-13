@@ -345,6 +345,31 @@ Reports without a transcript — or any analysis failure — fall back to the
 plain zero-billed report. You can also classify explicitly with
 `supafone.classifyCall({ transcript, agent })`.
 
+## Test any phone agent
+
+The managed tester dials any voice agent you own or are authorized to test.
+The target does not need to be hosted by Supafone: PSTN is the neutral boundary,
+while `aiProvider` and `telephonyProvider` are recorded as metadata.
+
+```ts
+const readiness = await supafone.tester.capabilities();
+if (!readiness.phone_grader.available) throw new Error("Phone grader unavailable");
+
+const started = await supafone.tester.call({
+  toNumber: "+14155550100",
+  scenario: "language_switch",
+  aiProvider: "grok",
+  telephonyProvider: "telnyx",
+  authorized: true,
+});
+
+const finished = await supafone.tester.wait(started.session_id);
+console.log(finished.transcript, finished.verdict);
+```
+
+`tester.call` places a real call and spends tester credits. It rejects missing
+permission and non-E.164 numbers before sending a request.
+
 ## Agent builder & QA (session-scoped — call `login()` first)
 
 The builder and `qa.run` are account features, so authenticate with a console

@@ -185,10 +185,6 @@ class VapiAdapter(BaseAdapter):
         state: RuntimeState,
     ) -> list[ProviderAction]:
         if decision.kind == DecisionKinds.INJECT_HIDDEN_INSTRUCTION:
-            # Vapi Live Call Control "add-message" with triggerResponseEnabled
-            # False: the system turn lands in context silently and is NOT spoken
-            # or forced into an immediate reply (an assistant_override without a
-            # silence flag would be voiced back to the caller).
             return [
                 ProviderAction(
                     provider=self.provider_name,
@@ -228,8 +224,15 @@ class VapiAdapter(BaseAdapter):
             return [
                 ProviderAction(
                     provider=self.provider_name,
-                    kind="assistant_override",
-                    payload={"instruction": decision.payload["message"]},
+                    kind="control_add_message",
+                    payload={
+                        "type": "add-message",
+                        "message": {
+                            "role": "system",
+                            "content": decision.payload["message"],
+                        },
+                        "triggerResponseEnabled": True,
+                    },
                 )
             ]
         if decision.kind == DecisionKinds.RECONCILE_CALL_SUMMARY:

@@ -1,4 +1,4 @@
-# 📄 The Sidecar Oracle
+# The Sidecar Oracle
 
 **A Provider-Agnostic Supervisor Harness for Real-Time Voice Agents**
 
@@ -43,19 +43,22 @@ The harness defines a canonical event vocabulary and, per provider, an adapter s
 
 ### 3.3 Capability-aware injection compilation
 
-One abstract decision compiles to thirteen native channels:
+One abstract decision compiles across fourteen audited runtime integrations:
 
 | Platform | Class | Compiled whisper |
 | --- | --- | --- |
-| Ultravox | S2S | `inject_message` (deferred text) |
-| OpenAI Realtime / Grok Voice | S2S | `session.update` instruction patch |
-| Vapi | pipeline | `assistant_override` in webhook reply |
+| Supafone / Ultravox | managed / S2S | deferred `user_text_message` |
+| OpenAI Realtime / Inworld Realtime | S2S | system `conversation.item.create` |
+| Grok Voice | S2S | per-response `response.create.instructions` |
+| Gemini Live | S2S | `clientContent` user turn (system is invalid mid-session) |
+| Vapi | pipeline | system `add-message` via live-call `controlUrl` |
 | Retell (custom LLM) | pipeline | system message prepended to next turn |
 | ElevenLabs Agents | pipeline | `contextual_update` (read, never spoken) |
 | Deepgram Voice Agent | pipeline | `UpdatePrompt` (additive) |
 | Pipecat | framework | `LLMMessagesAppendFrame`, `run_llm=false` |
 | LiveKit Agents | framework | chat-context system append |
-| Bland / Cartesia / Inworld | pipeline / component | none — tap-only, honestly declared |
+| Bland | pipeline | none — observation-only, honestly declared |
+| Cartesia Line | component / agent hook | none until the agent handles a custom event |
 
 ### 3.4 The whisper path and degrade-safety
 

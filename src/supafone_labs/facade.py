@@ -27,6 +27,7 @@ from supafone_labs.runtime.adapters import (
     LivekitAdapter,
     PipecatAdapter,
     RetellAdapter,
+    SupafoneAdapter,
     UltravoxAdapter,
     VapiAdapter,
 )
@@ -54,13 +55,14 @@ SCENARIO_PRESETS: dict[str, list[str]] = {
 
 def _default_adapters() -> list[Any]:
     return [
+        SupafoneAdapter(),
         UltravoxAdapter(),
         VapiAdapter(),
         BlandAdapter(),
         GPTRealtimeAdapter(),
-        GeminiLiveAdapter(),
         RetellAdapter(),
         GrokAdapter(),
+        GeminiLiveAdapter(),
         ElevenLabsAdapter(),
         DeepgramAdapter(),
         PipecatAdapter(),
@@ -154,11 +156,14 @@ class SuperchargeResult:
 # --- provider auto-detection ---------------------------------------------------
 
 _PROVIDER_HINTS = {
+    "supafone": "supafone",
     "ultravox": "ultravox",
     "vapi": "vapi",
     "bland": "bland",
     "retell": "retell",
     "grok": "grok",
+    "gemini": "gemini_live",
+    "gemini_live": "gemini_live",
     "elevenlabs": "elevenlabs",
     "11labs": "elevenlabs",
     "deepgram": "deepgram",

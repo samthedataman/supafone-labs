@@ -1,7 +1,7 @@
-# 📦 SDK Installation
+# SDK Installation
 
 Supafone Labs publishes a Python package and an unscoped TypeScript package.
-Current release: **0.4.6** on both
+Current release: **0.4.8** on both
 [PyPI](https://pypi.org/project/supafone-labs/) and
 [npm](https://www.npmjs.com/package/supafone-labs).
 
@@ -59,15 +59,8 @@ import { Supafone } from "supafone-labs";
 
 const supafone = new Supafone({
   apiKey: process.env.SUPAFONE_LABS_API_KEY!,
-  voiceWatcher: true, // default on — provisions agents under the Voice Watcher framework
 });
 ```
-
-The `voiceWatcher` flag (Python: `voice_watcher`) is **on by default**: every
-agent the client provisions runs under Supafone's Voice Watcher framework (live
-supervision + QA + call scoring). Set it to `false` for a raw agent. The TS
-client also accepts `voice_watcher` (snake case); both SDKs keep a deprecated
-`labs` alias.
 
 CommonJS:
 
@@ -107,10 +100,48 @@ const live = supafone.liveTranscribe({
 });
 ```
 
+## Universal Phone Tester
+
+Both SDKs expose the real provider-neutral phone grader. The target can run on
+Vapi, Retell, Bland, OpenAI Realtime, Grok, LiveKit, or a custom runtime, and
+can use any carrier reachable over PSTN.
+
+Python:
+
+```python
+from supafone_labs import Supafone
+
+sf = Supafone()  # SUPAFONE_TOKEN=sl_live_...
+started = sf.tester.call(
+    to_number="+14155550100",
+    scenario="price_probe",
+    ai_provider="gpt_realtime",
+    telephony_provider="twilio",
+    authorized=True,
+)
+finished = sf.tester.wait(started["session_id"])
+print(finished["verdict"], finished["transcript"])
+```
+
+TypeScript:
+
+```ts
+const started = await supafone.tester.call({
+  toNumber: "+14155550100",
+  scenario: "price_probe",
+  aiProvider: "vapi",
+  telephonyProvider: "telnyx",
+  authorized: true,
+});
+const finished = await supafone.tester.wait(started.session_id);
+```
+
+This places a real call and spends tester credits. Both SDKs reject missing
+authorization and malformed E.164 numbers before dialing.
+
 ## Package Names
 
 | Ecosystem | Install name | Import name |
 | --- | --- | --- |
 | Python | `supafone-labs` | `supafone_labs` |
 | npm | `supafone-labs` | `Supafone` from `"supafone-labs"` |
-

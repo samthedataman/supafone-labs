@@ -4,6 +4,23 @@ All notable changes to this project are documented here. The format is based on
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project adheres to
 [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.4.8] - 2026-07-12
+
+### Added
+- Provider-neutral phone tester clients in Python and TypeScript, including
+  capability discovery, authorized PSTN test starts, session polling,
+  transcripts, and verdicts.
+- Native Supafone and Gemini Live runtime adapters plus an executable provider
+  injection contract matrix covering 14 voice runtimes.
+
+### Fixed
+- Preserved the `0.4.7` Voice Watcher default and native Ultravox BYOK
+  passthrough while adding the tester APIs.
+- Gemini Live control messages use a valid mid-session `user` role and retain
+  availability, consent-guard, and summary-reconciliation decisions.
+- Gemini Live parsing preserves every transcript emitted in a combined server
+  frame instead of returning only the first event.
+
 ## [0.4.7] - 2026-07-12
 
 ### Fixed

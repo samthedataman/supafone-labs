@@ -7,9 +7,8 @@ is OpenAI-Realtime-*compatible* but not identical (per xAI's docs):
 ``response.done`` — and caller transcription arrives as
 ``conversation.item.input_audio_transcription.updated`` carrying the
 **cumulative** transcript (xAI's rename of OpenAI's ``.delta``; requires
-``audio.input.transcription.model = "grok-transcribe"``). xAI documents no
-agent-transcript events. Injection is a ``session.update`` prompt patch —
-speech-to-speech models have no out-of-band hidden-message channel.
+``audio.input.transcription.model = "grok-transcribe"``). A Watcher directive
+uses xAI's documented per-response ``response.create.instructions`` override.
 """
 from __future__ import annotations
 
@@ -27,7 +26,7 @@ class GrokAdapter(BaseAdapter):
 
     def capabilities(self) -> ProviderCapabilities:
         return ProviderCapabilities(
-            supports_hidden_instruction_injection=False,
+            supports_hidden_instruction_injection=True,
             supports_mid_call_prompt_patch=True,
             supports_stageful_session_updates=True,
             supports_tool_call_interception=True,
@@ -66,7 +65,7 @@ class GrokAdapter(BaseAdapter):
         if event_type == "conversation.item.created":
             item = raw_event.get("item", {})
             role = str(item.get("role") or "").lower()
-            text = str(item.get("text") or item.get("content", "") or "")
+            text = self._item_text(item)
             if not text:
                 return []
             caller = role == "user"
@@ -143,6 +142,21 @@ class GrokAdapter(BaseAdapter):
             ]
         return []
 
+    @staticmethod
+    def _item_text(item: dict[str, Any]) -> str:
+        if item.get("text"):
+            return str(item["text"])
+        content = item.get("content")
+        if isinstance(content, str):
+            return content
+        if not isinstance(content, list):
+            return ""
+        return "".join(
+            str(part.get("text") or part.get("transcript") or "")
+            for part in content
+            if isinstance(part, dict)
+        )
+
     async def compile(
         self,
         decision: RuntimeDecision,
@@ -152,8 +166,11 @@ class GrokAdapter(BaseAdapter):
             return [
                 ProviderAction(
                     provider=self.provider_name,
-                    kind="session_update",
-                    payload={"instructions_append": decision.payload["text"]},
+                    kind="response_create",
+                    payload={
+                        "type": "response.create",
+                        "response": {"instructions": decision.payload["text"]},
+                    },
                 )
             ]
         if decision.kind == DecisionKinds.FORCE_STAGE_TRANSITION:
@@ -185,7 +202,10 @@ class GrokAdapter(BaseAdapter):
                 ProviderAction(
                     provider=self.provider_name,
                     kind="response_create",
-                    payload={"instructions": decision.payload["message"]},
+                    payload={
+                        "type": "response.create",
+                        "response": {"instructions": decision.payload["message"]},
+                    },
                 )
             ]
         if decision.kind == DecisionKinds.RECONCILE_CALL_SUMMARY:

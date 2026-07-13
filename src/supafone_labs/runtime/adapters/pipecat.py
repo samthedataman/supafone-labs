@@ -173,7 +173,7 @@ class PipecatAdapter(BaseAdapter):
                     kind="append_context_frame",
                     payload={
                         "frame": "LLMMessagesAppendFrame",
-                        "messages": [{"role": "system", "content": text}],
+                        "messages": [{"role": "developer", "content": text}],
                         # whisper lands silently; don't force a new model turn
                         "run_llm": False,
                     },
@@ -188,7 +188,7 @@ class PipecatAdapter(BaseAdapter):
                         "frame": "LLMMessagesAppendFrame",
                         "messages": [
                             {
-                                "role": "system",
+                                "role": "developer",
                                 "content": f"Conversation stage is now: {decision.payload['stage']}",
                             }
                         ],
@@ -202,7 +202,7 @@ class PipecatAdapter(BaseAdapter):
                     kind="append_context_frame",
                     payload={
                         "frame": "LLMMessagesAppendFrame",
-                        "messages": [{"role": "system", "content": str(decision.payload)}],
+                        "messages": [{"role": "developer", "content": str(decision.payload)}],
                     },
                 )
             ]

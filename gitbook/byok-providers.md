@@ -132,6 +132,8 @@ Supported agent/provider-stack fields include:
 | Pipecat | `pipecatApiKey` |
 | OpenAI Realtime | `openaiApiKey` |
 | Grok/xAI | `xaiApiKey` |
+| Gemini Live | `geminiApiKey` or Google Cloud credentials |
+| Inworld Realtime | `inworldApiKey` |
 
 Supported TTS/STT fields include:
 

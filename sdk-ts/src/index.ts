@@ -992,6 +992,69 @@ export interface QAResult {
   };
 }
 
+export type TesterScenario = "price_probe" | "false_booking" | "language_switch" | "distressed";
+
+export interface TesterCallInput {
+  /** E.164 phone number for an agent you own or are authorized to test. */
+  toNumber: string;
+  scenario?: TesterScenario;
+  agentLabel?: string;
+  /** Metadata only: the target runtime is not re-hosted by Supafone. */
+  aiProvider?: string;
+  /** Metadata only: PSTN is the provider-neutral test boundary. */
+  telephonyProvider?: string;
+  /** Must be true. Supafone will not dial an unauthorized target. */
+  authorized: boolean;
+}
+
+export interface TesterCallStart {
+  session_id: string;
+  call_sid: string;
+  status: string;
+  mode: "phone_grader";
+  transport: Record<string, unknown>;
+  target: Record<string, unknown>;
+}
+
+export interface TesterTranscriptTurn {
+  role?: string;
+  speaker?: string;
+  text: string;
+  [extra: string]: unknown;
+}
+
+export interface TesterVerdict {
+  passed: boolean;
+  score: number;
+  evidence?: string;
+  [extra: string]: unknown;
+}
+
+export interface TesterSession {
+  status: string;
+  scenario: string;
+  turns: number;
+  transcript: TesterTranscriptTurn[];
+  verdict: TesterVerdict | null;
+  call_sid?: string;
+  carrier_status?: string;
+  error?: string;
+  target?: Record<string, unknown>;
+  transport?: Record<string, unknown>;
+}
+
+export interface TesterCapabilities {
+  phone_grader: {
+    available: boolean;
+    target_channel: "pstn";
+    target_ai_providers: "any";
+    target_telephony_providers: "any";
+    origin_dialer: string;
+    missing: string[];
+    scenarios: Array<{ id: TesterScenario; title: string }>;
+  };
+}
+
 export class SupafoneLabsError extends Error {
   constructor(
     message: string,
@@ -1031,6 +1094,7 @@ export class SupafoneLabs {
   readonly labs: LabsNamespace;
   readonly builder: BuilderNamespace;
   readonly qa: QANamespace;
+  readonly tester: TesterNamespace;
   readonly optimizer: OptimizerNamespace;
   readonly campaigns: CampaignsNamespace;
 
@@ -1065,6 +1129,7 @@ export class SupafoneLabs {
     this.labs = new LabsNamespace(this);
     this.builder = new BuilderNamespace(this);
     this.qa = new QANamespace(this);
+    this.tester = new TesterNamespace(this);
     this.optimizer = new OptimizerNamespace(this);
     this.campaigns = new CampaignsNamespace(this);
   }
@@ -2362,6 +2427,62 @@ class BuilderNamespace {
   }
 }
 
+class TesterNamespace {
+  constructor(private sm: SupafoneLabs) {}
+
+  /** Discover whether the managed phone grader is ready on this gateway. */
+  capabilities(): Promise<TesterCapabilities> {
+    return this.sm.request("GET", "/v1/tester/capabilities");
+  }
+
+  /**
+   * Dial any authorized voice agent over PSTN and start a synthetic caller.
+   * The target AI and telephony providers are metadata; neither is required
+   * to be hosted by Supafone.
+   */
+  call(input: TesterCallInput): Promise<TesterCallStart> {
+    if (!input?.authorized) {
+      throw new SupafoneLabsError("authorized must be true — only test agents you own or are permitted to call");
+    }
+    if (!/^\+[1-9]\d{7,14}$/.test(input.toNumber ?? "")) {
+      throw new SupafoneLabsError("toNumber must be E.164, for example +14155550100");
+    }
+    return this.sm.request("POST", "/v1/tester/call", {
+      to_number: input.toNumber,
+      scenario: input.scenario ?? "price_probe",
+      agent_label: input.agentLabel ?? "sdk-tester",
+      ai_provider: input.aiProvider ?? "unknown",
+      telephony_provider: input.telephonyProvider ?? "unknown",
+      authorized: true,
+    });
+  }
+
+  /** Read live transcript, carrier state, and final verdict for one tester call. */
+  session(sessionId: string): Promise<TesterSession> {
+    if (!sessionId?.trim()) throw new SupafoneLabsError("sessionId is required");
+    return this.sm.request("GET", `/v1/tester/session/${encodeURIComponent(sessionId)}`);
+  }
+
+  /** Poll until the real call finishes or timeoutMs is reached. */
+  async wait(
+    sessionId: string,
+    opts: { pollMs?: number; timeoutMs?: number } = {},
+  ): Promise<TesterSession> {
+    const pollMs = Math.max(250, opts.pollMs ?? 1_400);
+    const timeoutMs = Math.max(pollMs, opts.timeoutMs ?? 240_000);
+    const deadline = Date.now() + timeoutMs;
+    const terminal = new Set(["done", "completed", "failed", "busy", "no_answer", "no-answer", "canceled", "cancelled", "error"]);
+    while (true) {
+      const result = await this.session(sessionId);
+      if (terminal.has(String(result.status || "").toLowerCase())) return result;
+      if (Date.now() >= deadline) {
+        throw new SupafoneLabsError(`tester session ${sessionId} did not finish within ${timeoutMs}ms`);
+      }
+      await new Promise((resolve) => setTimeout(resolve, pollMs));
+    }
+  }
+}
+
 class QANamespace {
   constructor(private sm: SupafoneLabs) {}
   /**
@@ -2748,8 +2869,7 @@ function byokPayload(input: LabsProviderKeys | LabsByokConfig): Record<string, u
       provider_keys: providerKeysPayload(structured.provider_keys ?? structured.providerKeys ?? {}),
       agent_provider: providerConfigPayload(structured.agent_provider ?? structured.agentProvider ?? structured.runtime),
       // Native (BYOK) Ultravox runtime key — forwarded verbatim so
-      // byok.ultravox = {api_key, base_url?} round-trips even when the block
-      // also carries an agentProvider / telephony / *tts etc.
+      // byok.ultravox = {api_key, base_url?} round-trips with other provider config.
       ultravox: structured.ultravox,
       telephony: structured.telephony ? telephonyPayload(structured.telephony) : undefined,
       tts: providerConfigPayload(structured.tts),

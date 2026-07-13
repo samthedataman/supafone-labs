@@ -18,7 +18,7 @@ class FakeUltravoxAgent:
 
     def inject(self, actions) -> None:
         for action in actions:
-            self.injected.append(action.payload.get("message", ""))
+            self.injected.append(action.payload.get("text", ""))
 
 
 async def main() -> None:

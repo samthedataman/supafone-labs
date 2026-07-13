@@ -1,4 +1,4 @@
-# 🔗 MCP Server
+# MCP Server
 
 Supafone Labs ships a local MCP server for Claude Desktop under:
 
@@ -31,7 +31,7 @@ The older, explicit per-surface variables still work and take precedence when
 set:
 
 ```bash
-export SUPAFONE_API_KEY=sl_live_...       # your one sl_ key (or a scoped sf_ hosted-agent key)
+export SUPAFONE_API_KEY=sf_live_...       # hosted-agent provisioning
 export SUPAFONE_LABS_API_KEY=sl_live_...  # Labs Cloud logs/usage
 export SUPAFONE_API_BASE_URL=https://api.supafone.ai
 export SUPAFONE_LABS_API_BASE_URL=https://api.labs.supafone.ai
@@ -81,6 +81,30 @@ Restart Claude Desktop after saving the config.
 | `list_logs` | Read recent Labs Cloud logs from `/v1/logs`. |
 | `tail_logs` | Poll Labs Cloud logs for a bounded live-looking stream. |
 | `poll_logs` | Alias for `tail_logs`. |
++| `get_tester_capabilities` | Check managed phone-grader readiness and scenarios. |
+| `test_phone_agent` | Place a real synthetic call to any authorized E.164 voice agent, independent of target runtime/carrier. |
+| `get_phone_test` | Read carrier state, transcript, and verdict for a tester session. |
+| `wait_for_phone_test` | Poll a tester session to a bounded terminal result. |
+| `generate_qa_scenarios` | Generate adversarial scenarios from an agent prompt. |
+| `list_qa_runs` | Read prior QA and Watcher benchmark results. |
+| `run_watcher_qa` | Run every scenario with and without Watcher supervision (Labs login required). |
+
+#### Test any voice stack
+
+`test_phone_agent` uses PSTN as the provider-neutral boundary. The target may
+run Vapi, Retell, Bland, OpenAI Realtime, Grok, LiveKit, a custom runtime, or
+another framework, and its carrier may be Twilio, Telnyx, SignalWire, SIP, or
+another provider. These names are recorded as metadata; Supafone does not need
+to host either side of the target stack.
+
+The tool places a real call and spends tester credits. It rejects the request
+unless `authorized` is exactly `true`. Use `get_phone_test` for one status read
+or `wait_for_phone_test` for bounded polling to the final transcript and
+verdict.
+
+`run_watcher_qa` is a different lane: it runs synthetic A/B conversations
+without dialing a phone. It requires the Labs account email/password because
+the saved Builder configuration is session-scoped.
 
 ### Campaigns & calls (main-app account login)
 

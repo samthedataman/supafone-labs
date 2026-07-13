@@ -1,4 +1,4 @@
-.PHONY: install test lint fmt docs build clean
+.PHONY: install test test-provider-contracts test-live-injection lint fmt docs build clean
 
 PY ?= python3
 
@@ -7,7 +7,13 @@ install:
 	$(PY) -m pip install pytest pytest-asyncio ruff
 
 test:
-	$(PY) -m pytest tests -q
+	PYTHONPATH=src $(PY) -m pytest tests -q
+
+test-provider-contracts:
+	PYTHONPATH=src $(PY) -m pytest tests/test_adapters.py tests/test_facade_all_providers.py tests/test_provider_injection_e2e.py -q
+
+test-live-injection:
+	PYTHONPATH=src $(PY) -m pytest tests -q -m live_injection
 
 lint:
 	$(PY) -m ruff check src

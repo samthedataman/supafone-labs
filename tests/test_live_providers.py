@@ -50,6 +50,7 @@ async def test_live_ultravox_rest_messages_parse():
 
 @needs("ELEVENLABS_API_KEY")
 @needs("ELEVENLABS_AGENT_ID")
+@pytest.mark.live_injection
 async def test_live_elevenlabs_ws_frames_and_contextual_update():
     """Real ConvAI session: initiation frame parses; contextual_update (our whisper) is accepted."""
     import asyncio
@@ -57,7 +58,9 @@ async def test_live_elevenlabs_ws_frames_and_contextual_update():
 
     websockets = pytest.importorskip("websockets")
     from supafone_labs.runtime.adapters import ElevenLabsAdapter
+    from supafone_labs.runtime.core.decision import RuntimeDecision
     from supafone_labs.runtime.core.events import EventTypes
+    from supafone_labs.runtime.core.state import build_initial_state
 
     url = (
         "wss://api.elevenlabs.io/v1/convai/conversation"
@@ -72,9 +75,14 @@ async def test_live_elevenlabs_ws_frames_and_contextual_update():
         assert events and events[0].type == EventTypes.SESSION_STARTED
         assert events[0].provider_session_id.startswith("conv")
 
-        # The whisper path: inject context, then force a turn. A malformed
-        # injection would surface as an error/close instead of agent_response.
-        await ws.send(json.dumps({"type": "contextual_update", "text": "live contract check"}))
+        # Compile through the production adapter, inject context, then force a
+        # turn. A malformed action surfaces as an error/close, never a pass.
+        actions = await adapter.compile(
+            RuntimeDecision.inject_hidden_instruction("live contract check"),
+            build_initial_state(provider="elevenlabs", session_id="live-injection"),
+        )
+        assert len(actions) == 1 and actions[0].kind == "contextual_update"
+        await ws.send(json.dumps(actions[0].payload))
         await ws.send(json.dumps({"type": "user_message", "text": "Hello?"}))
         saw_agent_response = False
         for _ in range(12):

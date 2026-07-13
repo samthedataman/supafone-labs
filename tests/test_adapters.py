@@ -21,6 +21,7 @@ from supafone_labs.runtime.adapters import (
     LivekitAdapter,
     PipecatAdapter,
     RetellAdapter,
+    SupafoneAdapter,
     UltravoxAdapter,
     VapiAdapter,
 )
@@ -45,6 +46,27 @@ class ProviderCase:
 
 
 CASES: dict[str, ProviderCase] = {
+    "supafone": ProviderCase(
+        adapter=SupafoneAdapter(),
+        start={"type": "call.started", "call_id": "managed-1"},
+        caller={
+            "type": "transcript",
+            "speaker": "caller",
+            "text": CALLER_TEXT,
+            "final": True,
+            "call_id": "managed-1",
+        },
+        agent={
+            "type": "transcript",
+            "speaker": "agent",
+            "text": AGENT_TEXT,
+            "final": True,
+            "call_id": "managed-1",
+        },
+        tool_call={"type": "tool_call", "name": "book_appointment", "call_id": "managed-1"},
+        end={"type": "call.ended", "call_id": "managed-1"},
+        inject_kind="inject_message",
+    ),
     "ultravox": ProviderCase(
         adapter=UltravoxAdapter(),
         start={"type": "call.started", "call_id": "c1"},
@@ -89,8 +111,6 @@ CASES: dict[str, ProviderCase] = {
             "message": {"type": "end-of-call-report", "endedReason": "hangup"},
             "call": {"id": "c2"},
         },
-        # Live Call Control "add-message" with triggerResponseEnabled:false —
-        # the system turn lands in context silently (not spoken, no forced reply).
         inject_kind="control_add_message",
     ),
     # Doc-verified: live speech arrives as webhook_events "call" lines; the
@@ -122,32 +142,7 @@ CASES: dict[str, ProviderCase] = {
             "name": "book_appointment",
             "session_id": "c4",
         },
-        # One-shot conversation.item.create (system item, no response.create) —
-        # a per-turn silent steer, not a durable session_update prompt patch.
         inject_kind="conversation_item_create",
-    ),
-    # Gemini Live API bidi frames: serverContent carries inputTranscription
-    # (caller STT) + outputTranscription (model audio) + streamed modelTurn;
-    # toolCall.functionCalls for tools; goAway signals close. Roles are only
-    # user/model, so a silent steer is a user-role send_client_content turn
-    # with turnComplete:false.
-    "gemini": ProviderCase(
-        adapter=GeminiLiveAdapter(),
-        start={"setupComplete": {}, "session_id": "c14"},
-        caller={
-            "serverContent": {"inputTranscription": {"text": CALLER_TEXT}},
-            "session_id": "c14",
-        },
-        agent={
-            "serverContent": {"outputTranscription": {"text": AGENT_TEXT}},
-            "session_id": "c14",
-        },
-        tool_call={
-            "toolCall": {"functionCalls": [{"name": "book_appointment", "args": {}}]},
-            "session_id": "c14",
-        },
-        end={"goAway": {"timeLeft": "5s"}, "session_id": "c14"},
-        inject_kind="send_client_content",
     ),
     "retell": ProviderCase(
         adapter=RetellAdapter(),
@@ -193,7 +188,35 @@ CASES: dict[str, ProviderCase] = {
             "name": "book_appointment",
             "session_id": "c6",
         },
-        inject_kind="session_update",
+        inject_kind="response_create",
+    ),
+    "gemini_live": ProviderCase(
+        adapter=GeminiLiveAdapter(),
+        start={"setupComplete": {}, "session_id": "c-gemini"},
+        caller={
+            "serverContent": {
+                "inputTranscription": {"text": CALLER_TEXT},
+                "turnComplete": True,
+            },
+            "session_id": "c-gemini",
+        },
+        agent={
+            "serverContent": {
+                "outputTranscription": {"text": AGENT_TEXT},
+                "turnComplete": True,
+            },
+            "session_id": "c-gemini",
+        },
+        tool_call={
+            "toolCall": {
+                "functionCalls": [
+                    {"id": "gem-tool-1", "name": "book_appointment", "args": {}}
+                ]
+            },
+            "session_id": "c-gemini",
+        },
+        end={"goAway": {"timeLeft": "0s"}, "session_id": "c-gemini"},
+        inject_kind="client_content",
     ),
     "elevenlabs": ProviderCase(
         adapter=ElevenLabsAdapter(),
@@ -302,21 +325,29 @@ CASES: dict[str, ProviderCase] = {
     ),
     "inworld": ProviderCase(
         adapter=InworldAdapter(),
-        start={"type": "session_start", "session_id": "c12"},
+        start={"type": "session.created", "session_id": "c12"},
         caller={
-            "type": "text",
-            "text": {"text": CALLER_TEXT, "final": True},
-            "routing": {"source": {"isPlayer": True}},
+            "type": "conversation.item.done",
+            "item": {
+                "type": "message",
+                "role": "user",
+                "content": [{"type": "input_text", "text": CALLER_TEXT}],
+            },
             "session_id": "c12",
         },
         agent={
-            "type": "text",
-            "text": {"text": AGENT_TEXT, "final": True},
-            "routing": {"source": {"isPlayer": False}},
+            "type": "response.output_audio_transcript.done",
+            "transcript": AGENT_TEXT,
+            "session_id": "c12",
+        },
+        tool_call={
+            "type": "response.function_call_arguments.done",
+            "name": "book_appointment",
+            "call_id": "iw-tool-1",
             "session_id": "c12",
         },
         end={"type": "session_end", "session_id": "c12"},
-        inject_kind=None,  # tap-only
+        inject_kind="conversation_item_create",
     ),
     "generic": ProviderCase(
         adapter=GenericWebhookAdapter(),
@@ -566,6 +597,87 @@ async def test_elevenlabs_chat_response_part_and_correction():
     )
     assert events and events[0].type == EventTypes.AGENT_TRANSCRIPT_FINAL
     assert events[0].text == "Let me stop there."
+
+
+async def test_inworld_does_not_double_ingest_added_then_done():
+    adapter = InworldAdapter()
+    item = {
+        "type": "message",
+        "status": "in_progress",
+        "role": "user",
+        "content": [{"type": "input_text", "text": CALLER_TEXT}],
+    }
+    assert await adapter.parse_event(
+        {"type": "conversation.item.added", "item": item, "session_id": "c12"}
+    ) == []
+    item["status"] = "completed"
+    events = await adapter.parse_event(
+        {"type": "conversation.item.done", "item": item, "session_id": "c12"}
+    )
+    assert len(events) == 1
+    assert events[0].type == EventTypes.CALLER_TRANSCRIPT_FINAL
+
+
+async def test_gemini_input_transcription_uses_turn_completion():
+    adapter = GeminiLiveAdapter()
+    partial = await adapter.parse_event(
+        {
+            "serverContent": {
+                "inputTranscription": {"text": "I was rear"},
+                "turnComplete": False,
+            },
+            "session_id": "c-gemini",
+        }
+    )
+    assert partial and partial[0].type == EventTypes.CALLER_TRANSCRIPT_PARTIAL
+    final = await adapter.parse_event(
+        {
+            "serverContent": {
+                "inputTranscription": {"text": CALLER_TEXT},
+                "turnComplete": True,
+            },
+            "session_id": "c-gemini",
+        }
+    )
+    assert final and final[0].type == EventTypes.CALLER_TRANSCRIPT_FINAL
+
+
+async def test_gemini_preserves_all_events_in_one_server_frame():
+    adapter = GeminiLiveAdapter()
+    events = await adapter.parse_event(
+        {
+            "serverContent": {
+                "inputTranscription": {"text": CALLER_TEXT},
+                "outputTranscription": {"text": AGENT_TEXT},
+                "turnComplete": True,
+            },
+            "session_id": "c-gemini",
+        }
+    )
+    assert [event.type for event in events] == [
+        EventTypes.CALLER_TRANSCRIPT_FINAL,
+        EventTypes.AGENT_TRANSCRIPT_FINAL,
+    ]
+
+
+async def test_gemini_compiles_non_injection_decisions():
+    adapter = GeminiLiveAdapter()
+    state = build_initial_state(provider="gemini_live", session_id="s1")
+
+    availability = RuntimeDecision.request_availability_window(
+        "next week", "2026-07-13", "2026-07-19"
+    )
+    actions = await adapter.compile(availability, state)
+    assert actions[0].kind == "client_content"
+    assert actions[0].payload["clientContent"]["turns"][0]["role"] == "user"
+
+    consent = RuntimeDecision.block_delivery_until_consent("sms", "follow-up")
+    actions = await adapter.compile(consent, state)
+    assert actions[0].kind == "tool_guard"
+
+    summary = RuntimeDecision.reconcile_call_summary("summary", ["missing consent"])
+    actions = await adapter.compile(summary, state)
+    assert actions[0].kind == "summary_patch"
 
 
 async def test_deepgram_compile_uses_documented_message_fields():

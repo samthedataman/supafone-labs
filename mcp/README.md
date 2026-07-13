@@ -108,13 +108,23 @@ so this intentionally polls instead of keeping an infinite stream open:
 }
 ```
 
-`framework_support`
+### Universal tester and Watcher QA
 
-Returns the verified silent-context injection support matrix — which voice
-frameworks Supafone can supervise and by which mechanism (Mode A native event
-vs Mode B own-the-LLM), which are impossible (Bland), and which are not agents
-(Cartesia/Pipecat). No arguments; static verified knowledge, so an agent can ask
-"can we inject into X?" without reading the docs.
+- `get_tester_capabilities` checks whether the managed phone grader is ready.
+- `test_phone_agent` places a **real** synthetic call to any authorized E.164
+  agent, independent of its AI runtime or phone carrier. It requires
+  `authorized: true` and spends tester credits.
+- `get_phone_test` reads one live transcript/status snapshot.
+- `wait_for_phone_test` polls to a bounded final transcript and verdict.
+- `generate_qa_scenarios` creates adversarial cases from an agent prompt.
+- `list_qa_runs` reads prior QA/Watcher results.
+- `run_watcher_qa` runs the saved Builder agent with and without Watcher
+  supervision. It requires `SUPAFONE_EMAIL` and `SUPAFONE_PASSWORD` because the
+  saved Builder configuration is account-session scoped.
+
+The phone tester records `aiProvider` and `telephonyProvider` as target
+metadata. PSTN is the neutral boundary, so the target can run Vapi, OpenAI
+Realtime, Grok, Retell, Bland, LiveKit, Twilio, Telnyx, SIP, or another stack.
 
 ## BYOK Provider Config
 

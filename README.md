@@ -31,9 +31,7 @@ brain = supafone_labs.supercharge(my_agent)   # that's the whole integration
 ```ts
 import { Supafone } from "supafone-labs";
 
-const supafone = new Supafone({ apiKey: process.env.SUPAFONE_API_KEY!, voiceWatcher: true });
-// voiceWatcher is on by default (Python: voice_watcher) — agents provision under
-// the Voice Watcher framework (live supervision + QA + scoring). Set false for a raw agent.
+const supafone = new Supafone({ apiKey: process.env.SUPAFONE_API_KEY! });
 
 const agent = await supafone.labs.agents.createInboundWithNumber({
   agentKey: "northline-intake",
@@ -424,56 +422,34 @@ and rendered at [labs.supafone.ai/pricing.html](https://labs.supafone.ai/pricing
 BYO vendor keys always win when present — leaving the cloud is deleting one
 environment variable.
 
-## Supported frameworks
+## Works with every voice platform
 
-Silent injection means feeding the live agent hidden guidance it *acts on but
-never speaks*. Whether a framework can receive one depends on the door that
-vendor exposes, so the answer is per-framework. There are two mechanisms:
+Speech-to-speech models, STT→LLM→TTS pipelines, frameworks, and raw speech
+engines each get the injection channel they actually have:
 
-- **Mode A — native silent event.** Speech-to-speech models accept a vendor
-  event that adds context to the session without triggering speech.
-- **Mode B — own the LLM.** For STT→LLM→TTS pipelines, Supafone plugs in as the
-  LLM and splices a `system`/`developer` message into the prompt before
-  generation.
+| Platform | Kind | Watcher delivery |
+|---|---|---|
+| Supafone · Ultravox | managed / S2S | deferred `user_text_message` |
+| Vapi | agent platform | system `add-message` via live-call `controlUrl` |
+| OpenAI Realtime · Inworld Realtime | realtime S2S | system `conversation.item.create` |
+| xAI Grok | realtime S2S | per-response `response.create.instructions` |
+| Gemini Live | realtime S2S | `clientContent` user turn (system is invalid mid-session) |
+| Retell | custom-LLM WS | system entry in your owned LLM context |
+| ElevenLabs Agents | agent platform | `contextual_update` |
+| Deepgram Voice Agent | agent platform | `UpdatePrompt` |
+| Pipecat · LiveKit Agents | frameworks | context frame / chat-context append |
+| Bland | observation only | no documented prompt-injection control |
+| Cartesia Line | custom hook | no action until your agent handles a custom event |
+| Anything else | webhook | `GenericWebhookAdapter`, configurable |
 
-**Possible — 10 frameworks**, each with a real injection door:
-
-| Framework | Mode | Exact primitive |
-|---|:--:|---|
-| Ultravox | A | `send_data_message` (`urgency:"later"`) — **live/proven today** |
-| OpenAI Realtime | A | `conversation.item.create` (role `system`, no `response.create`) |
-| Grok (xAI) | A | OpenAI-Realtime-compatible item inject |
-| Gemini Live | A | `clientContent` (`turnComplete:false`, role `user`) |
-| ElevenLabs | A | `contextual_update` |
-| Inworld | A | OpenAI-Realtime-compatible item inject |
-| Vapi | A+B | `add-message` (`triggerResponseEnabled:false`) or custom-LLM splice |
-| Retell | B | `system` message into the custom-LLM turn |
-| Deepgram | A+B | `UpdatePrompt`, or own the `think` LLM |
-| LiveKit | B | inject into `chat_ctx` in-process |
-
-**Impossible — 1 framework:** **Bland** is a closed box — its live-call API is
-stop/listen/transfer only, with no mid-call inject channel and no custom-LLM.
-You can observe and score a Bland call, but not whisper to it live. This is a
-permanent vendor limitation, not a Supafone gap.
-
-**Not conversational agents (n/a):** **Cartesia** is a voice (TTS) used on
-another agent, not an agent itself; **Pipecat** is a DIY framework where you own
-every step, so injection is trivial and needs no vendor door.
-
-> **Honest caveats:** injection is *possible* for all 10, but managed delivery
-> is wired end-to-end **only for Ultravox today** — the other nine are supported
-> via their native primitive, with managed delivery rolling out / BYO. A live
-> test against any vendor needs that vendor's key; free/trial tiers exist for all
-> **except OpenAI Realtime** (paid, no free tier).
-
-The full matrix with citations lives in
-[gitbook/framework-support.md](gitbook/framework-support.md); the per-adapter
-capability receipts are in [docs/providers.md](docs/providers.md). *(The PyPI/npm
-package-page copy updates on the next release.)*
-
-Telephony is transport-agnostic and separate from injection: Twilio, Telnyx,
-SignalWire, Vonage, Plivo, LiveKit SIP, Jambonz, FreeSWITCH/Asterisk, and SIPREC
-forks all feed the same tap ([SIP matrix](https://labs.supafone.ai/docs.html#sip)).
+The release gate covers **fourteen public runtimes** from provider event through
+Watcher decision to exact delivery payload. Credentialed probes separately send
+real controls and wait for provider acceptance; missing credentials skip rather
+than pass. [docs/providers.md](docs/providers.md) has the current contract and
+test matrix. Telephony is
+transport-agnostic: Twilio, Telnyx, SignalWire, Vonage, Plivo, LiveKit SIP,
+Jambonz, FreeSWITCH/Asterisk, and SIPREC forks all feed the same tap
+([SIP matrix](https://labs.supafone.ai/docs.html#sip)).
 
 Runnable integrations for every permutation live in [`examples/`](examples/).
 
@@ -556,7 +532,7 @@ platform-native suites, τ-bench, VoiceBench) —
 ## Repo layout
 
 ```
-src/supafone_labs/     the package — facade, oracle, runtime + 13 adapters, tts, stt, tiers
+src/supafone_labs/     the package — facade, oracle, runtime + 14 audited runtimes, tts, stt, tiers
 cloud/              Supafone Labs Cloud — the hosted gateway (FastAPI)
 landing/            the website (landing, get-key, console, docs)
 examples/           one runnable integration per platform + TypeScript client
@@ -569,7 +545,8 @@ docs/               provider capability matrix + quickstart
 ```bash
 make install                  # editable install + dev tools
 make test                     # offline suite (live tests skip without keys)
-pytest -m live                # live provider contract checks
+make test-provider-contracts  # 14-runtime event -> Watcher -> exact-action gate
+make test-live-injection      # real controls; missing credentials are skips
 make lint                     # ruff
 cd cloud && uvicorn app:app --reload    # run the gateway locally
 ```

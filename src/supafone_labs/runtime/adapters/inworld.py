@@ -1,10 +1,8 @@
-"""Inworld adapter — TTS component / character-engine events, tap-only.
+"""Inworld Realtime adapter with legacy character-event compatibility.
 
-Inworld's TTS is a speech engine (nothing to coach); its character runtime
-emits interaction packets with a ``text`` body and ``routing`` metadata whose
-``source.isPlayer`` flag distinguishes the human from the character. Both
-shapes are mapped to canonical transcript events so the oracle can observe an
-Inworld-powered stack; ``compile`` returns no actions (tap-only).
+Inworld's current Realtime API follows the OpenAI Realtime event protocol and
+accepts system-role conversation items during a call. Older character-engine
+``text`` packets are still parsed so existing integrations keep working.
 """
 from __future__ import annotations
 
@@ -12,7 +10,7 @@ from typing import Any
 
 from supafone_labs.runtime.adapters.base import BaseAdapter
 from supafone_labs.runtime.core.capabilities import ProviderCapabilities
-from supafone_labs.runtime.core.decision import ProviderAction, RuntimeDecision
+from supafone_labs.runtime.core.decision import DecisionKinds, ProviderAction, RuntimeDecision
 from supafone_labs.runtime.core.events import CanonicalEvent, EventTypes, make_event
 from supafone_labs.runtime.core.state import RuntimeState
 
@@ -22,10 +20,10 @@ class InworldAdapter(BaseAdapter):
 
     def capabilities(self) -> ProviderCapabilities:
         return ProviderCapabilities(
-            supports_hidden_instruction_injection=False,
-            supports_mid_call_prompt_patch=False,
-            supports_stageful_session_updates=False,
-            supports_tool_call_interception=False,
+            supports_hidden_instruction_injection=True,
+            supports_mid_call_prompt_patch=True,
+            supports_stageful_session_updates=True,
+            supports_tool_call_interception=True,
             supports_server_side_transcript_stream=True,
             supports_native_recording=False,
             supports_native_webhooks=False,
@@ -41,6 +39,21 @@ class InworldAdapter(BaseAdapter):
         speaker = str(raw_event.get("speaker") or raw_event.get("role") or "").lower()
         return speaker in {"player", "user", "caller", "client"}
 
+    @staticmethod
+    def _item_text(item: dict[str, Any]) -> str:
+        if item.get("text"):
+            return str(item["text"])
+        content = item.get("content")
+        if isinstance(content, str):
+            return content
+        if not isinstance(content, list):
+            return ""
+        return "".join(
+            str(part.get("text") or part.get("transcript") or "")
+            for part in content
+            if isinstance(part, dict)
+        )
+
     async def parse_event(self, raw_event: dict[str, Any]) -> list[CanonicalEvent]:
         event_type = str(raw_event.get("type") or "").strip().lower()
         session_id = self._session_id(raw_event)
@@ -48,7 +61,12 @@ class InworldAdapter(BaseAdapter):
             raw_event.get("interaction_id") or raw_event.get("interactionId") or ""
         )
 
-        if event_type in {"session_start", "session.started", "control_session_start"}:
+        if event_type in {
+            "session.created",
+            "session_start",
+            "session.started",
+            "control_session_start",
+        }:
             return [
                 make_event(
                     EventTypes.SESSION_STARTED,
@@ -56,6 +74,98 @@ class InworldAdapter(BaseAdapter):
                     provider=self.provider_name,
                     provider_session_id=provider_session_id,
                     data=raw_event,
+                )
+            ]
+        if event_type == "session.updated":
+            return [
+                make_event(
+                    EventTypes.SESSION_UPDATED,
+                    session_id=session_id,
+                    provider=self.provider_name,
+                    provider_session_id=provider_session_id,
+                    data=raw_event,
+                )
+            ]
+        if event_type in {
+            "conversation.item.added",
+            "conversation.item.created",
+            "conversation.item.done",
+        }:
+            item = raw_event.get("item") if isinstance(raw_event.get("item"), dict) else {}
+            if event_type == "conversation.item.added" and item.get("status") != "completed":
+                # Current Inworld sessions emit added and then done for one item.
+                # Only a completed added event is safe to treat as a final turn.
+                return []
+            role = str(item.get("role") or "").lower()
+            text = self._item_text(item)
+            if not text or role == "system":
+                return []
+            caller = role == "user"
+            return [
+                make_event(
+                    EventTypes.CALLER_TRANSCRIPT_FINAL
+                    if caller
+                    else EventTypes.AGENT_TRANSCRIPT_FINAL,
+                    session_id=session_id,
+                    provider=self.provider_name,
+                    provider_session_id=provider_session_id,
+                    actor="caller" if caller else "agent",
+                    text=text,
+                    data=raw_event,
+                )
+            ]
+        if event_type in {
+            "conversation.item.input_audio_transcription.delta",
+            "conversation.item.input_audio_transcription.completed",
+        }:
+            final = event_type.endswith("completed")
+            return [
+                make_event(
+                    EventTypes.CALLER_TRANSCRIPT_FINAL
+                    if final
+                    else EventTypes.CALLER_TRANSCRIPT_PARTIAL,
+                    session_id=session_id,
+                    provider=self.provider_name,
+                    provider_session_id=provider_session_id,
+                    actor="caller",
+                    text=str(raw_event.get("transcript") or raw_event.get("delta") or ""),
+                    data=raw_event,
+                )
+            ]
+        if event_type in {
+            "response.output_audio_transcript.delta",
+            "response.output_audio_transcript.done",
+            "response.output_text.delta",
+            "response.output_text.done",
+        }:
+            final = event_type.endswith("done")
+            return [
+                make_event(
+                    EventTypes.AGENT_TRANSCRIPT_FINAL
+                    if final
+                    else EventTypes.AGENT_TRANSCRIPT_PARTIAL,
+                    session_id=session_id,
+                    provider=self.provider_name,
+                    provider_session_id=provider_session_id,
+                    actor="agent",
+                    text=str(
+                        raw_event.get("transcript")
+                        or raw_event.get("text")
+                        or raw_event.get("delta")
+                        or ""
+                    ),
+                    data=raw_event,
+                )
+            ]
+        if event_type == "response.function_call_arguments.done":
+            return [
+                make_event(
+                    EventTypes.TOOL_CALLED,
+                    session_id=session_id,
+                    provider=self.provider_name,
+                    provider_session_id=provider_session_id,
+                    actor="tool",
+                    data={"tool_name": raw_event.get("name"), **raw_event},
                 )
             ]
         if event_type == "text":
@@ -69,17 +179,19 @@ class InworldAdapter(BaseAdapter):
             if not text.strip():
                 return []
             caller = self._is_player(raw_event)
-            if caller:
-                mapped = (
-                    EventTypes.CALLER_TRANSCRIPT_FINAL if final else EventTypes.CALLER_TRANSCRIPT_PARTIAL
-                )
-            else:
-                mapped = (
-                    EventTypes.AGENT_TRANSCRIPT_FINAL if final else EventTypes.AGENT_TRANSCRIPT_PARTIAL
-                )
             return [
                 make_event(
-                    mapped,
+                    (
+                        EventTypes.CALLER_TRANSCRIPT_FINAL
+                        if final
+                        else EventTypes.CALLER_TRANSCRIPT_PARTIAL
+                    )
+                    if caller
+                    else (
+                        EventTypes.AGENT_TRANSCRIPT_FINAL
+                        if final
+                        else EventTypes.AGENT_TRANSCRIPT_PARTIAL
+                    ),
                     session_id=session_id,
                     provider=self.provider_name,
                     provider_session_id=provider_session_id,
@@ -115,5 +227,43 @@ class InworldAdapter(BaseAdapter):
         decision: RuntimeDecision,
         state: RuntimeState,
     ) -> list[ProviderAction]:
-        # Tap-only: a speech engine has no instruction channel.
+        if decision.kind in {
+            DecisionKinds.INJECT_HIDDEN_INSTRUCTION,
+            DecisionKinds.REQUEST_FIELD_REPAIR,
+        }:
+            text = decision.payload.get("text") or decision.payload.get("message") or ""
+            return [
+                ProviderAction(
+                    provider=self.provider_name,
+                    kind="conversation_item_create",
+                    payload={
+                        "type": "conversation.item.create",
+                        "item": {
+                            "type": "message",
+                            "role": "system",
+                            "content": [{"type": "input_text", "text": text}],
+                        },
+                    },
+                )
+            ]
+        if decision.kind == DecisionKinds.FORCE_STAGE_TRANSITION:
+            return [
+                ProviderAction(
+                    provider=self.provider_name,
+                    kind="conversation_item_create",
+                    payload={
+                        "type": "conversation.item.create",
+                        "item": {
+                            "type": "message",
+                            "role": "system",
+                            "content": [
+                                {
+                                    "type": "input_text",
+                                    "text": f"Conversation stage is now: {decision.payload['stage']}",
+                                }
+                            ],
+                        },
+                    },
+                )
+            ]
         return []

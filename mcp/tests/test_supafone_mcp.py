@@ -32,6 +32,13 @@ def test_initialize_and_list_tools():
         "create_inbound_agent_with_number",
         "create_outbound_agent_with_number",
         "get_usage",
+        "get_tester_capabilities",
+        "test_phone_agent",
+        "get_phone_test",
+        "wait_for_phone_test",
+        "generate_qa_scenarios",
+        "list_qa_runs",
+        "run_watcher_qa",
         "list_logs",
         "tail_logs",
         "poll_logs",
@@ -71,7 +78,12 @@ def test_create_inbound_agent_uses_python_sdk(monkeypatch):
     assert result["agent"]["agent_key"] == "northline-intake"
     assert calls[0] == (
         "client",
-        {"api_key": "sf_test", "supafone_api_base_url": "https://api.supafone.ai"},
+        {
+            "api_key": "sf_test",
+            "labs_api_key": "sf_test",
+            "supafone_api_base_url": "https://api.supafone.ai",
+            "labs_api_base_url": "https://api.labs.supafone.ai",
+        },
     )
     assert calls[1] == (
         "create_inbound",
@@ -113,6 +125,58 @@ def test_poll_logs_returns_bounded_batches(monkeypatch):
     assert result["latest_logs"][0]["detail"] == "second"
 
 
+def test_phone_agent_requires_authorization_and_preserves_provider_metadata(monkeypatch):
+    calls = []
+
+    class FakeTester:
+        def call(self, **kwargs):
+            calls.append(kwargs)
+            return {"session_id": "ts_123", "status": "dialing"}
+
+    class FakeSupafone:
+        def __init__(self, **_kwargs):
+            self.tester = FakeTester()
+
+    monkeypatch.setattr(supafone_mcp, "Supafone", FakeSupafone)
+    server = supafone_mcp.SupafoneMCPServer(sleep=lambda _seconds: None)
+
+    denied = server.handle(
+        {
+            "jsonrpc": "2.0",
+            "id": 7,
+            "method": "tools/call",
+            "params": {
+                "name": "test_phone_agent",
+                "arguments": {"apiKey": "sl_test", "toNumber": "+14155550100", "authorized": False},
+            },
+        }
+    )
+    assert denied["result"]["isError"] is True
+
+    result = server.call_tool(
+        "test_phone_agent",
+        {
+            "apiKey": "sl_test",
+            "toNumber": "+14155550100",
+            "scenario": "language_switch",
+            "aiProvider": "grok",
+            "telephonyProvider": "telnyx",
+            "authorized": True,
+        },
+    )
+    assert result["session_id"] == "ts_123"
+    assert calls == [
+        {
+            "to_number": "+14155550100",
+            "scenario": "language_switch",
+            "agent_label": "mcp-tester",
+            "ai_provider": "grok",
+            "telephony_provider": "telnyx",
+            "authorized": True,
+        }
+    ]
+
+
 # ---------------------------------------------------------------------------
 # Main-app tools: campaigns + place_call (JWT auth against api.supafone.ai)
 # ---------------------------------------------------------------------------
@@ -136,21 +200,6 @@ def test_tools_list_includes_campaign_and_call_tools():
         "apply_campaign_preset",
         "create_sign_link",
     }.issubset(tool_names)
-
-
-def test_framework_support_returns_verified_injection_matrix():
-    server = supafone_mcp.SupafoneMCPServer(sleep=lambda _seconds: None)
-    listed = server.handle({"jsonrpc": "2.0", "id": 4, "method": "tools/list"})
-    assert "framework_support" in {t["name"] for t in listed["result"]["tools"]}
-    matrix = server.call_tool("framework_support", {})
-    possible = {f["framework"] for f in matrix["possible"]}
-    assert len(matrix["possible"]) == 10
-    assert possible == {
-        "ultravox", "openai_realtime", "grok", "gemini_live", "vapi",
-        "retell", "deepgram", "livekit", "elevenlabs", "inworld",
-    }
-    assert {f["framework"] for f in matrix["impossible"]} == {"bland"}
-    assert set(matrix["modes"]) == {"A_native_event", "B_own_the_llm"}
 
 
 def _fake_main_http(requests_log, responses):
