@@ -301,9 +301,14 @@ def test_campaign_flow_create_add_launch(monkeypatch):
 
 
 def test_main_api_logs_in_and_retries_once_on_401(monkeypatch):
-    monkeypatch.delenv("SUPAFONE_TOKEN", raising=False)
-    monkeypatch.delenv("SUPAFONE_ACCESS_TOKEN", raising=False)
-    monkeypatch.delenv("SUPAFONE_JWT", raising=False)
+    for key in (
+        "SUPAFONE_TOKEN",
+        "SUPAFONE_ACCESS_TOKEN",
+        "SUPAFONE_JWT",
+        "SUPAFONE_API_KEY",
+        "SUPAFONE_LABS_API_KEY",
+    ):
+        monkeypatch.delenv(key, raising=False)
     monkeypatch.setenv("SUPAFONE_EMAIL", "owner@real-domain.io")
     monkeypatch.setenv("SUPAFONE_PASSWORD", "hunter22!")
 
