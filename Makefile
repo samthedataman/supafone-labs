@@ -22,6 +22,7 @@ fmt:
 	$(PY) -m ruff format src
 
 docs:
+	$(PY) -m pip install -q -e .[docs]
 	$(PY) -m mkdocs serve
 
 build:

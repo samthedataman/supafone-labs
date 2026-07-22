@@ -22,7 +22,19 @@ def _client_with_transport(calls, response=None):
     return Supafone(token="jwt-test", transport=transport)
 
 
-def test_account_auth_alone_is_enough_to_construct():
+_AUTH_ENV = (
+    "SUPAFONE_TOKEN",
+    "SUPAFONE_ACCESS_TOKEN",
+    "SUPAFONE_API_KEY",
+    "SUPAFONE_LABS_API_KEY",
+    "SUPAFONE_EMAIL",
+    "SUPAFONE_PASSWORD",
+)
+
+
+def test_account_auth_alone_is_enough_to_construct(monkeypatch):
+    for key in _AUTH_ENV:
+        monkeypatch.delenv(key, raising=False)
     supafone = Supafone(token="jwt-test", transport=lambda m, p, b: {})
     assert supafone.campaigns is not None
     with pytest.raises(ValueError):
@@ -132,7 +144,7 @@ def test_account_api_logs_in_lazily_and_retries_once_on_401(monkeypatch):
         return FakeResponse(json.dumps(body).encode())
 
     monkeypatch.setattr(client_module.request, "urlopen", fake_urlopen)
-    for key in ("SUPAFONE_TOKEN", "SUPAFONE_ACCESS_TOKEN"):
+    for key in _AUTH_ENV:
         monkeypatch.delenv(key, raising=False)
 
     sf = Supafone(email="owner@real-domain.io", password="hunter22!")
