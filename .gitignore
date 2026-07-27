@@ -3,6 +3,7 @@ __pycache__/
 .pytest_cache/
 .ruff_cache/
 .mypy_cache/
+.venv/
 .env
 .env.*
 data/
@@ -11,6 +12,7 @@ data/
 dist/
 build/
 *.egg-info/
+site/
 node_modules/
 sdk-ts/dist/
 sdk-ts/node_modules/

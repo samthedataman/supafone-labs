@@ -1,7 +1,7 @@
 # Quickstart
 
 ```bash
-pip install supafone-labs          # pulls in adhera
+pip install supafone-labs
 ```
 
 ## 1. Supercharge an agent (one line)
