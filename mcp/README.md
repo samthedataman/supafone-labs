@@ -22,6 +22,13 @@ The shortest operator loop is:
 The speaking agent stays on its realtime path; Watcher supervision remains
 off that path and degrades to a no-op if it cannot safely intervene.
 
+`start_call_and_watch` is carrier-neutral. It uses the calling provider already
+selected for the owned Supafone agent/account: Supafone native, BYO Twilio,
+**BYO Telnyx**, BYO Plivo, or BYO SIP. The MCP never receives or exposes the
+provider credential; the private Supafone runtime resolves it server-side and
+applies the same destination, rate-limit, and authorization controls used by
+the dashboard.
+
 **One-key setup (0.4.4+):** set `SUPAFONE_TOKEN=sl_live_...` and every tool
 works — a single `sl_` Labs key authenticates on both APIs (one-key auth: the
 product API introspects the key against Labs Cloud and maps it to the

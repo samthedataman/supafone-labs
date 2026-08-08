@@ -282,7 +282,7 @@ def test_start_call_and_watch_is_a_safe_discoverable_alias(monkeypatch):
         "_main_http",
         _fake_main_http(
             log,
-            [(200, {"success": True, "call_record_id": "call-live", "provider": "byo_twilio"})],
+            [(200, {"success": True, "call_record_id": "call-live", "provider": "byo_telnyx"})],
         ),
     )
 
@@ -297,6 +297,7 @@ def test_start_call_and_watch_is_a_safe_discoverable_alias(monkeypatch):
     )
 
     assert result["dashboard_url"] == "https://app.supafone.ai/app/calls?call=call-live"
+    assert result["provider"] == "byo_telnyx"
     assert result["next_step"].startswith("Open dashboard_url")
     assert log[0]["url"].endswith("/api/v1/phone/test-call")
 
