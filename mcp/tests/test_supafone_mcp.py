@@ -190,6 +190,7 @@ def test_tools_list_includes_campaign_and_call_tools():
     tool_names = {tool["name"] for tool in listed["result"]["tools"]}
     assert {
         "call_from_owned_agent",
+        "start_call_and_watch",
         "list_voice_agents",
         "list_campaigns",
         "create_campaign",
@@ -219,7 +220,20 @@ def test_call_from_owned_agent_dials_through_phone_endpoint(monkeypatch):
     monkeypatch.setattr(
         server,
         "_main_http",
-        _fake_main_http(log, [(200, {"success": True, "call_sid": "CA123", "provider": "native"})]),
+        _fake_main_http(
+            log,
+            [
+                (
+                    200,
+                    {
+                        "success": True,
+                        "call_sid": "CA123",
+                        "call_record_id": "call-record-123",
+                        "provider": "native",
+                    },
+                )
+            ],
+        ),
     )
 
     result = server.call_tool(
@@ -234,6 +248,8 @@ def test_call_from_owned_agent_dials_through_phone_endpoint(monkeypatch):
 
     assert result["success"] is True and result["call_sid"] == "CA123"
     assert result["call_mode"] == "call_from_owned_agent"
+    assert result["dashboard_url"] == "https://app.supafone.ai/app/calls?call=call-record-123"
+    assert result["dashboard_requires_sign_in"] is True
     assert log == [
         {
             "method": "POST",
@@ -256,6 +272,34 @@ def test_call_from_owned_agent_requires_confirmation_agent_and_e164_number():
             {"jsonrpc": "2.0", "id": 9, "method": "tools/call", "params": {"name": "call_from_owned_agent", "arguments": arguments}}
         )
         assert response["result"]["isError"] is True
+
+
+def test_start_call_and_watch_is_a_safe_discoverable_alias(monkeypatch):
+    server = supafone_mcp.SupafoneMCPServer(sleep=lambda _seconds: None)
+    log = []
+    monkeypatch.setattr(
+        server,
+        "_main_http",
+        _fake_main_http(
+            log,
+            [(200, {"success": True, "call_record_id": "call-live", "provider": "byo_telnyx"})],
+        ),
+    )
+
+    result = server.call_tool(
+        "start_call_and_watch",
+        {
+            "token": "jwt-abc",
+            "agentId": "agent-1",
+            "toNumber": "+15551234567",
+            "confirmRealCall": True,
+        },
+    )
+
+    assert result["dashboard_url"] == "https://app.supafone.ai/app/calls?call=call-live"
+    assert result["provider"] == "byo_telnyx"
+    assert result["next_step"].startswith("Open dashboard_url")
+    assert log[0]["url"].endswith("/api/v1/phone/test-call")
 
 
 def test_campaign_flow_create_add_launch(monkeypatch):
@@ -436,6 +480,7 @@ def test_get_call_fetches_call_record(monkeypatch):
     )
     result = server.call_tool("get_call", {"token": "jwt", "callId": "call-live"})
     assert result["call"]["id"] == "call-live"
+    assert result["dashboard_url"] == "https://app.supafone.ai/app/calls?call=call-live"
     assert log[0]["url"].endswith("/api/v1/calls/call-live")
 
 

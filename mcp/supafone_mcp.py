@@ -147,6 +147,27 @@ def _with_call_mode(value: Any, call_mode: str) -> dict[str, Any]:
     return {"call_mode": call_mode, "result": value}
 
 
+def _call_dashboard_url(call_record_id: Any = None) -> str:
+    """Build a browser-safe dashboard link without putting auth in the URL."""
+    app_url = (_env("SUPAFONE_APP_URL") or "https://app.supafone.ai").rstrip("/")
+    call_id = str(call_record_id or "").strip()
+    if not call_id:
+        return f"{app_url}/app/calls"
+    return f"{app_url}/app/calls?call={parse.quote(call_id)}"
+
+
+def _with_call_watch_link(value: Any, call_mode: str) -> dict[str, Any]:
+    result = _with_call_mode(value, call_mode)
+    call_record_id = result.get("call_record_id") or result.get("callRecordId")
+    result["dashboard_url"] = _call_dashboard_url(call_record_id)
+    result["dashboard_requires_sign_in"] = True
+    result["next_step"] = (
+        "Open dashboard_url to watch the authenticated live call, transcript, status, "
+        "recording, and summary. Keep the URL in the response as a clickable link."
+    )
+    return result
+
+
 def _log_key(log: Mapping[str, Any]) -> str:
     return "|".join(
         str(log.get(name, ""))
@@ -712,6 +733,15 @@ TOOLS: list[dict[str, Any]] = [
         "inputSchema": _call_from_agent_schema(),
     },
     {
+        "name": "start_call_and_watch",
+        "description": (
+            "START A REAL SUPAFONE CALL AND RETURN ITS AUTHENTICATED LIVE DASHBOARD LINK. "
+            "Use this when the user asks to make, place, start, or watch a call from one of "
+            "their owned Supafone agents. Requires confirmRealCall=true."
+        ),
+        "inputSchema": _call_from_agent_schema(),
+    },
+    {
         "name": "list_campaigns",
         "description": "List outbound campaigns on the Supafone account, with live stats per campaign.",
         "inputSchema": _main_schema(
@@ -1234,7 +1264,7 @@ class SupafoneMCPServer:
         # --- main-app: campaigns + real calls --------------------------------
         if name == "list_voice_agents":
             return self._main_api("GET", "/api/v1/agents", None, arguments)
-        if name in {"call_from_owned_agent", "place_call"}:
+        if name in {"call_from_owned_agent", "start_call_and_watch", "place_call"}:
             _require_confirmation(arguments, "confirmRealCall", "placing a real outbound call")
             agent_id = _pick(arguments, "agentId", "agent_id")
             to_number = _require_e164(_pick(arguments, "toNumber", "to_number"))
@@ -1246,7 +1276,7 @@ class SupafoneMCPServer:
                 {"agent_id": str(agent_id), "to_number": to_number},
                 arguments,
             )
-            return _with_call_mode(result, "call_from_owned_agent")
+            return _with_call_watch_link(result, "call_from_owned_agent")
         if name == "list_campaigns":
             account_id = _pick(arguments, "accountId", "account_id")
             suffix = f"?{parse.urlencode({'account_id': account_id})}" if account_id else ""
@@ -1383,7 +1413,16 @@ class SupafoneMCPServer:
             call_id = _pick(arguments, "callId", "call_id")
             if not call_id:
                 raise ToolError("callId is required (see monitor_campaign)")
-            return self._main_api("GET", f"/api/v1/calls/{parse.quote(str(call_id))}", None, arguments)
+            result = self._main_api(
+                "GET", f"/api/v1/calls/{parse.quote(str(call_id))}", None, arguments
+            )
+            if isinstance(result, Mapping):
+                return {
+                    **dict(result),
+                    "dashboard_url": _call_dashboard_url(call_id),
+                    "dashboard_requires_sign_in": True,
+                }
+            return result
         if name == "upload_signing_document":
             file_path = _pick(arguments, "filePath", "file_path")
             if not file_path:

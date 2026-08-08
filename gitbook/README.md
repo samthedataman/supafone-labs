@@ -10,6 +10,25 @@
 🌐 [labs.supafone.ai](https://labs.supafone.ai) ·
 📄 [Research papers](https://labs.supafone.ai/research.html)
 
+## Start with the Voice Watcher
+
+Supafone Voice Watcher is the product's defining layer: a second AI observes
+the live call off the audio hot path and sends silent, provider-native
+corrections only when the speaking agent needs help. It watches intent,
+urgency, language, tool truth, workflow state, and compliance. It is
+timeout-bounded and degrade-safe, so an unavailable Watcher does not interrupt
+the customer call.
+
+```python
+from supafone_labs import Supafone
+
+supafone = Supafone(api_key="sl_live_...", voice_watcher=True)  # default on
+```
+
+Go directly to [Voice Watcher Framework](self-healing-watcher.md), then review
+[Framework Support](framework-support.md), [Testing Voice Agents](voice-qa-landscape.md),
+and the [MCP Server](mcp-server.md).
+
 ## The developer pain we solve
 
 Shipping a production voice agent today means gluing together seven different

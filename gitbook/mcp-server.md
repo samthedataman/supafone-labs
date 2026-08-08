@@ -111,6 +111,7 @@ the saved Builder configuration is session-scoped.
 | Tool | Purpose |
 | --- | --- |
 | `call_from_owned_agent` | **Owned agent → human**: places a real outbound call and requires `confirmRealCall:true`. |
+| `start_call_and_watch` | Preferred natural-language action: places the guarded owned-agent call and returns its authenticated live-dashboard link. |
 | `list_voice_agents` | List the account's voice agents to pick an `agentId` for calls and campaigns. |
 | `list_campaigns` | List outbound campaigns with live stats. |
 | `create_campaign` | Create a draft campaign (`goal`: book / qualify / follow_up / reengage). |
@@ -125,6 +126,11 @@ the saved Builder configuration is session-scoped.
 | `create_sign_link` | Mint a recipient's tracked tap-to-sign page (inherits the campaign's signing PDF). |
 | `monitor_campaign` | Watch a campaign live: in-flight calls + recent calls, each with a portal listen link. |
 | `get_call` | One call's record — poll it while in progress to follow the live transcript. |
+
+Owned-agent calls are carrier-neutral. Supafone resolves the provider already
+configured for the account—native, BYO Twilio, **BYO Telnyx**, BYO Plivo, or
+BYO SIP—inside the private runtime. Provider credentials never enter the MCP
+process or the returned dashboard URL.
 
 ### Campaigns as code (YAML config)
 
