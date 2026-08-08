@@ -119,6 +119,11 @@ so this intentionally polls instead of keeping an infinite stream open:
 - `call_from_owned_agent` makes the opposite call: one of your custom Supafone
   agents calls a human. It requires `confirmRealCall: true` and uses the same
   linked `sl_` key against the product API.
+- `start_call_and_watch` is the preferred natural-language calling action. It
+  starts the same guarded owned-agent call and returns `dashboard_url`, a link
+  to the authenticated live call view. The link contains no token or secret;
+  Supafone asks the operator to sign in when necessary and then opens the exact
+  call record.
 - `generate_qa_scenarios` creates adversarial cases from an agent prompt.
 - `list_qa_runs` reads prior QA/Watcher results.
 - `run_watcher_qa` runs the saved Builder agent with and without Watcher

@@ -111,6 +111,7 @@ the saved Builder configuration is session-scoped.
 | Tool | Purpose |
 | --- | --- |
 | `call_from_owned_agent` | **Owned agent → human**: places a real outbound call and requires `confirmRealCall:true`. |
+| `start_call_and_watch` | Preferred natural-language action: places the guarded owned-agent call and returns its authenticated live-dashboard link. |
 | `list_voice_agents` | List the account's voice agents to pick an `agentId` for calls and campaigns. |
 | `list_campaigns` | List outbound campaigns with live stats. |
 | `create_campaign` | Create a draft campaign (`goal`: book / qualify / follow_up / reengage). |

@@ -268,25 +268,27 @@ happens.
 {
   "mcpServers": {
     "supafone": {
-      "command": "python3",
-      "args": ["<repo>/services/supafone-labs/mcp/supafone_mcp.py"],
+      "command": "python3.12",
+      "args": ["<repo>/mcp/supafone_mcp.py"],
       "env": {
-        "SUPAFONE_EMAIL": "you@company.com",
-        "SUPAFONE_PASSWORD": "...",
-        "SUPAFONE_API_KEY": "sf_live_...",
-        "SUPAFONE_LABS_API_KEY": "sl_live_..."
+        "SUPAFONE_TOKEN": "sl_live_..."
       }
     }
   }
 }
 ```
 
+`<repo>` is the absolute path to the cloned **public `supafone-labs` repository**.
+After changing this file, fully restart the MCP client so it refreshes
+`tools/list`. A correct connection advertises `start_call_and_watch`; a short
+models/usage-only list means Claude is still launching a different command.
+
 Two independent auth lanes — set the ones you use:
 
 | Lane | Env | Unlocks |
 | --- | --- | --- |
-| Account login (same as app.supafone.ai) | `SUPAFONE_EMAIL` + `SUPAFONE_PASSWORD`, or `SUPAFONE_TOKEN` (a JWT) | Campaigns, real calls, live monitoring, sign links |
-| API keys | `SUPAFONE_API_KEY` / `SUPAFONE_LABS_API_KEY` | Hosted-agent provisioning, numbers, Labs logs/usage/voices |
+| One-key setup | Linked `SUPAFONE_TOKEN=sl_live_...` | Agents, campaigns, guarded real calls, monitoring, numbers, Labs logs/usage/voices |
+| Explicit fallback | `SUPAFONE_EMAIL` + `SUPAFONE_PASSWORD`, or separate `SUPAFONE_API_KEY` / `SUPAFONE_LABS_API_KEY` | Same surfaces when one-key linking is unavailable |
 
 The server logs in lazily with the email/password and transparently re-logs-in
 when the token expires — a long Claude session never goes stale.
@@ -297,9 +299,10 @@ when the token expires — a long Claude session never goes stale.
   (built-in playbooks or your saved custom presets), `add_campaign_recipients`
   (consented leads), `launch_campaign` / `pause_campaign`, `update_campaign`
   (scripts, cadence, settings — including the e-sign document config).
-- **Real phone calls** — `call_from_owned_agent` dials any number from your calling
-  provider and bridges your voice agent onto the line. `list_voice_agents`
-  picks the agent.
+- **Real phone calls** — `start_call_and_watch` (or `call_from_owned_agent`)
+  dials through your configured calling provider, bridges your voice agent onto
+  the line, and returns a secret-free authenticated dashboard link for the live
+  call. `list_voice_agents` picks the agent.
 - **Live monitoring** — `monitor_campaign` returns the live funnel, the calls
   in flight *right now*, and a listen link per call plus the campaign's
   developer-portal link; `get_call` polled during a call follows the live
