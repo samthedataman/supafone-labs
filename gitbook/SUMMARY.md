@@ -1,6 +1,7 @@
 # Summary
 
 * [Overview](README.md)
+* [Self-Healing Watcher](self-healing-watcher.md)
 * [Why Supafone](why-supafone.md)
 * [Voice AI Thesis](voice-ai-thesis.md)
 * [Product Overview](overview.md)
@@ -20,7 +21,6 @@
 * [BYOK Providers](byok-providers.md)
 * [Phone Numbers](phone-numbers.md)
 * [Pricing and Credits](pricing-and-credits.md)
-* [Self-Healing Watcher](self-healing-watcher.md)
 * [Testing Voice Agents (QA)](voice-qa-landscape.md)
 * [The Sidecar Oracle (paper)](research-paper.md)
 * [Frontend Routing](frontend-routing.md)

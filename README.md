@@ -22,6 +22,40 @@ Supafone Pro watcher built in — or attach the same second mind to any platform
 
 ---
 
+## Start here: Supafone Voice Watcher
+
+The Watcher is the core of Supafone Labs: a second AI runs beside the realtime
+agent, observes the live conversation off the latency-critical audio path, and
+silently corrects the agent when it detects tool failures, unsafe claims,
+language changes, missed intent, or a broken workflow. If the Watcher has
+nothing useful to add—or cannot respond in time—the call continues unchanged.
+
+It is enabled by default in both SDKs:
+
+```python
+from supafone_labs import Supafone
+
+supafone = Supafone(api_key="sl_live_...", voice_watcher=True)
+```
+
+```ts
+import { Supafone } from "supafone-labs";
+
+const supafone = new Supafone({
+  apiKey: process.env.SUPAFONE_TOKEN!,
+  voiceWatcher: true,
+});
+```
+
+Already running Vapi, Retell, Ultravox, OpenAI Realtime, LiveKit, Pipecat, or
+another stack? Keep it. Feed provider events into the Watcher and deliver its
+canonical silent directive through the matching adapter.
+
+**Read this first:** [Voice Watcher framework](gitbook/self-healing-watcher.md) ·
+[framework support](gitbook/framework-support.md) ·
+[adversarial QA](gitbook/voice-qa-landscape.md) ·
+[MCP setup](mcp/README.md)
+
 ```python
 import supafone_labs
 

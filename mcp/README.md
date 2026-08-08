@@ -4,6 +4,24 @@ Local MCP server for Claude Desktop. It lets Claude create hosted Supafone voice
 agents, provision numbers, and inspect Supafone Labs usage/logs through a
 dependency-light Python stdio JSON-RPC server.
 
+## What matters first: Watcher + live call loop
+
+The MCP is not only a provisioning wrapper. It exposes the Supafone Voice
+Watcher workflow so Claude can create a supervised agent, run adversarial QA
+with and without Watcher intervention, place an explicitly confirmed real
+call, and return a safe authenticated link to watch that exact call finish.
+
+The shortest operator loop is:
+
+1. `create_inbound_agent` or `create_outbound_agent` with Labs/Watcher enabled.
+2. `run_watcher_qa` to measure the supervised agent against the bare agent.
+3. `start_call_and_watch` with `confirmRealCall: true` and an E.164 number.
+4. Open the returned `dashboard_url` for live status, transcript, recording,
+   classification, and summary. The URL contains no token or secret.
+
+The speaking agent stays on its realtime path; Watcher supervision remains
+off that path and degrades to a no-op if it cannot safely intervene.
+
 **One-key setup (0.4.4+):** set `SUPAFONE_TOKEN=sl_live_...` and every tool
 works — a single `sl_` Labs key authenticates on both APIs (one-key auth: the
 product API introspects the key against Labs Cloud and maps it to the
