@@ -2,6 +2,7 @@
 
 * [Overview](README.md)
 * [Self-Healing Watcher](self-healing-watcher.md)
+* [Production Voice AI Challenges](production-voice-ai-challenges.md)
 * [Why Supafone](why-supafone.md)
 * [Voice AI Thesis](voice-ai-thesis.md)
 * [Product Overview](overview.md)

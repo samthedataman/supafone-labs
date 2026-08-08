@@ -16,12 +16,12 @@ Factory path. BYOK provider credentials should live behind an advanced drawer.
 After a working agent is created, the builder should export the exact same
 configuration as TypeScript, Python, REST, and JSON.
 
-The builder should make the two product pillars obvious:
+The builder should preserve the product hierarchy:
 
-| Pillar | Builder meaning |
+| Role | Builder meaning |
 | --- | --- |
-| Agent Factory | Create a complete agent with managed defaults and no required vendor keys. |
-| Self-healing watcher | Enable `labs.enabled` so Supafone supervises and improves the live agent. |
+| Primary: model supervisor | Voice Watcher supervises and improves the live agent; `voiceWatcher` is on by default. |
+| Secondary: Agent Factory | Create a complete hosted agent with managed defaults and no required vendor keys. |
 
 When users open BYOK, split it into three drawers:
 

@@ -48,25 +48,30 @@ The developer should be able to ask a coding agent:
 
 The coding agent should complete that workflow through MCP tools or the Supafone SDK, with dangerous actions still requiring explicit authorization.
 
-## One Framework, Two Honest Lanes
+## One Supervisor, Two Honest Lanes
 
-Supafone supports two complementary paths.
+The model-agnostic supervisor is the stable product. Supafone supports two
+ways to receive it.
 
-### Agent Factory
+### Bring Your Stack — primary
 
-Use Supafone-managed defaults to create a complete hosted agent, assign or buy a phone number, configure a voice, enable tools, attach the Watcher, and return deployable artifacts.
+Keep the runtime and carrier you already use. The Supafone Watcher normalizes
+provider events, maintains empathy and operational state across turns, and
+compiles corrections back into provider-native control actions.
 
-This is the shortest path from an idea to a working voice agent.
-
-### Bring Your Stack
-
-Keep the runtime and carrier you already use. The Supafone Watcher normalizes provider events, maintains call state, and compiles corrections back into provider-native control actions.
-
-The target stack may use Vapi with Twilio, OpenAI Realtime with Telnyx, Grok with SIP, LiveKit with SignalWire, or another combination. Supafone does not pretend to re-host every vendor. The stable boundary is:
+The target stack may use Vapi with Twilio, OpenAI Realtime with Telnyx, Grok
+with SIP, LiveKit with SignalWire, or another combination. Supafone does not
+pretend to re-host every vendor. The stable boundary is:
 
 - an SDK adapter for supervision and tool contracts,
 - PSTN for real black-box testing of any authorized phone agent,
 - canonical logs, reports, objectives, and artifacts above both.
+
+### Agent Factory — secondary
+
+Use Supafone-managed defaults to create a complete hosted agent, assign or buy a phone number, configure a voice, enable tools, attach the Watcher, and return deployable artifacts.
+
+This is the shortest path from an idea to a working voice agent.
 
 ## The Built-In Production Surface
 

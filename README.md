@@ -52,6 +52,7 @@ another stack? Keep it. Feed provider events into the Watcher and deliver its
 canonical silent directive through the matching adapter.
 
 **Read this first:** [Voice Watcher framework](gitbook/self-healing-watcher.md) ·
+[production problems it solves](gitbook/production-voice-ai-challenges.md) ·
 [framework support](gitbook/framework-support.md) ·
 [adversarial QA](gitbook/voice-qa-landscape.md) ·
 [MCP setup](mcp/README.md)
@@ -83,18 +84,25 @@ routes Supafone-managed numbers, so developers do not need to create Twilio,
 Ultravox, Cartesia, Inworld, ElevenLabs, or Deepgram accounts just to ship an
 agent. BYOK remains available when a team already owns those provider accounts.
 
-## The two product pillars
+## The core product: a model-agnostic supervisor
 
-Supafone Labs has two equally important features:
+Supafone Labs is built around one defining capability:
 
-1. **Agent Factory**: create complete inbound, outbound, web, and campaign
-   agents from one Supafone API key. This is the managed path. It eliminates
-   the need to bring your own voice-platform, telephony, TTS, STT, or LLM keys
-   before you can launch.
-2. **Self-healing Labs watcher**: attach the Supafone second mind to a hosted
-   agent or to an agent you already run. It listens beside the call, watches
-   transcripts, tools, state, and outcomes, then sends silent corrective
-   directives through the provider's native control channel.
+1. **Primary — Voice Watcher model supervisor**: attach the Supafone second
+   mind to a hosted agent or an agent you already run. It watches empathy and
+   operational patterns across turns—intent, urgency, emotion, language,
+   workflow progress, tool truth, and outcomes—then sends a silent corrective
+   directive through the provider's native control channel only when it can
+   improve the call.
+2. **Secondary — Agent Factory delivery path**: create complete inbound,
+   outbound, web, and campaign agents from one Supafone API key with the same
+   supervisor already attached. This managed path removes provisioning work;
+   it does not define or constrain the Watcher framework.
+
+The supervisor is model agnostic by construction. Provider adapters normalize
+each stack into one call-state contract and compile one abstract directive back
+into the provider's supported control channel. The speaking model, supervisor
+model, carrier, STT, and TTS can therefore evolve independently.
 
 Managed is the default. BYOK is available when the customer already owns
 provider accounts or needs provider-specific controls. Keep the BYOK lanes

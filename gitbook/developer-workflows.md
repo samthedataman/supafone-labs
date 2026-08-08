@@ -1,9 +1,10 @@
 # 🧑‍💻 Developer Workflows
 
-Supafone Labs has two equal product pillars. Keep them mentally separate, then
-combine them when the user wants the complete product.
+Supafone Labs has one defining framework and one secondary delivery path. Lead
+with the model-agnostic supervisor; use Agent Factory when the user also wants
+Supafone to provision the complete hosted product.
 
-## Pillar 1: Provider-Agnostic Framework
+## Primary: Model-Agnostic Voice Watcher
 
 Use this path when the developer already has an agent running on Ultravox,
 Vapi, Retell, ElevenLabs, OpenAI Realtime, Grok, Bland, LiveKit, Pipecat,
@@ -15,12 +16,13 @@ import supafone_labs
 brain = supafone_labs.supercharge(my_agent)
 ```
 
-The framework watches call events, transcripts, tool outcomes, and call state,
-then emits a silent directive only when the live agent needs help. The caller
-does not hear the directive. If the watcher is disabled, out of balance, or
-times out, the call continues without intervention.
+The framework watches empathy and operational patterns across turns—intent,
+urgency, emotion, language, trust, workflow progress, tool outcomes, and call
+state—then emits a silent directive only when the live agent needs help. The
+caller does not hear the directive. If the Watcher is disabled, out of balance,
+or times out, the call continues without intervention.
 
-## Pillar 2: Hosted Agent Factory
+## Secondary: Hosted Agent Factory
 
 Use this path when the developer wants Supafone to create the agent, phone
 number, voice, stages, logs, widget, and optional watcher.
@@ -66,8 +68,9 @@ agent = supafone.labs.agents.create_inbound_with_number({
 
 ## Which One Should the UI Lead With?
 
-The hosted builder should lead with the one `sl_` Labs key because that is the
-lowest-friction happy path — it authenticates every surface:
+The product story should lead with Voice Watcher. Inside the hosted builder,
+the task flow should then lead with the one `sl_` Labs key because that is the
+lowest-friction provisioning path—it authenticates every surface:
 
 1. Paste your `sl_live_...` key (as `SUPAFONE_LABS_API_KEY` / `SUPAFONE_TOKEN`).
 2. Choose inbound or outbound.

@@ -26,8 +26,9 @@ supafone = Supafone(api_key="sl_live_...", voice_watcher=True)  # default on
 ```
 
 Go directly to [Voice Watcher Framework](self-healing-watcher.md), then review
-[Framework Support](framework-support.md), [Testing Voice Agents](voice-qa-landscape.md),
-and the [MCP Server](mcp-server.md).
+[the production problems it solves](production-voice-ai-challenges.md),
+[Framework Support](framework-support.md),
+[Testing Voice Agents](voice-qa-landscape.md), and the [MCP Server](mcp-server.md).
 
 ## The developer pain we solve
 
@@ -37,15 +38,26 @@ themselves:**
 
 | Pain point | What it takes alone | With Supafone Labs |
 | --- | --- | --- |
-| **Phone numbers** | Twilio account, number search, webhooks, compliance | `number: { search: { areaCode: "415" } }` |
-| **TTS / STT keys** | Cartesia + Deepgram + ElevenLabs accounts, voice tuning | Managed voices, one namespace, hosted STT with 10-language code-switching |
-| **Knowledge / RAG** | Vector DB, chunking, retrieval tuning | `tools: { firmKnowledge: true }` |
-| **Tool calls** | Per-platform tool schemas, verification plumbing | Built-in stages + tools with verified ground truth |
-| **Self-healing** | A second supervision stack nobody budgets for | `labs: { enabled: true }` — the watcher whispers silent corrections mid-call |
+| **The speaking model must also supervise itself** | A larger prompt that adds latency but still misses cross-turn patterns | A second model watches off the hot path and either whispers one bounded directive or does nothing |
+| **Empathy stays a vague prompt instruction** | No durable state for intent, urgency, emotion, language, trust, or workflow progress | The Watcher turns those signals into an evidence-backed belief state across turns |
+| **Tool calls** | Per-platform schemas plus no reliable check that the action succeeded | The supervisor compares spoken claims with tool ground truth before the agent confirms success |
+| **Provider fragmentation** | Rewrite supervision whenever the voice stack or carrier changes | One canonical event/directive contract with provider-native adapters |
+| **Worker and language handoffs** | Lost stage, voice, facts, or routing state | Redis-backed call state and continuity-preserving language/voice routing |
 | **Call classification** | Post-call pipeline, judge prompts, label storage | `post_call_analysis=True` — every call auto-labeled against your objective |
 | **Testing / QA** | A separate QA vendor and integration project | `qa.suite()` — adversarial suite generated from your agent's own prompt, SSR-graded |
+| **Complete hosted delivery** | Numbers, webhooks, TTS/STT, RAG, tools, and recordings assembled manually | The secondary Agent Factory path provisions the full stack with the supervisor attached |
 
-The whole thing is **five lines of code**:
+Attach the defining capability—the model supervisor—in **three lines**:
+
+```python
+import supafone_labs
+
+supervisor = supafone_labs.supercharge(my_agent)
+result = await supervisor.observe(raw_event)
+```
+
+When a team also wants Supafone to create the entire hosted agent, the
+secondary Agent Factory path remains available:
 
 ```ts
 import { Supafone } from "supafone-labs";
@@ -56,7 +68,7 @@ const agent = await supafone.labs.agents.createInboundWithNumber({
 });
 ```
 
-That's a live phone number, a staged multi-turn agent, managed voice, tools,
+That convenience path adds a live phone number, a staged multi-turn agent, managed voice, tools,
 recordings, transcripts, a self-healing watcher on the line, automatic
 post-call classification — and an adversarial QA suite one call away
 (`await supafone.qa.suite()`), graded with
@@ -96,23 +108,23 @@ channel, the grading system, and the improvement loop are the same primitives
 a thousand-agent swarm needs. That's the product we are building toward, and
 everything in these docs is a piece of it.
 
-## Two ways to ship
+## One supervisor, two ways to ship
 
-Supafone Labs is the developer framework behind Supafone. It gives teams two
-ways to ship production voice agents:
+Supafone Labs is the developer framework behind Supafone. The model supervisor
+is the product; teams can attach it to an existing agent or receive it inside a
+complete hosted environment:
 
-- **Agent Factory**: create complete phone, web, and campaign agents from code
-  with managed stages, voices, numbers, tools, transcripts, recordings,
-  widgets, usage, and Supafone Pro watcher attached. This path is designed to
-  eliminate the need for customer-owned voice-platform, telephony, TTS, STT,
-  and LLM keys before launch.
-- **Self-healing Labs watcher**: keep Vapi, Retell, OpenAI Realtime, Grok,
+- **Primary — model-agnostic Voice Watcher**: keep Vapi, Retell, OpenAI Realtime, Grok,
   Ultravox, Gemini Live, ElevenLabs, Inworld, Deepgram, LiveKit, or another
   stack, then add the Supafone Labs second mind that listens off the hot path and
   sends silent corrective directives back to the live agent. Ten frameworks
   accept a live directive; **Bland does not** (closed live-call API — observe and
   score only), and Cartesia/Pipecat are n/a. See
   [Framework Support](framework-support.md).
+- **Secondary — hosted Agent Factory**: create complete phone, web, and campaign
+  agents from code with managed stages, voices, numbers, tools, transcripts,
+  recordings, widgets, usage, and the same Watcher attached. This path removes
+  provisioning work; it does not define or limit the supervisor framework.
 
 There are two API surfaces:
 
