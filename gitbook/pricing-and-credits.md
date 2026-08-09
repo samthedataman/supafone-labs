@@ -20,6 +20,14 @@ curl https://api.labs.supafone.ai/v1/pricing
 
 The trial signup grants 5 free minutes.
 
+## What a recording costs
+
+Supafone does **not** add a second fee just because a call is recorded. Hosted
+calls debit the connected voice-agent runtime from the minute ledger. The
+recording artifact is included. Transcription, supervisor/SecondMind work, QA,
+and longer-term storage remain separate internal meters so usage and margins
+stay auditable; the customer still sees one clear Supafone balance.
+
 ## Usage Meters
 
 | Meter | Unit | Notes |
@@ -54,6 +62,24 @@ Response shape:
   }
 }
 ```
+
+## Hosted Stripe Checkout
+
+The SDK and MCP create Checkout Sessions on the server, so a secret Stripe key
+never enters a client application or model context:
+
+```python
+checkout = client.labs.billing.checkout(
+    kind="plan",
+    plan_key="growth",
+)
+print(checkout["checkout_url"])
+```
+
+After payment, poll `client.labs.billing.status(checkout_session_id)`. Use
+`client.labs.billing.portal()` to return an authenticated Stripe Customer Portal
+link for payment methods, invoices, and cancellation. Stripe webhook events are
+signature-verified and deduplicated before credits or entitlements are granted.
 
 ## Stripe Checkout Metadata
 
@@ -99,3 +125,9 @@ Dedicated and premium numbers are paid number-month choices:
 
 Product flows should make number purchases explicit. Do not silently upgrade a
 shared-pool user to a dedicated or premium number.
+
+For SDK and MCP callers, the first paid-number request returns a hosted
+`checkout_url`. After Stripe reports `paid`, repeat the purchase with the
+`billing_checkout_session_id`. Supafone claims the single-use entitlement,
+provisions the carrier number, then consumes the entitlement. A retry returns
+the already-provisioned number rather than buying another one.

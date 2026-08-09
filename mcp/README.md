@@ -154,6 +154,12 @@ so this intentionally polls instead of keeping an infinite stream open:
 - `run_watcher_qa` runs the saved Builder agent with and without Watcher
   supervision. It requires `SUPAFONE_EMAIL` and `SUPAFONE_PASSWORD` because the
   saved Builder configuration is account-session scoped.
+- `start_billing_checkout`, `get_billing_checkout`, and `open_billing_portal`
+  return Stripe-hosted browser links for plans, credit packs, invoices, and
+  payment-method management.
+- `buy_phone_number` returns a clickable Checkout link for dedicated/premium
+  numbers. After payment, call it again with `billingCheckoutSessionId`; the
+  private API consumes the entitlement before touching the carrier.
 
 The phone tester records `aiProvider` and `telephonyProvider` as target
 metadata. PSTN is the neutral boundary, so the target can run Vapi, OpenAI

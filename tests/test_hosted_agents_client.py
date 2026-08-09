@@ -81,6 +81,7 @@ def test_create_inbound_with_number_searches_and_assigns_number():
             "agent_key": "northline-intake",
             "agent_name": "Maya",
             "preset_key": "general_intake_receptionist",
+            "number_strategy": "default_pool",
             "style": "inbound",
             "telephony": {"mode": "supafone_managed", "provider": "supafone"},
         },
@@ -314,6 +315,7 @@ def test_camelcase_agent_methods_match_typescript_contract():
             "agent_key": "northline-intake",
             "agent_name": "Maya",
             "preset_key": "general_intake_receptionist",
+            "number_strategy": "default_pool",
             "style": "inbound",
             "telephony": {"mode": "supafone_managed", "provider": "supafone"},
         },
@@ -577,6 +579,87 @@ def test_phone_number_lifecycle_methods_are_exposed():
             {"agency_id": "ag_123", "reason": "cancelled"},
         ),
     ]
+
+
+def test_labs_billing_checkout_status_and_portal_are_exposed():
+    calls = []
+
+    def transport(method, path, payload):
+        calls.append((method, path, payload))
+        if path == "/v1/billing/checkout":
+            return {
+                "status": "requires_payment",
+                "checkout_session_id": "cs_test_123",
+                "checkout_url": "https://checkout.stripe.com/c/pay/test",
+            }
+        if path.endswith("cs_test_123"):
+            return {"status": "paid", "checkout_session_id": "cs_test_123"}
+        return {"url": "https://billing.stripe.com/p/session/test"}
+
+    supafone = Supafone(api_key="sl_test", transport=transport)
+    checkout = supafone.labs.billing.checkout(
+        kind="number_addon",
+        numberStrategy="premium",
+        phoneNumber="+14155550123",
+    )
+    status = supafone.labs.billing.status(checkout["checkout_session_id"])
+    portal = supafone.labs.billing.portal()
+
+    assert checkout["status"] == "requires_payment"
+    assert status["status"] == "paid"
+    assert portal["url"].startswith("https://billing.stripe.com/")
+    assert calls == [
+        (
+            "POST",
+            "/v1/billing/checkout",
+            {
+                "kind": "number_addon",
+                "number_strategy": "premium",
+                "phone_number": "+14155550123",
+            },
+        ),
+        ("GET", "/v1/billing/checkout/cs_test_123", None),
+        ("POST", "/v1/billing/portal", {}),
+    ]
+
+
+def test_paid_phone_buy_hands_off_to_checkout_then_provisions_once_paid():
+    calls = []
+
+    def transport(method, path, payload):
+        calls.append((method, path, payload))
+        if path == "/v1/billing/checkout":
+            return {
+                "status": "requires_payment",
+                "checkout_session_id": "cs_test_number",
+                "checkout_url": "https://checkout.stripe.com/c/pay/test-number",
+            }
+        return {"success": True, "number": {"number_id": "num_123"}}
+
+    supafone = Supafone(api_key="sl_test", transport=transport)
+    checkout = supafone.labs.phone_numbers.buy(
+        phoneNumber="+14155550123",
+        numberStrategy="dedicated",
+    )
+    provisioned = supafone.labs.phone_numbers.buy(
+        phoneNumber="+14155550123",
+        numberStrategy="dedicated",
+        billingCheckoutSessionId=checkout["checkout_session_id"],
+    )
+
+    assert checkout["status"] == "requires_payment"
+    assert provisioned["number"]["number_id"] == "num_123"
+    assert calls[0] == (
+        "POST",
+        "/v1/billing/checkout",
+        {
+            "kind": "number_addon",
+            "number_strategy": "dedicated",
+            "phone_number": "+14155550123",
+        },
+    )
+    assert calls[1][0:2] == ("POST", "/api/v1/labs/phone-numbers")
+    assert calls[1][2]["billing_checkout_session_id"] == "cs_test_number"
 
 
 def test_call_stages_can_be_customized_or_disabled():

@@ -718,6 +718,8 @@ export interface LabsPhoneNumberProvisionRequest {
   numberPool?: string;
   number_pool?: string;
   premium?: boolean;
+  billingCheckoutSessionId?: string;
+  billing_checkout_session_id?: string;
   style?: LabsAgentStyle;
   agentStyle?: LabsAgentStyle;
   agent_style?: LabsAgentStyle;
@@ -779,7 +781,7 @@ export interface CreateLabsAgentWithNumberRequest extends CreateLabsAgentRequest
 }
 
 export interface CreateLabsAgentWithNumberResponse extends CreateLabsAgentResponse {
-  number?: LabsPhoneNumberProvisionResponse;
+  number?: LabsPhoneNumberProvisionResponse | LabsBillingCheckoutResponse;
 }
 
 export interface LabsAgentResponse {
@@ -2088,6 +2090,7 @@ class CampaignsNamespace {
 
 class LabsNamespace {
   readonly agents: LabsAgentsNamespace;
+  readonly billing: LabsBillingNamespace;
   readonly presets: LabsPresetsNamespace;
   readonly tools: LabsToolsNamespace;
   readonly voices: LabsVoicesNamespace;
@@ -2099,6 +2102,7 @@ class LabsNamespace {
 
   constructor(private sm: SupafoneLabs) {
     this.agents = new LabsAgentsNamespace(sm);
+    this.billing = new LabsBillingNamespace(sm);
     this.presets = new LabsPresetsNamespace(sm);
     this.tools = new LabsToolsNamespace(sm);
     this.voices = new LabsVoicesNamespace(sm);
@@ -2112,6 +2116,73 @@ class LabsNamespace {
   /** Discover the Supafone convenience layer over Ultravox. */
   capabilities(): Promise<LabsCapabilitiesResponse> {
     return this.sm.requestSupafoneApi<LabsCapabilitiesResponse>("GET", "/api/v1/labs/capabilities");
+  }
+}
+
+export type LabsBillingCheckoutKind = "plan" | "credits" | "number_addon";
+
+export interface LabsBillingCheckoutInput {
+  kind?: LabsBillingCheckoutKind;
+  planKey?: "developer" | "growth" | "scale" | string;
+  plan_key?: string;
+  numberStrategy?: "dedicated" | "premium" | string;
+  number_strategy?: string;
+  phoneNumber?: string;
+  phone_number?: string;
+  quantity?: number;
+  successUrl?: string;
+  success_url?: string;
+  cancelUrl?: string;
+  cancel_url?: string;
+}
+
+export interface LabsBillingCheckoutResponse {
+  status: "requires_payment" | "pending" | "paid" | string;
+  checkout_session_id: string;
+  checkout_url?: string;
+  kind: LabsBillingCheckoutKind | string;
+  plan_key?: string | null;
+  number_strategy?: string | null;
+  phone_number?: string | null;
+  stripe_subscription_id?: string | null;
+  ready_to_provision?: boolean;
+  next_step?: string;
+}
+
+class LabsBillingNamespace {
+  constructor(private sm: SupafoneLabs) {}
+
+  /** Start hosted Stripe Checkout. MCP callers should render checkout_url as a link. */
+  checkout(input: LabsBillingCheckoutInput = {}): Promise<LabsBillingCheckoutResponse> {
+    return this.sm.request("POST", "/v1/billing/checkout", compact({
+      kind: input.kind ?? "plan",
+      plan_key: input.plan_key ?? input.planKey,
+      number_strategy: input.number_strategy ?? input.numberStrategy,
+      phone_number: input.phone_number ?? input.phoneNumber,
+      quantity: input.quantity,
+      success_url: input.success_url ?? input.successUrl,
+      cancel_url: input.cancel_url ?? input.cancelUrl,
+    }));
+  }
+
+  status(checkoutSessionId: string): Promise<LabsBillingCheckoutResponse> {
+    if (!checkoutSessionId?.trim()) throw new SupafoneLabsError("checkoutSessionId is required");
+    return this.sm.request(
+      "GET",
+      `/v1/billing/checkout/${encodeURIComponent(checkoutSessionId)}`,
+    );
+  }
+
+  portal(): Promise<{ url: string }> {
+    return this.sm.request("POST", "/v1/billing/portal", {});
+  }
+
+  createCheckout(input: LabsBillingCheckoutInput = {}): Promise<LabsBillingCheckoutResponse> {
+    return this.checkout(input);
+  }
+
+  getCheckout(checkoutSessionId: string): Promise<LabsBillingCheckoutResponse> {
+    return this.status(checkoutSessionId);
   }
 }
 
@@ -2362,13 +2433,32 @@ class LabsPhoneNumbersNamespace {
     );
   }
 
-  /** Buy a Supafone-managed number. Developers do not need a Twilio account. */
-  buy(input: LabsPhoneNumberProvisionRequest): Promise<LabsPhoneNumberProvisionResponse> {
+  /**
+   * Buy a managed number. Paid strategies return a hosted Checkout link first;
+   * call again with billingCheckoutSessionId after Checkout reports paid.
+   */
+  buy(
+    input: LabsPhoneNumberProvisionRequest,
+  ): Promise<LabsPhoneNumberProvisionResponse | LabsBillingCheckoutResponse> {
+    const strategy = input.number_strategy ?? input.numberStrategy ?? (input.premium ? "premium" : "default_pool");
+    const checkoutSessionId = input.billing_checkout_session_id ?? input.billingCheckoutSessionId;
+    if ((strategy === "dedicated" || strategy === "premium") && !checkoutSessionId) {
+      const phoneNumber = input.phone_number ?? input.phoneNumber;
+      if (!phoneNumber) {
+        return Promise.reject(new SupafoneLabsError("phoneNumber is required before starting number Checkout"));
+      }
+      return this.sm.labs.billing.checkout({
+        kind: "number_addon",
+        numberStrategy: strategy,
+        phoneNumber,
+      });
+    }
     return this.sm.requestSupafoneApi<LabsPhoneNumberProvisionResponse>(
       "POST",
       "/api/v1/labs/phone-numbers",
       phoneNumberProvisionPayload({
         ...input,
+        numberStrategy: strategy,
         telephony: input.telephony ?? { mode: "supafone_managed", provider: "supafone" },
       }),
     );
@@ -2423,7 +2513,9 @@ class LabsPhoneNumbersNamespace {
    * Search if needed, buy the first matching Supafone-managed number, and assign
    * it to the supplied agent. This is the zero-Twilio-account happy path.
    */
-  async buyAndAssign(input: LabsPhoneNumberBuyAndAssignRequest): Promise<LabsPhoneNumberProvisionResponse> {
+  async buyAndAssign(
+    input: LabsPhoneNumberBuyAndAssignRequest,
+  ): Promise<LabsPhoneNumberProvisionResponse | LabsBillingCheckoutResponse> {
     let phoneNumber = input.phoneNumber ?? input.phone_number ?? "";
     if (!phoneNumber) {
       const found = await this.search({
@@ -2752,6 +2844,7 @@ function phoneNumberProvisionPayload(input: LabsPhoneNumberProvisionRequest): Re
     number_strategy: input.number_strategy ?? input.numberStrategy,
     number_pool: input.number_pool ?? input.numberPool,
     premium: input.premium,
+    billing_checkout_session_id: input.billing_checkout_session_id ?? input.billingCheckoutSessionId,
     style: input.agent_style ?? input.agentStyle ?? input.style,
     direction: input.direction,
     telephony: input.telephony ? telephonyPayload(input.telephony) : undefined,

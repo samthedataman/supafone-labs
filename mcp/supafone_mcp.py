@@ -32,7 +32,7 @@ except Exception:  # pragma: no cover - exercised only when SDK import is broken
 
 
 SERVER_NAME = "supafone-labs-mcp"
-SERVER_VERSION = "0.4.10"
+SERVER_VERSION = "0.4.11"
 DEFAULT_PROTOCOL_VERSION = "2024-11-05"
 DEFAULT_HOSTED_API_BASE = "https://api.supafone.ai"
 DEFAULT_LABS_API_BASE = "https://api.labs.supafone.ai"
@@ -604,6 +604,53 @@ TOOLS: list[dict[str, Any]] = [
         },
     },
     {
+        "name": "start_billing_checkout",
+        "description": (
+            "Create a Stripe Checkout link for a Labs plan, credit pack, or dedicated/premium "
+            "number. Return checkout_url as a clickable link; never claim payment completed yet."
+        ),
+        "inputSchema": {
+            "type": "object",
+            "properties": {
+                "kind": {"type": "string", "enum": ["plan", "credits", "number_addon"]},
+                "planKey": {"type": "string", "enum": ["developer", "growth", "scale"]},
+                "numberStrategy": {"type": "string", "enum": ["dedicated", "premium"]},
+                "phoneNumber": {"type": "string", "description": "E.164 number selected for paid reservation."},
+                "quantity": {"type": "integer", "minimum": 1, "maximum": 25},
+                "apiKey": {"type": "string"},
+                "labsApiBaseUrl": {"type": "string"},
+            },
+            "additionalProperties": True,
+        },
+    },
+    {
+        "name": "get_billing_checkout",
+        "description": "Check whether a Stripe Checkout Session is pending or paid.",
+        "inputSchema": {
+            "type": "object",
+            "properties": {
+                "checkoutSessionId": {"type": "string"},
+                "checkout_session_id": {"type": "string"},
+                "apiKey": {"type": "string"},
+                "labsApiBaseUrl": {"type": "string"},
+            },
+            "required": ["checkoutSessionId"],
+            "additionalProperties": True,
+        },
+    },
+    {
+        "name": "open_billing_portal",
+        "description": "Return the authenticated Stripe Customer Portal link for invoices and cancellations.",
+        "inputSchema": {
+            "type": "object",
+            "properties": {
+                "apiKey": {"type": "string"},
+                "labsApiBaseUrl": {"type": "string"},
+            },
+            "additionalProperties": True,
+        },
+    },
+    {
         "name": "list_phone_numbers",
         "description": "List Supafone-managed phone numbers in the hosted account.",
         "inputSchema": {
@@ -630,6 +677,33 @@ TOOLS: list[dict[str, Any]] = [
                 "apiKey": {"type": "string"},
                 "supafoneApiBaseUrl": {"type": "string"},
             },
+            "additionalProperties": True,
+        },
+    },
+    {
+        "name": "buy_phone_number",
+        "description": (
+            "Provision a number, or return a clickable Stripe Checkout URL for a paid "
+            "dedicated/premium number. After payment is confirmed, call this tool again "
+            "with billingCheckoutSessionId to provision exactly once."
+        ),
+        "inputSchema": {
+            "type": "object",
+            "properties": {
+                "config": {"type": "object", "additionalProperties": True},
+                "phoneNumber": {"type": "string", "description": "Selected E.164 number."},
+                "numberStrategy": {
+                    "type": "string",
+                    "enum": ["default_pool", "dedicated", "premium", "byok"],
+                },
+                "billingCheckoutSessionId": {"type": "string"},
+                "agentKey": {"type": "string"},
+                "agencyId": {"type": "string"},
+                "apiKey": {"type": "string"},
+                "supafoneApiBaseUrl": {"type": "string"},
+                "labsApiBaseUrl": {"type": "string"},
+            },
+            "required": ["phoneNumber", "numberStrategy"],
             "additionalProperties": True,
         },
     },
@@ -1192,6 +1266,25 @@ class SupafoneMCPServer:
                 scenarios=[str(item) for item in scenarios] if isinstance(scenarios, list) else None,
                 turns=_safe_int(arguments.get("turns"), default=2, minimum=1, maximum=8),
             )
+        if name == "start_billing_checkout":
+            result = self._hosted_client(arguments).labs.billing.checkout(_merge_config(arguments))
+            if isinstance(result, Mapping) and result.get("checkout_url"):
+                return {
+                    **dict(result),
+                    "next_step": "Open checkout_url to pay securely, then call get_billing_checkout.",
+                    "checkout_requires_browser": True,
+                }
+            return result
+        if name == "get_billing_checkout":
+            session_id = _pick(arguments, "checkoutSessionId", "checkout_session_id")
+            if not session_id:
+                raise ToolError("checkoutSessionId is required")
+            return self._hosted_client(arguments).labs.billing.status(str(session_id))
+        if name == "open_billing_portal":
+            result = self._hosted_client(arguments).labs.billing.portal()
+            if isinstance(result, Mapping) and result.get("url"):
+                return {**dict(result), "portal_requires_browser": True}
+            return result
         if name == "list_phone_numbers":
             return self._hosted_client(arguments).labs.phone_numbers.list(
                 agencyId=_pick(arguments, "agencyId", "agency_id"),
@@ -1199,6 +1292,18 @@ class SupafoneMCPServer:
             )
         if name == "search_phone_numbers":
             return self._hosted_client(arguments).labs.phone_numbers.search(_merge_config(arguments))
+        if name == "buy_phone_number":
+            result = self._hosted_client(arguments).labs.phone_numbers.buy(_merge_config(arguments))
+            if isinstance(result, Mapping) and result.get("checkout_url"):
+                return {
+                    **dict(result),
+                    "checkout_requires_browser": True,
+                    "next_step": (
+                        "Open checkout_url, complete Stripe Checkout, call get_billing_checkout, "
+                        "then call buy_phone_number again with billingCheckoutSessionId."
+                    ),
+                }
+            return result
         if name == "unassign_phone_number":
             _require_confirmation(arguments, "confirmRelease", "detaching a phone number")
             return self._hosted_client(arguments).labs.phone_numbers.unassign(

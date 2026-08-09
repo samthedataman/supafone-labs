@@ -283,9 +283,13 @@ MCP also exposes lifecycle and artifact tools:
 - `list_voices` / `preview_voice`
 - `list_phone_numbers`
 - `search_phone_numbers`
+- `buy_phone_number` (returns Stripe Checkout first for paid strategies)
 - `unassign_phone_number`
 - `return_phone_number_to_pool`
 - `delete_phone_number`
+- `start_billing_checkout`
+- `get_billing_checkout`
+- `open_billing_portal`
 - `list_calls`
 - `list_recordings`
 - `delete_recording`
@@ -297,3 +301,7 @@ MCP also exposes lifecycle and artifact tools:
 MCP tool calls are request/response. The local MCP server therefore exposes
 `tail_logs` and `poll_logs` as bounded polling tools. The browser and SDKs can
 use the true SSE stream documented in [Log Streaming](log-streaming.md).
+
+Stripe card entry always stays on Stripe-hosted Checkout. MCP responses contain
+only the public `checkout_url` and session reference—never Stripe secrets or
+card data.

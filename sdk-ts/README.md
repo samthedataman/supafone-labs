@@ -468,6 +468,7 @@ and `const { Supafone } = require("supafone-labs")` both work, with full types.
 | `labs.agents.create/createInbound/createOutbound/list/get` | `/api/v1/labs/agents*` on the Supafone API |
 | `labs.agents.createInboundWithNumber/createOutboundWithNumber` | Agent creation plus Supafone-managed number buy/assign |
 | `labs.phoneNumbers.search/buy/assign/list/buyAndAssign` | `/api/v1/labs/phone-numbers*` |
+| `labs.billing.checkout/status/portal` | Stripe-hosted Checkout, payment polling, and Customer Portal |
 | `labs.telephony.get/configure/useSupafoneManaged` | `/api/v1/labs/telephony` |
 | `labs.presets.list()` · `labs.tools.list()` · `labs.voices.list()` | Supafone hosted-agent discovery |
 | `whisper(transcript, opts?)` | convenience over the oracle |
@@ -482,6 +483,12 @@ and `const { Supafone } = require("supafone-labs")` both work, with full types.
 | `optimizer.improve/standing` | `/v1/optimizer/*` |
 
 Get a key (5 free minutes, no card): <https://labs.supafone.ai/get-key.html>
+
+For `dedicated` or `premium`, `labs.phoneNumbers.buy()` first returns a public
+`checkout_url`. Open it, poll `labs.billing.status()`, then call `buy()` again
+with `billingCheckoutSessionId`. The server verifies and consumes the paid
+entitlement before carrier provisioning; Stripe secrets and card data never
+enter the SDK.
 
 The runtime, all provider adapters, and the offline (bring-your-own-keys) mode
 are open source and MIT-licensed — the Python package `pip install supafone-labs`

@@ -380,6 +380,8 @@ class Supafone:
         *,
         use_session: bool = False,
     ) -> Any:
+        if self._transport:
+            return self._transport(method, path, payload)
         token = (
             self._labs_session_token
             if use_session and self._labs_session_token
@@ -702,6 +704,7 @@ class TesterNamespace:
 class LabsNamespace:
     def __init__(self, client: Supafone) -> None:
         self.agents = LabsAgentsNamespace(client)
+        self.billing = LabsBillingNamespace(client)
         self.phone_numbers = LabsPhoneNumbersNamespace(client)
         self.phoneNumbers = self.phone_numbers
         self.telephony = LabsTelephonyNamespace(client)
@@ -711,6 +714,44 @@ class LabsNamespace:
 
     def capabilities(self) -> Any:
         return self.agents._client._request_supafone_api("GET", "/api/v1/labs/capabilities")
+
+
+class LabsBillingNamespace:
+    """Stripe-backed Labs plans, credits, and managed-number add-ons."""
+
+    def __init__(self, client: Supafone) -> None:
+        self._client = client
+
+    def checkout(self, config: Optional[Mapping[str, Any]] = None, **kwargs: Any) -> Any:
+        data = _merge(config, kwargs)
+        payload = _compact(
+            {
+                "kind": data.get("kind") or "plan",
+                "plan_key": _pick(data, "plan_key", "planKey"),
+                "number_strategy": _pick(data, "number_strategy", "numberStrategy"),
+                "phone_number": _pick(data, "phone_number", "phoneNumber"),
+                "quantity": data.get("quantity"),
+                "success_url": _pick(data, "success_url", "successUrl"),
+                "cancel_url": _pick(data, "cancel_url", "cancelUrl"),
+            }
+        )
+        return self._client._request_labs_api("POST", "/v1/billing/checkout", payload)
+
+    def status(self, checkout_session_id: str) -> Any:
+        if not str(checkout_session_id or "").strip():
+            raise ValueError("checkout_session_id is required")
+        return self._client._request_labs_api(
+            "GET",
+            f"/v1/billing/checkout/{parse.quote(str(checkout_session_id), safe='')}",
+        )
+
+    def portal(self) -> Any:
+        return self._client._request_labs_api("POST", "/v1/billing/portal", {})
+
+    create_checkout = checkout
+    createCheckout = checkout
+    get_checkout = status
+    getCheckout = status
 
 
 class CampaignsNamespace:
@@ -1192,6 +1233,23 @@ class LabsPhoneNumbersNamespace:
 
     def buy(self, config: Optional[Mapping[str, Any]] = None, **kwargs: Any) -> Any:
         data = _merge(config, kwargs)
+        strategy = str(
+            _pick(data, "number_strategy", "numberStrategy")
+            or ("premium" if data.get("premium") else "default_pool")
+        ).strip().lower()
+        data["number_strategy"] = strategy
+        checkout_session_id = _pick(
+            data, "billing_checkout_session_id", "billingCheckoutSessionId"
+        )
+        if strategy in {"dedicated", "premium"} and not checkout_session_id:
+            phone_number = _pick(data, "phone_number", "phoneNumber")
+            if not phone_number:
+                raise SupafoneError("phone_number is required before starting number Checkout")
+            return self._client.labs.billing.checkout(
+                kind="number_addon",
+                number_strategy=strategy,
+                phone_number=phone_number,
+            )
         data.setdefault("telephony", {"mode": "supafone_managed", "provider": "supafone"})
         return self._client._request_supafone_api(
             "POST",
@@ -1821,6 +1879,9 @@ def _phone_number_provision_payload(data: Mapping[str, Any]) -> dict[str, Any]:
             "number_strategy": _pick(data, "number_strategy", "numberStrategy"),
             "number_pool": _pick(data, "number_pool", "numberPool"),
             "premium": data.get("premium"),
+            "billing_checkout_session_id": _pick(
+                data, "billing_checkout_session_id", "billingCheckoutSessionId"
+            ),
             "style": _pick(data, "agent_style", "agentStyle", "style"),
             "direction": data.get("direction"),
             "telephony": _telephony_payload(data["telephony"]) if data.get("telephony") else None,

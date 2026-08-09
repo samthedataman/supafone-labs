@@ -4,6 +4,20 @@ All notable changes to this project are documented here. The format is based on
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project adheres to
 [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.4.11] - 2026-08-09
+
+### Added
+- Stripe-hosted Checkout, payment-status polling, and Customer Portal methods
+  in the Python and TypeScript SDKs.
+- MCP billing tools that return browser-safe `checkout_url` handoffs for plans,
+  credit packs, and paid phone numbers.
+- A two-step dedicated/premium number flow: pay on Stripe, then redeem a
+  server-verified single-use entitlement before carrier provisioning.
+
+### Security
+- Card data, Stripe secrets, webhooks, and carrier credentials remain in the
+  private Supafone services and are never returned through SDK or MCP tools.
+
 ## [0.4.10] - 2026-08-09
 
 ### Added

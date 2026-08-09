@@ -23,7 +23,7 @@ def test_initialize_and_list_tools():
         }
     )
     assert init["result"]["serverInfo"]["name"] == "supafone-labs-mcp"
-    assert init["result"]["serverInfo"]["version"] == "0.4.10"
+    assert init["result"]["serverInfo"]["version"] == "0.4.11"
 
     listed = server.handle({"jsonrpc": "2.0", "id": 2, "method": "tools/list"})
     tool_names = {tool["name"] for tool in listed["result"]["tools"]}
@@ -40,6 +40,10 @@ def test_initialize_and_list_tools():
         "generate_qa_scenarios",
         "list_qa_runs",
         "run_watcher_qa",
+        "start_billing_checkout",
+        "get_billing_checkout",
+        "open_billing_portal",
+        "buy_phone_number",
         "list_logs",
         "tail_logs",
         "poll_logs",
@@ -95,6 +99,118 @@ def test_create_inbound_agent_uses_python_sdk(monkeypatch):
             "labs": {"enabled": True},
         },
     )
+
+
+def test_billing_checkout_returns_clickable_browser_handoff(monkeypatch):
+    calls = []
+
+    class FakeBilling:
+        def checkout(self, config):
+            calls.append(("checkout", config))
+            return {
+                "status": "requires_payment",
+                "checkout_session_id": "cs_test_123",
+                "checkout_url": "https://checkout.stripe.com/c/pay/test",
+            }
+
+        def status(self, session_id):
+            calls.append(("status", session_id))
+            return {"status": "paid", "checkout_session_id": session_id}
+
+        def portal(self):
+            calls.append(("portal",))
+            return {"url": "https://billing.stripe.com/p/session/test"}
+
+    class FakeLabs:
+        def __init__(self):
+            self.billing = FakeBilling()
+
+    class FakeSupafone:
+        def __init__(self, **_kwargs):
+            self.labs = FakeLabs()
+
+    monkeypatch.setattr(supafone_mcp, "Supafone", FakeSupafone)
+    server = supafone_mcp.SupafoneMCPServer(sleep=lambda _seconds: None)
+
+    checkout = server.call_tool(
+        "start_billing_checkout",
+        {
+            "apiKey": "sl_test",
+            "kind": "number_addon",
+            "numberStrategy": "premium",
+            "phoneNumber": "+14155550123",
+        },
+    )
+    status = server.call_tool(
+        "get_billing_checkout",
+        {"apiKey": "sl_test", "checkoutSessionId": "cs_test_123"},
+    )
+    portal = server.call_tool("open_billing_portal", {"apiKey": "sl_test"})
+
+    assert checkout["checkout_requires_browser"] is True
+    assert checkout["checkout_url"].startswith("https://checkout.stripe.com/")
+    assert status["status"] == "paid"
+    assert portal["portal_requires_browser"] is True
+    assert calls == [
+        (
+            "checkout",
+            {
+                "kind": "number_addon",
+                "numberStrategy": "premium",
+                "phoneNumber": "+14155550123",
+            },
+        ),
+        ("status", "cs_test_123"),
+        ("portal",),
+    ]
+
+
+def test_buy_phone_number_returns_checkout_handoff_and_paid_retry(monkeypatch):
+    calls = []
+
+    class FakePhoneNumbers:
+        def buy(self, config):
+            calls.append(config)
+            if not config.get("billingCheckoutSessionId"):
+                return {
+                    "status": "requires_payment",
+                    "checkout_session_id": "cs_test_number",
+                    "checkout_url": "https://checkout.stripe.com/c/pay/test-number",
+                }
+            return {"success": True, "number": {"number_id": "num_123"}}
+
+    class FakeLabs:
+        def __init__(self):
+            self.phone_numbers = FakePhoneNumbers()
+
+    class FakeSupafone:
+        def __init__(self, **_kwargs):
+            self.labs = FakeLabs()
+
+    monkeypatch.setattr(supafone_mcp, "Supafone", FakeSupafone)
+    server = supafone_mcp.SupafoneMCPServer(sleep=lambda _seconds: None)
+    checkout = server.call_tool(
+        "buy_phone_number",
+        {
+            "apiKey": "sl_test",
+            "phoneNumber": "+14155550123",
+            "numberStrategy": "dedicated",
+        },
+    )
+    provisioned = server.call_tool(
+        "buy_phone_number",
+        {
+            "apiKey": "sl_test",
+            "phoneNumber": "+14155550123",
+            "numberStrategy": "dedicated",
+            "billingCheckoutSessionId": "cs_test_number",
+        },
+    )
+
+    assert checkout["checkout_requires_browser"] is True
+    assert checkout["checkout_url"].startswith("https://checkout.stripe.com/")
+    assert provisioned["number"]["number_id"] == "num_123"
+    assert calls[1]["billingCheckoutSessionId"] == "cs_test_number"
 
 
 def test_poll_logs_returns_bounded_batches(monkeypatch):

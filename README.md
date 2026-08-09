@@ -393,6 +393,9 @@ minute; every request itemized.
 | `WS   /v1/stt/live` | Live streaming STT — the multilingual tap, zero Deepgram account |
 | `GET  /v1/usage` | Today's request counts |
 | `GET  /v1/billing/balance` | Minutes remaining + top-up links |
+| `POST /v1/billing/checkout` | Server-authored plan, credit, or paid-number Stripe Checkout |
+| `GET  /v1/billing/checkout/{session_id}` | Poll payment and number-entitlement readiness |
+| `POST /v1/billing/portal` | Authenticated Stripe Customer Portal link |
 | `GET  /v1/logs` | The audit trail: every whisper, timestamped and billed |
 | `POST /v1/qa/generate` | Adversarial test scenarios generated from your agent's own prompt |
 | `POST /v1/qa/suite` | One-call auto QA suite: mock calls vs your real config, pass/fail + SSR grades |

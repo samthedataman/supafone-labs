@@ -1,7 +1,7 @@
 # SDK Installation
 
 Supafone Labs publishes a Python package and an unscoped TypeScript package.
-Current release: **0.4.10** on both
+This branch prepares **0.4.11** for both
 [PyPI](https://pypi.org/project/supafone-labs/) and
 [npm](https://www.npmjs.com/package/supafone-labs).
 
@@ -45,6 +45,39 @@ export SUPAFONE_LABS_API_KEY=sl_live_...
 
 If no Labs key is present, use BYO provider keys such as `ANTHROPIC_API_KEY`,
 `OPENAI_API_KEY`, `XAI_API_KEY`, or local fake providers for tests.
+
+### Oracle provider and controls
+
+`labs.enabled: true` attaches the model-agnostic supervisor. A Supafone
+`sl_...` key uses the hosted Oracle; BYOK can use Anthropic, OpenAI, xAI/Grok,
+or an explicitly constructed OpenAI-compatible provider. The speaking agent
+and supervisor providers are independent.
+
+```python
+from supafone_labs import SupafoneLabs
+from supafone_labs.config import Settings
+
+watcher = SupafoneLabs(
+    provider="ultravox",       # speaking-agent adapter
+    llm="anthropic",           # supervisor provider
+    oracle_model="claude-haiku-4-5-20251001",
+    config=Settings(
+        confidence_threshold=0.65,
+        oracle_timeout_seconds=5.0,
+    ),
+    oracle_instructions="Prioritize empathy, tool truth, and the next required intake step.",
+    scenario="intake",
+    mode="apply",
+    telemetry=True,
+    post_call_analysis=True,
+)
+```
+
+For raw hosted completions, both SDKs expose `model`, `max_tokens`/
+`maxTokens`, and `temperature`. `whisper()` additionally accepts operator
+`guardrails`. The full watcher also accepts custom belief/directive prompts,
+an injection adapter, telemetry and post-call controls, and an `agent_label`
+for optimization history.
 
 ## TypeScript
 
@@ -156,6 +189,13 @@ print(started["browser_session"]["join_url"])
 
 See [Browser WebRTC Calls](browser-webrtc-calls.md) for React integration,
 security boundaries, transport details, and transfer limitations.
+
+## Stripe-hosted billing handoff
+
+Version `0.4.11` adds plan, credit-pack, and managed-number Checkout links to
+both SDKs and the MCP server. Clients receive a public `checkout_url`; Stripe
+card entry and entitlement verification remain in Supafone's private services.
+See [Pricing and Credits](pricing-and-credits.md) for the full flow.
 
 ## Outbound campaigns
 
