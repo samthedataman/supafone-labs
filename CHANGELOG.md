@@ -4,6 +4,18 @@ All notable changes to this project are documented here. The format is based on
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project adheres to
 [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.4.10] - 2026-08-09
+
+### Added
+- First-class browser WebRTC session creation in the Python and TypeScript
+  clients through `start_webrtc_call()` and `startWebRtcCall()`.
+- A stable, typed browser-session response exposing the provider transport,
+  join URL, microphone/audio support, and live-transcript capability.
+
+### Changed
+- Documented the browser-call path separately from PSTN `callFromAgent()` so
+  applications can test agents without buying or dialing a phone number.
+
 ## [0.4.9] - 2026-07-12
 
 ### Added

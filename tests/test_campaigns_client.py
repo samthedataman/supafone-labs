@@ -81,13 +81,17 @@ def test_call_from_agent_and_agent_listing_routes():
     calls = []
     sf = _client_with_transport(calls, {"success": True, "agents": []})
     sf.call_from_agent(agent_id="agent-1", to_number="+15551234567")
+    sf.start_webrtc_call(agent_id="agent/with space")
     sf.list_voice_agents()
     assert calls == [
         ("POST", "/api/v1/phone/test-call", {"agent_id": "agent-1", "to_number": "+15551234567"}),
+        ("POST", "/api/v1/agents/agent%2Fwith%20space/test-call", None),
         ("GET", "/api/v1/agents", None),
     ]
     with pytest.raises(SupafoneError):
         sf.call_from_agent(agent_id="agent-1")  # missing number
+    with pytest.raises(SupafoneError):
+        sf.start_webrtc_call()
 
 
 def test_live_builds_listen_and_portal_links():

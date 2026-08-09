@@ -68,6 +68,37 @@ test("callFromAgent dials through the phone endpoint", async (t) => {
   await assert.rejects(() => sf.callFromAgent({ agentId: "agent-1" }), SupafoneLabsError);
 });
 
+test("startWebRtcCall creates a browser session without a phone number", async (t) => {
+  const log = [];
+  t.mock.method(globalThis, "fetch", mockFetch([
+    {
+      body: {
+        success: true,
+        browser_session: {
+          version: "1",
+          available: true,
+          provider: "ultravox",
+          transport: "ultravox",
+          join_url: "wss://voice.ultravox.ai/calls/test",
+          features: { microphone: true, speaker_audio: true, live_transcripts: true },
+        },
+      },
+    },
+  ], log));
+
+  const sf = new Supafone({ accountToken: "jwt-abc" });
+  const result = await sf.startWebRtcCall({ agentId: "agent/with space" });
+
+  assert.equal(result.browser_session.available, true);
+  assert.equal(result.browser_session.transport, "ultravox");
+  assert.equal(
+    log[0].url.split("api.supafone.ai")[1],
+    "/api/v1/agents/agent%2Fwith%20space/test-call",
+  );
+  assert.equal(log[0].body, undefined);
+  await assert.rejects(() => sf.startWebRtcCall({}), SupafoneLabsError);
+});
+
 test("live() surfaces in-flight calls with listen + portal links", async (t) => {
   const log = [];
   t.mock.method(globalThis, "fetch", mockFetch([

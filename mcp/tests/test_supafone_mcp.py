@@ -23,7 +23,7 @@ def test_initialize_and_list_tools():
         }
     )
     assert init["result"]["serverInfo"]["name"] == "supafone-labs-mcp"
-    assert init["result"]["serverInfo"]["version"] == "0.4.9"
+    assert init["result"]["serverInfo"]["version"] == "0.4.10"
 
     listed = server.handle({"jsonrpc": "2.0", "id": 2, "method": "tools/list"})
     tool_names = {tool["name"] for tool in listed["result"]["tools"]}
