@@ -289,6 +289,29 @@ class Supafone:
     place_call = call_from_agent
     placeCall = call_from_agent
 
+    def start_webrtc_call(
+        self,
+        *,
+        agent_id: Optional[str] = None,
+        agentId: Optional[str] = None,
+    ) -> Any:
+        """Create a browser WebRTC session for an owned voice agent.
+
+        The returned ``browser_session.join_url`` is consumed by the browser's
+        provider client. This starts no PSTN leg and requires no phone number.
+        """
+        agent = agent_id or agentId
+        if not agent:
+            raise SupafoneError("agent_id is required (see list_voice_agents())")
+        encoded_agent = parse.quote(str(agent), safe="")
+        return self._request_account_api(
+            "POST", f"/api/v1/agents/{encoded_agent}/test-call"
+        )
+
+    startWebRtcCall = start_webrtc_call
+    start_browser_call = start_webrtc_call
+    startBrowserCall = start_webrtc_call
+
     def list_voice_agents(self) -> Any:
         """The account's voice agents — pick an agent id for campaigns/calls."""
         return self._request_account_api("GET", "/api/v1/agents")

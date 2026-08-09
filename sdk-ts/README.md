@@ -432,6 +432,12 @@ await sf.campaigns.launch(campaign.id);                            // real calls
 
 const live = await sf.campaigns.live(campaign.id);                 // in-flight calls + listen links
 await sf.callFromAgent({ agentId: agents[0].id, toNumber: "+15551234567" }); // ring a phone right now
+
+// Browser voice: creates WebRTC credentials without dialing a phone number.
+const webCall = await sf.startWebRtcCall({ agentId: agents[0].id });
+if (!webCall.browser_session.available) throw new Error("Browser voice unavailable");
+// Pass webCall.browser_session.join_url to the adapter named by
+// webCall.browser_session.transport (currently the Ultravox browser client).
 ```
 
 `campaigns.live()` returns a portal link (`app.supafone.ai/app/developer`) and

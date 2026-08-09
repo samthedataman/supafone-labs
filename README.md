@@ -311,7 +311,8 @@ when the token expires — a long Claude session never goes stale.
 
 Full tool reference: [`gitbook/mcp-server.md`](gitbook/mcp-server.md). The same
 campaign surface is available in code via `supafone_labs` (PyPI) and
-`supafone-labs` (npm) — `client.campaigns.*` + `callFromAgent()`.
+`supafone-labs` (npm) — `client.campaigns.*`, `callFromAgent()`, and
+`startWebRtcCall()` for browser voice sessions without a phone number.
 
 ## How it works
 

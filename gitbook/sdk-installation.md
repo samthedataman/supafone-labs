@@ -1,7 +1,7 @@
 # SDK Installation
 
 Supafone Labs publishes a Python package and an unscoped TypeScript package.
-Current release: **0.4.9** on both
+Current release: **0.4.10** on both
 [PyPI](https://pypi.org/project/supafone-labs/) and
 [npm](https://www.npmjs.com/package/supafone-labs).
 
