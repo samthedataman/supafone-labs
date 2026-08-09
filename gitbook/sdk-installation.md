@@ -139,6 +139,31 @@ const finished = await supafone.tester.wait(started.session_id);
 This places a real call and spends tester credits. Both SDKs reject missing
 authorization and malformed E.164 numbers before dialing.
 
+## Browser WebRTC calls
+
+Version `0.4.10` adds first-class browser-session creation without buying or
+dialing a phone number:
+
+```ts
+const started = await supafone.startWebRtcCall({ agentId: "agent-123" });
+console.log(started.browser_session.join_url);
+```
+
+```python
+started = supafone.start_webrtc_call(agent_id="agent-123")
+print(started["browser_session"]["join_url"])
+```
+
+See [Browser WebRTC Calls](browser-webrtc-calls.md) for React integration,
+security boundaries, transport details, and transfer limitations.
+
+## Outbound campaigns
+
+The same account-authenticated clients create, launch, monitor, pause, and
+round-trip call campaigns as YAML. See
+[Outbound Call Campaigns](outbound-call-campaigns.md) for the complete
+TypeScript and Python lifecycle.
+
 ## Package Names
 
 | Ecosystem | Install name | Import name |
