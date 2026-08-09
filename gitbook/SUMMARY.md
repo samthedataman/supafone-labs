@@ -1,36 +1,53 @@
 # Summary
 
 * [Overview](README.md)
-* [Self-Healing Watcher](self-healing-watcher.md)
-* [Production Voice AI Challenges](production-voice-ai-challenges.md)
-* [Why Supafone](why-supafone.md)
-* [Voice AI Thesis](voice-ai-thesis.md)
-* [Product Overview](overview.md)
-* [Developer Workflows](developer-workflows.md)
 * [Quickstart](quickstart.md)
+
+## Model Supervisor — Start Here
+
+* [Voice Watcher Framework](self-healing-watcher.md)
+* [Production Voice AI Challenges](production-voice-ai-challenges.md)
+* [Oracle Models and Controls](oracle-models-and-controls.md)
+* [Framework Support](framework-support.md)
+* [Provider-Agnostic Runtime](provider-agnostic-framework.md)
+* [Testing Voice Agents (QA)](voice-qa-landscape.md)
+* [Voice AI Thesis](voice-ai-thesis.md)
+* [The Sidecar Oracle (paper)](research-paper.md)
+
+## SDK, MCP, and BYOK
+
 * [SDK Installation](sdk-installation.md)
 * [SDK Parity](sdk-parity.md)
+* [MCP Server](mcp-server.md)
+* [Developer Workflows](developer-workflows.md)
+* [API Keys and Auth](api-keys-and-auth.md)
+* [BYOK Providers](byok-providers.md)
+* [LLMs and AI Agent Prompt](llms-ai-agent-prompt.md)
+
+## Calls, Campaigns, and Billing
+
 * [Browser WebRTC Calls](browser-webrtc-calls.md)
 * [Outbound Call Campaigns](outbound-call-campaigns.md)
-* [API Keys and Auth](api-keys-and-auth.md)
-* [Provider-Agnostic Framework](provider-agnostic-framework.md)
+* [Phone Numbers](phone-numbers.md)
+* [Call Recording and Artifacts](call-recording-artifacts.md)
+* [Pricing, Credits, and Checkout](pricing-and-credits.md)
+* [Log Streaming](log-streaming.md)
+
+## Agent Factory — Managed Delivery
+
 * [Agent Factory](agent-factory.md)
 * [Hosted Agent Builder](hosted-agent-builder.md)
 * [Hosted Agents API](hosted-agents-api.md)
 * [Call Stages](call-stages.md)
 * [Voices and Previews](voices-and-previews.md)
-* [Call Recording and Artifacts](call-recording-artifacts.md)
-* [Log Streaming](log-streaming.md)
-* [BYOK Providers](byok-providers.md)
-* [Phone Numbers](phone-numbers.md)
-* [Pricing and Credits](pricing-and-credits.md)
-* [Testing Voice Agents (QA)](voice-qa-landscape.md)
-* [The Sidecar Oracle (paper)](research-paper.md)
+* [Product Overview](overview.md)
+* [Why Supafone](why-supafone.md)
+
+## Operations and Reference
+
 * [Frontend Routing](frontend-routing.md)
 * [Admin Developer Portal](admin-developer-portal.md)
 * [Admin Credit Provisioning](admin-credit-provisioning.md)
 * [E2E Testing](e2e-testing.md)
 * [Deployment and Render](deployment-render.md)
 * [Troubleshooting](troubleshooting.md)
-* [LLMs and AI Agent Prompt](llms-ai-agent-prompt.md)
-* [MCP Server](mcp-server.md)

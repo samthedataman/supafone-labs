@@ -13,6 +13,8 @@ All notable changes to this project are documented here. The format is based on
   credit packs, and paid phone numbers.
 - A two-step dedicated/premium number flow: pay on Stripe, then redeem a
   server-verified single-use entitlement before carrier provisioning.
+- A first-class Oracle models/control guide and supervisor-first GitBook
+  navigation that keeps the Agent Factory in its secondary delivery role.
 
 ### Security
 - Card data, Stripe secrets, webhooks, and carrier credentials remain in the

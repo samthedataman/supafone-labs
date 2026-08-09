@@ -27,8 +27,24 @@ supafone = Supafone(api_key="sl_live_...", voice_watcher=True)  # default on
 
 Go directly to [Voice Watcher Framework](self-healing-watcher.md), then review
 [the production problems it solves](production-voice-ai-challenges.md),
+[Oracle Models and Controls](oracle-models-and-controls.md),
 [Framework Support](framework-support.md),
 [Testing Voice Agents](voice-qa-landscape.md), and the [MCP Server](mcp-server.md).
+
+## Build paths at a glance
+
+| What you want to do | Start here | Main SDK/MCP surface |
+| --- | --- | --- |
+| Add a second mind to an existing agent | [Voice Watcher](self-healing-watcher.md) | `supercharge()`, `observe()`, silent provider adapter |
+| Choose or tune the supervisor model | [Oracle Models and Controls](oracle-models-and-controls.md) | hosted aliases, BYOK LLM, confidence and timeout gates |
+| See whether your framework can accept live guidance | [Framework Support](framework-support.md) | canonical event/directive adapters |
+| Test the supervised agent against the raw agent | [Testing Voice Agents](voice-qa-landscape.md) | `qa.suite()`, `run_watcher_qa` |
+| Let Claude start a real call and return the live dashboard | [MCP Server](mcp-server.md) | `start_call_and_watch` |
+| Embed a browser voice session | [Browser WebRTC Calls](browser-webrtc-calls.md) | `startWebRtcCall()` / `start_webrtc_call()` |
+| Build consented outbound sequences | [Outbound Call Campaigns](outbound-call-campaigns.md) | campaign SDK, YAML config, monitoring |
+| Bring your own agent, carrier, voice, STT, or LLM | [BYOK Providers](byok-providers.md) | independent provider/telephony/TTS/Oracle lanes |
+| Buy a dedicated number or add credits | [Pricing, Credits, and Checkout](pricing-and-credits.md) | Stripe-hosted SDK/MCP checkout link |
+| Provision the whole managed agent stack | [Agent Factory](agent-factory.md) | secondary hosted-delivery path with Watcher attached |
 
 ## The developer pain we solve
 
