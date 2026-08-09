@@ -86,6 +86,7 @@ agent = supafone.labs.agents.createInboundWithNumber({
 | Usage | `supafone.usage()` | `supafone.usage()` |
 | Log snapshot | `supafone.logs()` | `supafone.logs()` |
 | Log stream | `supafone.streamLogs()` | `supafone.stream_logs()` / `streamLogs()` |
+| Start browser WebRTC session | `supafone.startWebRtcCall()` / `startBrowserCall()` | `supafone.start_webrtc_call()` / `startWebRtcCall()` |
 | Call a human from an owned agent | `supafone.callFromAgent()` | `supafone.call_from_agent()` |
 | Grade an existing phone agent | `supafone.tester.gradeAgent()` | `supafone.tester.grade_agent()` |
 | Fetch one call (live transcript) | `supafone.getCall()` | `supafone.get_call()` |
@@ -94,6 +95,7 @@ agent = supafone.labs.agents.createInboundWithNumber({
 | Brand scan | `supafone.scanBrand()` | `supafone.scan_brand()` |
 | Generate intake form | `supafone.generateIntakeForm()` | `supafone.generate_intake_form()` |
 | Campaign lifecycle | `supafone.campaigns.create/get/list/update/launch/pause()` | same names, snake_case |
+| Campaign live monitoring | `campaigns.live/getCall()` | `campaigns.live/get_call()` |
 | Campaign config (YAML) | `campaigns.validateConfig/applyConfig/exportConfig/generateConfig()` | `campaigns.validate_config/apply_config/export_config/generate_config()` |
 | E-sign documents | `campaigns.uploadSigningDocument/detectSignatureFields/setSignatureFields()` | `campaigns.upload_signing_document/detect_signature_fields/set_signature_fields()` |
 | QA suites + SSR grading | `supafone.qa.generate/run/suite/history()` | `supafone.qa.generate/run/suite/history()` |

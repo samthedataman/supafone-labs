@@ -32,7 +32,7 @@ except Exception:  # pragma: no cover - exercised only when SDK import is broken
 
 
 SERVER_NAME = "supafone-labs-mcp"
-SERVER_VERSION = "0.4.9"
+SERVER_VERSION = "0.4.10"
 DEFAULT_PROTOCOL_VERSION = "2024-11-05"
 DEFAULT_HOSTED_API_BASE = "https://api.supafone.ai"
 DEFAULT_LABS_API_BASE = "https://api.labs.supafone.ai"

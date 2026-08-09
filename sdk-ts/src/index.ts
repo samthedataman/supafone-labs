@@ -1334,6 +1334,26 @@ export class SupafoneLabs {
     return this.callFromAgent(opts);
   }
 
+  /**
+   * Start a browser WebRTC session for an owned voice agent. No phone number or
+   * PSTN leg is created. Join browser_session.join_url with the provider's
+   * browser client (currently Ultravox).
+   */
+  async startWebRtcCall(opts: { agentId: string }): Promise<WebRtcCallResult> {
+    if (!opts?.agentId) {
+      throw new SupafoneLabsError("agentId is required (see listVoiceAgents())");
+    }
+    return this.requestAccountApi<WebRtcCallResult>(
+      "POST",
+      `/api/v1/agents/${encodeURIComponent(opts.agentId)}/test-call`,
+    );
+  }
+
+  /** Alias for startWebRtcCall(), named for browser-oriented applications. */
+  async startBrowserCall(opts: { agentId: string }): Promise<WebRtcCallResult> {
+    return this.startWebRtcCall(opts);
+  }
+
   /** The account's voice agents — pick an agent id for campaigns/calls. */
   async listVoiceAgents(): Promise<{ agents: Record<string, unknown>[] }> {
     return this.requestAccountApi("GET", "/api/v1/agents");
@@ -1699,6 +1719,35 @@ export interface PlaceCallResult {
   simulated?: boolean;
   call_sid?: string | null;
   provider?: string;
+}
+
+export interface BrowserVoiceSession {
+  version: string;
+  available: boolean;
+  provider: string;
+  transport: string;
+  join_url: string | null;
+  features: {
+    microphone: boolean;
+    speaker_audio: boolean;
+    live_transcripts: boolean;
+  };
+}
+
+export interface WebRtcCallResult {
+  success: boolean;
+  simulated?: boolean;
+  call_id?: string | null;
+  call_record_id?: string | null;
+  join_url?: string | null;
+  max_duration_seconds?: number;
+  free_calls_remaining?: number;
+  browser_session: BrowserVoiceSession;
+  test_capabilities?: {
+    browser_voice: boolean;
+    universal_phone_grade: boolean;
+    phone_grade_url: string;
+  };
 }
 
 export interface CampaignRecipientInput {
