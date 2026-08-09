@@ -8,6 +8,8 @@
 * [Quickstart](quickstart.md)
 * [SDK Installation](sdk-installation.md)
 * [SDK Parity](sdk-parity.md)
+* [Browser WebRTC Calls](browser-webrtc-calls.md)
+* [Outbound Call Campaigns](outbound-call-campaigns.md)
 * [API Keys and Auth](api-keys-and-auth.md)
 * [Provider-Agnostic Framework](provider-agnostic-framework.md)
 * [Agent Factory](agent-factory.md)
