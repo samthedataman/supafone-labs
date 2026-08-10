@@ -1,13 +1,37 @@
 # 🏭 Agent Factory
 
-The Agent Factory creates complete hosted agents: inbound, outbound, web, or
-campaign agents with stages, voices, numbers, logs, tools, and optional
-Supafone Labs watcher.
+Agent Factory is the shortest path from “this business needs an AI caller” to
+a working, observable agent. Describe the job in the language you would use to
+train a new employee; Supafone assembles the prompts, call stages, runtime,
+voice, tools, logs, and optional phone number.
 
-The main promise: a developer can launch with one Supafone API key. They do not
+The main promise: a developer can launch with one Supafone key. They do not
 need to own Ultravox, Retell, Vapi, Twilio, Telnyx, Cartesia, ElevenLabs,
 Inworld, Deepgram, OpenAI, Anthropic, or xAI accounts before the first working
 agent exists.
+
+### What your customer receives
+
+- an inbound receptionist, outbound caller, web agent, or campaign agent;
+- a real staged conversation instead of one fragile mega-prompt;
+- editable prompts, voices, tools, escalation rules, and business knowledge;
+- transcripts, recordings, call status, QA, and a signed-in dashboard;
+- a managed first-run path and BYOK controls when their infrastructure is
+  ready; and
+- Voice Watcher supervision attached by default, so the agent can be observed
+  and corrected rather than merely launched.
+
+### What the developer no longer rebuilds
+
+- model-key plumbing in the browser;
+- prompt generation and stage validation;
+- provider-specific voice and telephony payloads;
+- call-state transitions and tool-truth rules;
+- number assignment, webhook wiring, transcript storage, and dashboard links;
+- separate SDK and MCP implementations for the same action.
+
+The generated plan remains plain JSON. Your application can preview, edit,
+approve, diff, and version it before it reaches a caller.
 
 ## Default Happy Path
 
@@ -16,13 +40,14 @@ advanced control.
 
 ```ts
 const supafone = new Supafone({
-  apiKey: process.env.SUPAFONE_API_KEY!,
+  apiKey: process.env.SUPAFONE_TOKEN!,
 });
 
 const agent = await supafone.labs.agents.createInboundWithNumber({
   agentKey: "northline-intake",
   name: "Northline intake",
   assistantName: "Maya",
+  description: "Answer new inquiries, understand the request, and book the right next step.",
   websiteUrl: "https://northline.example",
   number: {
     search: { areaCode: "415" },
@@ -34,6 +59,9 @@ const agent = await supafone.labs.agents.createInboundWithNumber({
     model: "gemma"
   }
 });
+
+console.log(agent.call_plan?.summary);
+console.log(agent.call_plan?.call_stages); // the exact stages now running
 ```
 
 Python:
@@ -43,6 +71,7 @@ agent = supafone.labs.agents.create_inbound_with_number({
     "agentKey": "northline-intake",
     "name": "Northline intake",
     "assistantName": "Maya",
+    "description": "Answer new inquiries, understand the request, and book the right next step.",
     "websiteUrl": "https://northline.example",
     "number": {
         "search": {"areaCode": "415"},
@@ -54,6 +83,8 @@ agent = supafone.labs.agents.create_inbound_with_number({
         "model": "gemma",
     },
 })
+
+print(agent["call_plan"]["summary"])
 ```
 
 ## Outbound Agents
@@ -66,6 +97,7 @@ const outbound = await supafone.labs.agents.createOutboundWithNumber({
   name: "Northline speed to lead",
   assistantName: "Maya",
   goal: "Call new leads within five minutes and book a consult.",
+  description: "Call warm, consented leads, understand fit and urgency, then book a consult without pressure.",
   number: { search: { areaCode: "415" } },
   labs: { enabled: true, mode: "supafone_managed", model: "gemma" },
 });
@@ -77,7 +109,7 @@ The frontend builder should fit the core controls above the fold:
 
 | Section | Required controls |
 | --- | --- |
-| Key | Supafone API key first, Labs key optional for previews/logs |
+| Key | One `SUPAFONE_TOKEN` first; scoped overrides stay advanced |
 | Agent | inbound/outbound, name, assistant name, goal/system prompt |
 | Stages | automatic on by default, preset selector, advanced custom stages |
 | Voice | provider, voice, preview button |
@@ -108,7 +140,7 @@ Export TypeScript:
 import { Supafone } from "supafone-labs";
 
 const supafone = new Supafone({
-  apiKey: process.env.SUPAFONE_API_KEY!,
+  apiKey: process.env.SUPAFONE_TOKEN!,
 });
 
 await supafone.labs.agents.createInboundWithNumber({
@@ -126,7 +158,7 @@ Export Python:
 ```python
 from supafone_labs import Supafone
 
-supafone = Supafone(api_key=os.environ["SUPAFONE_API_KEY"])
+supafone = Supafone(api_key=os.environ["SUPAFONE_TOKEN"])
 
 supafone.labs.agents.create_inbound_with_number({
     "agentKey": "northline-intake",
@@ -145,6 +177,7 @@ Export JSON for replay/debugging:
   "agentKey": "northline-intake",
   "name": "Northline intake",
   "assistantName": "Maya",
+  "description": "Answer new inquiries, understand the request, and book the right next step.",
   "websiteUrl": "https://northline.example",
   "number": { "search": { "areaCode": "415" }, "numberStrategy": "default_pool" },
   "labs": { "enabled": true, "mode": "supafone_managed", "model": "gemma" }
@@ -161,6 +194,22 @@ The Agent Factory should infer as much as possible:
 - `runtimeMode: "multi_stage"` unless explicitly disabled,
 - shared number pool unless dedicated or premium is selected,
 - Supafone-managed voice/telephony/provider accounts unless BYOK is selected.
+
+## Public API, Not an SDK-Only Feature
+
+The SDKs are typed conveniences over a normal authenticated REST contract:
+
+```http
+POST https://api.supafone.ai/api/v1/labs/agent-plans
+POST https://api.supafone.ai/api/v1/labs/agents
+Authorization: Bearer $SUPAFONE_TOKEN
+```
+
+The first endpoint lets a product show the complete plan for review. The second
+creates the agent and installs that plan into the real stage runtime. The
+Python SDK, TypeScript SDK, and MCP server call these same endpoints, so a
+developer can choose the interface that fits their stack without losing
+capabilities.
 
 ## Advanced BYOK Agent Factory
 

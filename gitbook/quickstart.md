@@ -48,6 +48,7 @@ const agent = await supafone.labs.agents.createInboundWithNumber({
   name: "Northline intake",
   assistantName: "Maya",
   businessName: "Northline",
+  description: "Answer new inquiries, understand the request, and book the right next step.",
   websiteUrl: "https://northline.example",
   number: {
     search: { areaCode: "415" },
@@ -68,6 +69,7 @@ const agent = await supafone.labs.agents.createInboundWithNumber({
 console.log(agent.agent.agent_key);
 console.log(agent.number?.number.phone_number);
 console.log(agent.widget?.snippet);
+console.log(agent.call_plan?.call_stages); // the reviewed JSON now running on the agent
 ```
 
 The default pool is the safe starting point. Use `numberStrategy: "dedicated"`
@@ -86,6 +88,7 @@ agent = supafone.labs.agents.create_inbound_with_number({
     "name": "Northline intake",
     "assistantName": "Maya",
     "businessName": "Northline",
+    "description": "Answer new inquiries, understand the request, and book the right next step.",
     "websiteUrl": "https://northline.example",
     "number": {
         "search": {"areaCode": "415"},
@@ -105,7 +108,14 @@ agent = supafone.labs.agents.create_inbound_with_number({
 
 print(agent["agent"]["agent_key"])
 print(agent.get("number", {}).get("number", {}).get("phone_number"))
+print(agent["call_plan"]["call_stages"])
 ```
+
+That one description is enough for the default hosted planner to write the
+agent-wide prompt and a validated five-stage flow. You can preview it first
+with `supafone.generateCallStages(...)` / `supafone.generate_call_stages(...)`,
+edit the returned JSON, or pass an explicit stage array for a reviewed flow.
+Supafone's model credential stays on the server.
 
 ## 4. Supervise an Existing Agent
 
@@ -131,10 +141,10 @@ providers for tests.
 
 ```bash
 curl https://api.labs.supafone.ai/v1/billing/balance \
-  -H "Authorization: Bearer $SUPAFONE_LABS_API_KEY"
+  -H "Authorization: Bearer $SUPAFONE_TOKEN"
 
 curl https://api.labs.supafone.ai/v1/logs?limit=20 \
-  -H "Authorization: Bearer $SUPAFONE_LABS_API_KEY"
+  -H "Authorization: Bearer $SUPAFONE_TOKEN"
 ```
 
 ## 6. Smoke Test Hosted Agents

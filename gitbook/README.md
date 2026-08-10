@@ -137,9 +137,9 @@ complete hosted environment:
   accept a live directive; **Bland does not** (closed live-call API — observe and
   score only), and Cartesia/Pipecat are n/a. See
   [Framework Support](framework-support.md).
-- **Secondary — hosted Agent Factory**: create complete phone, web, and campaign
-  agents from code with managed stages, voices, numbers, tools, transcripts,
-  recordings, widgets, usage, and the same Watcher attached. This path removes
+- **Secondary — hosted Agent Factory**: describe the job once and create complete
+  phone, web, and campaign agents with generated executable stages, voices,
+  numbers, tools, transcripts, recordings, widgets, usage, and the same Watcher attached. This path removes
   provisioning work; it does not define or limit the supervisor framework.
 
 There are two API surfaces:
@@ -147,7 +147,7 @@ There are two API surfaces:
 | Surface | Base URL | Key | Primary use |
 | --- | --- | --- | --- |
 | Labs Cloud | `https://api.labs.supafone.ai` | `sl_live_...` | Oracle, TTS, STT, logs, builder, QA, optimizer |
-| Hosted Agents | `https://api.supafone.ai/api/v1/labs` | `sl_live_...` (or scoped `sf_live_...`) | Hosted agent, number, voice, preset, and telephony provisioning |
+| Hosted Agents REST API | `https://api.supafone.ai/api/v1/labs` | `sl_live_...` (or scoped `sf_live_...`) | Generated executable plans plus hosted agent, number, voice, tool, call-artifact, and telephony provisioning |
 
 **How many keys? One.** Since 0.4.4, your `sl_` Labs key authenticates on
 **both** APIs ([one-key auth](api-keys-and-auth.md)): the Labs gateway

@@ -7,12 +7,19 @@ supafone-labs/mcp/supafone_mcp.py
 ```
 
 It is a dependency-light Python stdio JSON-RPC server. Claude can use it to
-create hosted agents, provision numbers, check usage, and poll Labs logs.
+create hosted agents, turn a plain-English job description into production call
+prompts, provision numbers, check usage, and poll Labs logs.
 
 Use this when you want Claude Desktop to run agent-team experiments: one tool
 call can create an inbound receptionist, another can create an outbound sales
 agent, and a third can tail logs while the team evaluates different provider
 configurations.
+
+The human benefit is that the conversation can begin with the outcome instead
+of infrastructure: “Build a warm lead caller for a roofing company.” The MCP
+generates an editable plan, explains the stages, and can create the hosted agent
+with the same key. It never asks Claude—or the user—to paste Supafone's Haiku,
+telephony, TTS, or SMTP credentials into the conversation.
 
 ## Environment
 
@@ -77,6 +84,7 @@ Restart Claude Desktop after saving the config.
 | `create_outbound_agent` | Create an outbound hosted voice agent through the Python SDK. |
 | `create_inbound_agent_with_number` | Create an inbound agent and provision or assign a number. |
 | `create_outbound_agent_with_number` | Create an outbound agent and provision or assign a number. |
+| `generate_call_stages` | Turn one description into complete, validated prompts and a 3-8 stage runtime plan. |
 | `get_usage` | Read Labs Cloud usage and caps from `/v1/usage`. |
 | `list_logs` | Read recent Labs Cloud logs from `/v1/logs`. |
 | `tail_logs` | Poll Labs Cloud logs for a bounded live-looking stream. |
@@ -295,6 +303,20 @@ MCP also exposes lifecycle and artifact tools:
 - `delete_recording`
 - `list_transcripts`
 - `list_logs` / `tail_logs`
+
+### Ask naturally
+
+Examples that map directly to `generate_call_stages`:
+
+- “Build a five-stage inbound agent that screens plumbing emergencies and
+  books ordinary service calls.”
+- “Draft an outbound follow-up agent for warm, consented leads; make the
+  opt-out explicit and never claim an appointment until the calendar confirms.”
+- “Show me the generated plan before creating anything.”
+
+The response includes `generated_by` and `fallback`. An MCP client can explain
+whether the hosted planner or safe deterministic template produced the result,
+then present the ordinary JSON for human review.
 
 ## Log Streaming Note
 

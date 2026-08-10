@@ -24,15 +24,14 @@ if str(SRC) not in sys.path:
     sys.path.insert(0, str(SRC))
 
 try:
-    from supafone_labs import Supafone, SupafoneError, generate_call_stages
+    from supafone_labs import Supafone, SupafoneError
 except Exception:  # pragma: no cover - exercised only when SDK import is broken.
     Supafone = None  # type: ignore[assignment]
     SupafoneError = RuntimeError  # type: ignore[assignment]
-    generate_call_stages = None  # type: ignore[assignment]
 
 
 SERVER_NAME = "supafone-labs-mcp"
-SERVER_VERSION = "0.4.11"
+SERVER_VERSION = "0.4.12"
 DEFAULT_PROTOCOL_VERSION = "2024-11-05"
 DEFAULT_HOSTED_API_BASE = "https://api.supafone.ai"
 DEFAULT_LABS_API_BASE = "https://api.labs.supafone.ai"
@@ -189,6 +188,10 @@ def _agent_schema(*, with_number: bool = False) -> dict[str, Any]:
         "industry": {"type": "string"},
         "websiteUrl": {"type": "string"},
         "goal": {"type": "string"},
+        "description": {
+            "type": "string",
+            "description": "Describe what the agent should accomplish in plain English.",
+        },
         "greeting": {"type": "string"},
         "systemPrompt": {"type": "string"},
         "language": {"type": "string"},
@@ -218,6 +221,22 @@ def _agent_schema(*, with_number: bool = False) -> dict[str, Any]:
             "description": "Telephony mode/provider/credentials.",
         },
         "tools": {"type": "object", "additionalProperties": True},
+        "stageGeneration": {
+            "type": "string",
+            "enum": ["oracle", "template", "off"],
+            "description": "Hosted Haiku planner (default), offline template, or no generated override.",
+        },
+        "stageCount": {
+            "type": "integer",
+            "minimum": 3,
+            "maximum": 8,
+            "default": 5,
+        },
+        "stageDetail": {
+            "type": "string",
+            "enum": ["compact", "standard", "detailed"],
+            "default": "standard",
+        },
         "metadata": {"type": "object", "additionalProperties": True},
         "apiKey": {
             "type": "string",
@@ -461,7 +480,10 @@ TOOLS: list[dict[str, Any]] = [
     },
     {
         "name": "generate_call_stages",
-        "description": "Generate default Supafone call stages from prompt, goal, business metadata, and direction.",
+        "description": (
+            "Turn one plain-English agent description into complete, editable call prompts and "
+            "a validated 3-8 stage runtime plan. Uses the same Supafone key; no model key required."
+        ),
         "inputSchema": _agent_schema(),
     },
     {
@@ -1182,9 +1204,9 @@ class SupafoneMCPServer:
                 _merge_config(arguments)
             )
         if name == "generate_call_stages":
-            if generate_call_stages is None:
-                raise ToolError("supafone_labs SDK import failed; run from the repo or install supafone-labs")
-            return {"call_stages": generate_call_stages(_merge_config(arguments))}
+            return self._hosted_client(arguments).labs.agents.plan(
+                _merge_config(arguments)
+            )
         if name == "delete_agent":
             _require_confirmation(arguments, "confirmDelete", "deleting an agent")
             agent_key = _pick(arguments, "agentKey", "agent_key")

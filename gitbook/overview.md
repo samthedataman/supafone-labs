@@ -27,7 +27,8 @@ local or hosted supervisor-model modes.
 `https://api.supafone.ai/api/v1/labs` with your `sl_live_...` key (one-key
 auth) or a scoped `sf_live_...` key. This path is
 for complete agents: inbound receptionists, outbound sales agents, web agents,
-campaign agents, managed numbers, presets, tools, artifacts, and Supafone Pro.
+campaign agents, generated executable call plans, managed numbers, presets,
+tools, artifacts, and Supafone Pro.
 This is the Agent Factory path: by default, Supafone supplies the operational
 provider layer so the developer does not need to bring voice-platform,
 telephony, TTS, STT, or LLM keys to get started. This Agent Factory path is a
@@ -47,8 +48,9 @@ not create the agent.
 - **Watcher**: Supafone Pro live supervision attached to a hosted or BYO agent.
 - **Standing directive**: a persistent coaching preamble improved from
   post-call outcomes.
-- **Agent Factory**: the secondary hosted-agent creation path with managed
-  platform, telephony, TTS/STT/LLM, numbers, stages, tools, and logs.
+- **Agent Factory**: the secondary hosted-agent creation path that turns one
+  job description into validated prompts and a 3–8 stage runtime, then adds
+  managed platform, telephony, TTS/STT/LLM, numbers, tools, and logs.
 - **Number strategy**: shared pool by default, dedicated/premium only by
   explicit choice.
 

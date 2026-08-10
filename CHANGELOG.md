@@ -4,6 +4,30 @@ All notable changes to this project are documented here. The format is based on
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project adheres to
 [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.4.12] - 2026-08-09
+
+### Added
+- Hosted call-plan generation from one plain-language description, returning a
+  versioned, editable 3–8 stage runtime plan through REST, Python, TypeScript,
+  and MCP.
+- Public `/api/v1/labs/agent-plans`, presets, tools, runtime, calls,
+  recordings, and transcripts contracts with matching SDK helpers.
+- A complete GitBook REST endpoint map with curl examples, roles, error
+  handling, customer outcomes, developer benefits, and safe-retry guidance.
+
+### Changed
+- Agent creation now defaults to hosted plan generation and returns the exact
+  plan installed in the live multi-stage runtime. Explicit reviewed stages and
+  deterministic template/off modes remain supported.
+- Custom generated stage names and reviewed transition branches execute in the
+  runtime instead of being reduced to hard-coded intake/booking/confirmation.
+
+### Security
+- Planner requests are bounded and exclude Supafone credentials, provider
+  keys, telephony/carrier secrets, billing data, and BYOK configuration.
+- Invalid or unavailable model output degrades to a marked safe deterministic
+  plan; account call artifacts remain tenant-isolated.
+
 ## [0.4.11] - 2026-08-09
 
 ### Added

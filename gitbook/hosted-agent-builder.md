@@ -14,7 +14,7 @@ There are two builder modes:
 The builder UI should start with the one `sl_` Labs key and the hosted Agent
 Factory path. BYOK provider credentials should live behind an advanced drawer.
 After a working agent is created, the builder should export the exact same
-configuration as TypeScript, Python, REST, and JSON.
+configuration as TypeScript, Python, REST, MCP, and JSON.
 
 The builder should preserve the product hierarchy:
 
@@ -40,7 +40,7 @@ transcription, PII redaction, retention days, and consent announcement.
 import { Supafone } from "supafone-labs";
 
 const supafone = new Supafone({
-  apiKey: process.env.SUPAFONE_LABS_API_KEY!,
+  apiKey: process.env.SUPAFONE_TOKEN!,
   voiceWatcher: true, // default on — provisions agents under the Voice Watcher framework
 });
 
@@ -49,6 +49,7 @@ const inbound = await supafone.labs.agents.createInbound({
   name: "Northline intake",
   assistantName: "Maya",
   businessName: "Northline",
+  description: "Answer new inquiries, capture the facts that matter, and book or route the next step.",
   websiteUrl: "https://northline.example",
   presetKey: "general_intake_receptionist",
   runtimeMode: "multi_stage",
@@ -62,7 +63,34 @@ const inbound = await supafone.labs.agents.createInbound({
     voicemail: true
   }
 });
+
+console.log(inbound.call_plan?.call_stages); // reviewed JSON now running
 ```
+
+### Review before creation
+
+Products that need an approval step can preview first, show the plan in their
+own UI, let an operator edit it, and create from the approved JSON:
+
+```ts
+const plan = await supafone.generateCallStages({
+  direction: "inbound",
+  businessName: "Northline",
+  description: "Answer new inquiries, capture the facts that matter, and book or route the next step.",
+  stageCount: 5,
+  stageDetail: "detailed",
+});
+
+await supafone.labs.agents.createInbound({
+  agentKey: "northline-intake",
+  name: "Northline intake",
+  callStages: plan.call_stages,
+});
+```
+
+The equivalent REST endpoint is `POST /api/v1/labs/agent-plans`; Python uses
+`generate_call_stages()`; MCP uses `generate_call_stages`. All four interfaces
+share one plan contract and one Supafone credential.
 
 To add a number, use `createInboundWithNumber()` or
 `createOutboundWithNumber()`. Choose the shared pool unless the user explicitly

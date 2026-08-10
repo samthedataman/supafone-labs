@@ -23,7 +23,7 @@ def test_initialize_and_list_tools():
         }
     )
     assert init["result"]["serverInfo"]["name"] == "supafone-labs-mcp"
-    assert init["result"]["serverInfo"]["version"] == "0.4.11"
+    assert init["result"]["serverInfo"]["version"] == "0.4.12"
 
     listed = server.handle({"jsonrpc": "2.0", "id": 2, "method": "tools/list"})
     tool_names = {tool["name"] for tool in listed["result"]["tools"]}
@@ -32,6 +32,7 @@ def test_initialize_and_list_tools():
         "create_outbound_agent",
         "create_inbound_agent_with_number",
         "create_outbound_agent_with_number",
+        "generate_call_stages",
         "get_usage",
         "get_call_modes",
         "grade_existing_phone_agent",
@@ -97,6 +98,50 @@ def test_create_inbound_agent_uses_python_sdk(monkeypatch):
             "agentKey": "northline-intake",
             "name": "Northline intake",
             "labs": {"enabled": True},
+        },
+    )
+
+
+def test_generate_call_stages_uses_hosted_one_key_planner(monkeypatch):
+    calls = []
+
+    class FakeAgents:
+        def plan(self, config):
+            calls.append(("plan", config))
+            return {
+                "version": "supafone_call_plan_v1",
+                "generated_by": "supafone_hosted_haiku",
+                "call_stages": [{"key": "welcome"}, {"key": "action"}, {"key": "close"}],
+            }
+
+    class FakeLabs:
+        def __init__(self):
+            self.agents = FakeAgents()
+
+    class FakeSupafone:
+        def __init__(self, **kwargs):
+            calls.append(("client", kwargs))
+            self.labs = FakeLabs()
+
+    monkeypatch.setattr(supafone_mcp, "Supafone", FakeSupafone)
+    result = supafone_mcp.SupafoneMCPServer().call_tool(
+        "generate_call_stages",
+        {
+            "apiKey": "sl_live_one_key",
+            "description": "Qualify callers and schedule an estimate",
+            "direction": "inbound",
+            "stageCount": 4,
+        },
+    )
+
+    assert result["generated_by"] == "supafone_hosted_haiku"
+    assert calls[0][1]["api_key"] == "sl_live_one_key"
+    assert calls[1] == (
+        "plan",
+        {
+            "description": "Qualify callers and schedule an estimate",
+            "direction": "inbound",
+            "stageCount": 4,
         },
     )
 

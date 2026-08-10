@@ -35,7 +35,7 @@ advanced BYOK.
 import { Supafone } from "supafone-labs";
 
 const supafone = new Supafone({
-  apiKey: process.env.SUPAFONE_LABS_API_KEY!,
+  apiKey: process.env.SUPAFONE_TOKEN!,
   voiceWatcher: true, // default on — provisions agents under the Voice Watcher framework
 });
 
@@ -43,6 +43,7 @@ const agent = await supafone.labs.agents.createInboundWithNumber({
   agentKey: "northline-intake",
   name: "Northline intake",
   assistantName: "Maya",
+  description: "Answer new inquiries, understand the request, and book the right next step.",
   websiteUrl: "https://northline.example",
   number: { search: { areaCode: "415" } },
   labs: { enabled: true, model: "gemma" },
@@ -60,6 +61,7 @@ agent = supafone.labs.agents.create_inbound_with_number({
     "agentKey": "northline-intake",
     "name": "Northline intake",
     "assistantName": "Maya",
+    "description": "Answer new inquiries, understand the request, and book the right next step.",
     "websiteUrl": "https://northline.example",
     "number": {"search": {"areaCode": "415"}},
     "labs": {"enabled": True, "model": "gemma"},
@@ -75,11 +77,12 @@ lowest-friction provisioning path—it authenticates every surface:
 1. Paste your `sl_live_...` key (as `SUPAFONE_LABS_API_KEY` / `SUPAFONE_TOKEN`).
 2. Choose inbound or outbound.
 3. Describe the agent.
-4. Pick a voice and preview it.
-5. Keep Supafone-managed providers or open advanced BYOK.
-6. Create the agent and number.
-7. Stream logs.
-8. Export TypeScript and Python code.
+4. Review the generated prompts and 3–8 stage plan when approval matters.
+5. Pick a voice and preview it.
+6. Keep Supafone-managed providers or open advanced BYOK.
+7. Create the agent and number.
+8. Stream logs.
+9. Export REST, TypeScript, Python, MCP, or JSON.
 
 The BYOK panel should be advanced. Developers should not need Twilio, Telnyx,
 Plivo, SignalWire, SIP, Ultravox, Retell, Vapi, Bland, LiveKit, Pipecat,
@@ -160,8 +163,9 @@ Every builder-created agent should be exportable as:
 - TypeScript SDK code,
 - Python SDK code,
 - raw REST/curl,
+- MCP tool calls,
 - JSON configuration.
 
 The export should contain the exact choices from the UI, including direction,
 voice, number strategy, `labs.enabled`, `labs.mode`, BYOK providers, tools, and
-stage preset.
+stage preset, and the exact generated or edited call plan.

@@ -15,10 +15,10 @@ brain = supafone_labs.supercharge(my_agent)     # provider auto-detected
 Runs with **no API key** using the built-in fake provider, so you can see it work
 immediately, then swap in a real provider via `ANTHROPIC_API_KEY`.
 
-## 1b. Or spawn a hosted Supafone agent from TypeScript
+## 1b. Or create a hosted Supafone agent from REST, Python, TypeScript, or MCP
 
-If you want Supafone to host the agent, use the TypeScript SDK against the
-Supafone API. This creates an Ultravox-backed Supafone agent with a
+If you want Supafone to host the agent, use the public REST API directly or a
+matching SDK/MCP client. This creates an Ultravox-backed Supafone agent with a
 Supafone-managed phone number, managed voices, multistage state, tools,
 recordings, transcripts, and optional Supafone Pro watcher. You do not need
 Ultravox, Twilio, Cartesia, Inworld, ElevenLabs, or Deepgram keys in the default
@@ -32,21 +32,21 @@ There are two main features:
 - **Self-healing watcher** attaches Supafone Labs to a hosted or existing agent
   and sends silent corrective directives only when `labs.enabled` is on.
 
-Think of this as the full agent-building framework path: choose the voice you
-like, pick a built-in stage preset, turn on tools, and Supafone generates the
-durable agent profile and phone line that sync to the normal Supafone account.
+Think of this as the full agent-building framework path: describe the job,
+review the generated prompts and executable stages when needed, choose a voice
+and tools, and create a durable agent profile that syncs to the normal Supafone
+account.
 
 ```bash
 npm i supafone-labs
-export SUPAFONE_API_KEY=sf_live_...
+export SUPAFONE_TOKEN=sl_live_...
 ```
 
 ```ts
 import { Supafone } from "supafone-labs";
 
 const supafone = new Supafone({
-  apiKey: process.env.SUPAFONE_LABS_API_KEY || process.env.SUPAFONE_API_KEY!,
-  supafoneApiKey: process.env.SUPAFONE_API_KEY!,
+  apiKey: process.env.SUPAFONE_TOKEN!,
   voiceWatcher: true, // default on — provisions agents under the Voice Watcher framework
 });
 
@@ -55,6 +55,7 @@ const agent = await supafone.labs.agents.createInboundWithNumber({
   name: "MediVoice intake",
   assistantName: "Maya",
   businessName: "MediVoice",
+  description: "Answer new inquiries, capture the facts that matter, and book or route the next step.",
   websiteUrl: "https://medivoice.org",
   number: { search: { areaCode: "787" } },
   voice: { provider: "cartesia", voiceId: "Jacqueline" },
@@ -69,8 +70,22 @@ const agent = await supafone.labs.agents.createInboundWithNumber({
   },
 });
 
-console.log(agent.agent.agent_key, agent.number?.number.phone_number, agent.widget?.snippet);
+console.log(agent.agent.agent_key, agent.call_plan?.call_stages);
 ```
+
+REST uses the same contract; no TypeScript runtime is required:
+
+```bash
+curl https://api.supafone.ai/api/v1/labs/agent-plans \
+  -X POST \
+  -H "Authorization: Bearer $SUPAFONE_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"description":"Answer new inquiries and book the right next step","direction":"inbound","stage_count":5}'
+```
+
+Python uses `supafone.generate_call_stages(...)` and
+`supafone.labs.agents.create_inbound(...)`; MCP exposes
+`generate_call_stages` and the hosted-agent creation tools.
 
 For outbound sales or speed-to-lead workflows, use the matching helper:
 
@@ -79,6 +94,7 @@ const salesAgent = await supafone.labs.agents.createOutboundWithNumber({
   agentKey: "medivoice-sales",
   name: "MediVoice sales team",
   assistantName: "Maya",
+  description: "Call warm, consented leads, understand fit, and book the next step without pressure.",
   websiteUrl: "https://medivoice.org",
   number: { search: { areaCode: "787" } },
   labs: { enabled: true, model: "gemma" },
@@ -121,7 +137,7 @@ To verify the full hosted-agent path, run the smoke test:
 
 ```bash
 cd supafone-labs
-SUPAFONE_API_KEY=sf_live_... \
+SUPAFONE_TOKEN=sl_live_... \
 SUPAFONE_API_BASE_URL=https://api.supafone.ai \
 npx tsx examples/smoke-hosted-agent.ts
 ```

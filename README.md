@@ -66,12 +66,13 @@ brain = supafone_labs.supercharge(my_agent)   # that's the whole integration
 ```ts
 import { Supafone } from "supafone-labs";
 
-const supafone = new Supafone({ apiKey: process.env.SUPAFONE_API_KEY! });
+const supafone = new Supafone({ apiKey: process.env.SUPAFONE_TOKEN! });
 
 const agent = await supafone.labs.agents.createInboundWithNumber({
   agentKey: "northline-intake",
   name: "Northline intake",
   assistantName: "Maya",
+  description: "Answer new inquiries, understand the request, and book the right next step.",
   websiteUrl: "https://northline.example",
   number: { search: { areaCode: "415" } },
   labs: { enabled: true, model: "gemma" },
@@ -83,6 +84,30 @@ agent API at `https://api.supafone.ai/api/v1/labs`. The default path buys and
 routes Supafone-managed numbers, so developers do not need to create Twilio,
 Ultravox, Cartesia, Inworld, ElevenLabs, or Deepgram accounts just to ship an
 agent. BYOK remains available when a team already owns those provider accounts.
+
+### Describe the job once
+
+Agent Factory now turns that `description` into the complete prompt and staged
+call plan that the runtime actually executes. Developers do not need a second
+Haiku/Anthropic key, and customers do not have to accept a black-box prompt:
+
+```ts
+const plan = await supafone.generateCallStages({
+  name: "Warm lead caller",
+  description: "Call consented leads, understand fit, and book a demo without pressure.",
+  direction: "outbound",
+  stageCount: 5,
+});
+
+// Preview, edit, approve, or version ordinary JSON.
+console.log(plan.call_stages);
+```
+
+The practical advantage is simple: less prompt plumbing for the developer and
+a calmer, more consistent conversation for the customer. Stages remember where
+the call is, tool claims require real tool confirmation, outbound opt-outs are
+explicit, and the safe template keeps creation available if the hosted planner
+is temporarily unavailable.
 
 ## The core product: a model-agnostic supervisor
 

@@ -37,8 +37,7 @@ def test_create_inbound_serializes_hosted_agent_payload():
         "model": "gemma",
         "voice_watcher": True,
     }
-    assert payload["call_stages"][0]["key"] == "greeting"
-    assert payload["call_stages"][-1]["key"] == "close"
+    assert "call_stages" not in payload  # private API generates + executes the plan
 
 
 def test_create_inbound_with_number_searches_and_assigns_number():
@@ -300,7 +299,7 @@ def test_camelcase_agent_methods_match_typescript_contract():
         "model": "gemma",
         "voice_watcher": True,
     }
-    assert payload["call_stages"][0]["metadata"]["auto_generated"] is True
+    assert "call_stages" not in payload
     assert calls[1] == (
         "POST",
         "/api/v1/labs/phone-numbers/search",
@@ -384,8 +383,7 @@ def test_create_outbound_serializes_byok_labs_provider_config():
     assert payload["telephony"]["credentials"]["account_sid"] == "AC_test"
     assert payload["labs"]["mode"] == "byok"
     assert payload["labs"]["managed_infrastructure"] is False
-    assert payload["call_stages"][0]["key"] == "intro_consent"
-    assert payload["call_stages"][-1]["key"] == "close"
+    assert "call_stages" not in payload
 
 
 def test_structured_byok_lanes_stay_separate():
@@ -544,6 +542,50 @@ def test_agent_delete_and_call_artifact_routes_are_exposed():
     ]
 
 
+def test_discovery_voice_and_runtime_routes_are_exposed_in_python():
+    calls = []
+
+    def transport(method, path, payload):
+        calls.append((method, path, payload))
+        return {"ok": True}
+
+    supafone = Supafone(api_key="sf_test", transport=transport)
+    supafone.labs.capabilities()
+    supafone.labs.presets.list()
+    supafone.labs.tools.list()
+    supafone.labs.voices.list(
+        provider="cartesia", search="warm", language="en-US", cursor=10, limit=25
+    )
+    supafone.labs.runtime.get(agencyId="acct_123")
+    supafone.labs.runtime.configure(
+        provider="ultravox",
+        credentials={"apiKey": "uvx_test", "baseUrl": "https://api.ultravox.ai/api"},
+    )
+
+    assert calls == [
+        ("GET", "/api/v1/labs/capabilities", None),
+        ("GET", "/api/v1/labs/presets", None),
+        ("GET", "/api/v1/labs/tools", None),
+        (
+            "GET",
+            "/api/v1/labs/voices?provider=cartesia&search=warm&language=en-US&cursor=10&limit=25",
+            None,
+        ),
+        ("GET", "/api/v1/labs/runtime?agency_id=acct_123", None),
+        (
+            "PUT",
+            "/api/v1/labs/runtime",
+            {
+                "provider": "ultravox",
+                "credentials": {
+                    "apiKey": "uvx_test",
+                    "baseUrl": "https://api.ultravox.ai/api",
+                },
+            },
+        ),
+    ]
+
+
 def test_phone_number_lifecycle_methods_are_exposed():
     calls = []
 
@@ -674,7 +716,11 @@ def test_call_stages_can_be_customized_or_disabled():
         {
             "agentKey": "custom-stages",
             "name": "Custom stages",
-            "callStages": [{"key": "verify", "name": "Verify caller", "exitCriteria": ["done"]}],
+            "callStages": [
+                {"key": "welcome", "name": "Welcome", "instructions": "Understand the request."},
+                {"key": "verify", "name": "Verify caller", "exitCriteria": ["done"]},
+                {"key": "close", "name": "Close", "instructions": "Recap the confirmed outcome."},
+            ],
         }
     )
     supafone.labs.agents.create_inbound(
@@ -686,6 +732,37 @@ def test_call_stages_can_be_customized_or_disabled():
     )
 
     assert calls[0][2]["call_stages"] == [
-        {"key": "verify", "name": "Verify caller", "exit_criteria": ["done"]}
+        {"key": "welcome", "name": "Welcome", "instructions": "Understand the request."},
+        {"key": "verify", "name": "Verify caller", "exit_criteria": ["done"]},
+        {"key": "close", "name": "Close", "instructions": "Recap the confirmed outcome."},
     ]
-    assert "call_stages" not in calls[1][2]
+    assert calls[1][2]["call_stages"] is False
+
+
+def test_hosted_call_plan_uses_the_same_supafone_api_key():
+    calls = []
+
+    def transport(method, path, payload):
+        calls.append((method, path, payload))
+        return {
+            "version": "supafone_call_plan_v1",
+            "summary": "Ready",
+            "base_system_prompt": "Be helpful",
+            "call_stages": [],
+            "generated_by": "supafone_hosted_haiku",
+            "model": "haiku",
+            "fallback": False,
+        }
+
+    supafone = Supafone(api_key="sl_test_one_key", transport=transport)
+    result = supafone.generate_call_stages(
+        description="Qualify warm leads and book a demo",
+        direction="outbound",
+        stage_count=5,
+        telephony={"credentials": {"auth_token": "must-not-enter-planner"}},
+    )
+
+    assert result["generated_by"] == "supafone_hosted_haiku"
+    assert calls[0][:2] == ("POST", "/api/v1/labs/agent-plans")
+    assert calls[0][2]["description"] == "Qualify warm leads and book a demo"
+    assert "telephony" not in calls[0][2]

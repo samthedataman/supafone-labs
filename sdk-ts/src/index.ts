@@ -144,12 +144,30 @@ export interface LabsCallStage {
   key?: string;
   id?: string;
   name: string;
+  /** Plain-English job description used by the hosted call-plan generator. */
+  description?: string;
   goal?: string;
   instructions?: string;
   exitCriteria?: string[];
   exit_criteria?: string[];
   tools?: string[];
+  temperature?: number;
+  nextStages?: string[];
+  next_stages?: string[];
   metadata?: Record<string, unknown>;
+}
+
+export type LabsStageGeneration = "oracle" | "template" | "off";
+
+export interface LabsCallPlan {
+  version: "supafone_call_plan_v1" | string;
+  summary: string;
+  base_system_prompt: string;
+  call_stages: LabsCallStage[];
+  generated_by: "supafone_hosted_haiku" | "deterministic_template" | "deterministic_fallback" | "developer" | string;
+  model: string;
+  fallback: boolean;
+  warnings?: string[];
 }
 
 export interface LabsVoiceSelection {
@@ -481,6 +499,8 @@ export interface CreateLabsAgentRequest {
   agentStyle?: LabsAgentStyle;
   agent_style?: LabsAgentStyle;
   name: string;
+  /** Plain-language job description used by the hosted call-plan generator. */
+  description?: string;
   assistantName?: string;
   assistant_name?: string;
   businessName?: string;
@@ -500,12 +520,18 @@ export interface CreateLabsAgentRequest {
   preset_key?: string;
   runtimeMode?: LabsRuntimeMode;
   runtime_mode?: LabsRuntimeMode;
-  /** Default true. When true, the SDK creates sensible call stages from prompt metadata. */
-  callStages?: boolean | LabsCallStage[];
-  call_stages?: boolean | LabsCallStage[];
+  /** Defaults to Supafone's hosted planner; model credentials remain server-side. */
+  callStages?: boolean | LabsStageGeneration | LabsCallStage[];
+  call_stages?: boolean | LabsStageGeneration | LabsCallStage[];
   stages?: LabsCallStage[];
   autoCallStages?: boolean;
   auto_call_stages?: boolean;
+  stageGeneration?: LabsStageGeneration;
+  stage_generation?: LabsStageGeneration;
+  stageCount?: number;
+  stage_count?: number;
+  stageDetail?: "compact" | "standard" | "detailed";
+  stage_detail?: "compact" | "standard" | "detailed";
   goal?: string;
   greeting?: string;
   systemPrompt?: string;
@@ -578,6 +604,10 @@ export interface LabsToolListResponse {
 
 export interface LabsVoiceListOptions {
   provider?: string;
+  search?: string;
+  language?: string;
+  cursor?: number;
+  limit?: number;
 }
 
 export interface LabsVoiceListResponse {
@@ -586,6 +616,15 @@ export interface LabsVoiceListResponse {
   providers: Array<Record<string, unknown>>;
   provider_accounts?: Record<string, unknown>;
   errors?: Record<string, string>;
+}
+
+export interface LabsRuntimeResponse {
+  account_id: string;
+  provider: "ultravox" | string;
+  managed: boolean;
+  byok_connected: boolean;
+  base_url?: string;
+  updated_at?: string;
 }
 
 export interface LabsCallListOptions {
@@ -807,6 +846,7 @@ export interface CreateLabsAgentResponse {
     snippet?: string;
     [extra: string]: unknown;
   };
+  call_plan?: LabsCallPlan;
   [extra: string]: unknown;
 }
 
@@ -1153,6 +1193,15 @@ export class SupafoneLabs {
     this.tester = new TesterNamespace(this);
     this.optimizer = new OptimizerNamespace(this);
     this.campaigns = new CampaignsNamespace(this);
+  }
+
+  /** Build a complete hosted plan with the same Supafone key used to create agents. */
+  generateCallStages(input: CreateLabsAgentRequest & { description?: string }): Promise<LabsCallPlan> {
+    return this.labs.agents.plan(input);
+  }
+
+  generate_call_stages(input: CreateLabsAgentRequest & { description?: string }): Promise<LabsCallPlan> {
+    return this.generateCallStages(input);
   }
 
   /** True once login() (or a passed sessionToken) is in effect. */
@@ -2094,6 +2143,7 @@ class LabsNamespace {
   readonly presets: LabsPresetsNamespace;
   readonly tools: LabsToolsNamespace;
   readonly voices: LabsVoicesNamespace;
+  readonly runtime: LabsRuntimeNamespace;
   readonly phoneNumbers: LabsPhoneNumbersNamespace;
   readonly telephony: LabsTelephonyNamespace;
   readonly calls: LabsCallsNamespace;
@@ -2106,6 +2156,7 @@ class LabsNamespace {
     this.presets = new LabsPresetsNamespace(sm);
     this.tools = new LabsToolsNamespace(sm);
     this.voices = new LabsVoicesNamespace(sm);
+    this.runtime = new LabsRuntimeNamespace(sm);
     this.phoneNumbers = new LabsPhoneNumbersNamespace(sm);
     this.telephony = new LabsTelephonyNamespace(sm);
     this.calls = new LabsCallsNamespace(sm);
@@ -2196,6 +2247,19 @@ class LabsAgentsNamespace {
       "/api/v1/labs/agents",
       labsAgentPayload(this.withVoiceWatcher(input)),
     );
+  }
+
+  /** Preview the exact validated call-plan contract the Supafone runtime executes. */
+  plan(input: CreateLabsAgentRequest & { description?: string }): Promise<LabsCallPlan> {
+    return this.sm.requestSupafoneApi<LabsCallPlan>(
+      "POST",
+      "/api/v1/labs/agent-plans",
+      stagePlanPayload(input),
+    );
+  }
+
+  generateCallStages(input: CreateLabsAgentRequest & { description?: string }): Promise<LabsCallPlan> {
+    return this.plan(input);
   }
 
   /** Default the agent onto the client's Voice Watcher setting (live supervision
@@ -2341,8 +2405,41 @@ class LabsVoicesNamespace {
   list(opts: LabsVoiceListOptions = {}): Promise<LabsVoiceListResponse> {
     const q = new URLSearchParams();
     if (opts.provider) q.set("provider", opts.provider);
+    if (opts.search) q.set("search", opts.search);
+    if (opts.language) q.set("language", opts.language);
+    if (opts.cursor !== undefined) q.set("cursor", String(opts.cursor));
+    if (opts.limit !== undefined) q.set("limit", String(opts.limit));
     const suffix = q.toString() ? `?${q}` : "";
     return this.sm.requestSupafoneApi<LabsVoiceListResponse>("GET", `/api/v1/labs/voices${suffix}`);
+  }
+}
+
+class LabsRuntimeNamespace {
+  constructor(private sm: SupafoneLabs) {}
+
+  get(opts: { agencyId?: string; agency_id?: string } = {}): Promise<LabsRuntimeResponse> {
+    const q = new URLSearchParams();
+    const agencyId = opts.agency_id ?? opts.agencyId;
+    if (agencyId) q.set("agency_id", agencyId);
+    const suffix = q.toString() ? `?${q}` : "";
+    return this.sm.requestSupafoneApi<LabsRuntimeResponse>("GET", `/api/v1/labs/runtime${suffix}`);
+  }
+
+  configure(input: {
+    agencyId?: string;
+    agency_id?: string;
+    provider?: "ultravox" | string;
+    credentials?: { apiKey?: string; api_key?: string; baseUrl?: string; base_url?: string };
+  }): Promise<LabsRuntimeResponse> {
+    const credentials = input.credentials ?? {};
+    return this.sm.requestSupafoneApi<LabsRuntimeResponse>("PUT", "/api/v1/labs/runtime", compact({
+      agency_id: input.agency_id ?? input.agencyId,
+      provider: input.provider ?? "ultravox",
+      credentials: compact({
+        api_key: credentials.api_key ?? credentials.apiKey,
+        base_url: credentials.base_url ?? credentials.baseUrl,
+      }),
+    }));
   }
 }
 
@@ -2729,6 +2826,7 @@ function labsAgentPayload(input: CreateLabsAgentRequest): Record<string, unknown
     agent_type: input.agent_type ?? input.agentType,
     style: input.agent_style ?? input.agentStyle ?? input.style,
     name: input.name,
+    description: input.description,
     assistant_name: input.assistant_name ?? input.assistantName,
     business_name: input.business_name ?? input.businessName,
     industry: input.industry,
@@ -2741,6 +2839,9 @@ function labsAgentPayload(input: CreateLabsAgentRequest): Record<string, unknown
     preset_key: input.preset_key ?? input.presetKey,
     runtime_mode: input.runtime_mode ?? input.runtimeMode,
     call_stages: callStagesPayload(input),
+    stage_generation: input.stage_generation ?? input.stageGeneration,
+    stage_count: input.stage_count ?? input.stageCount,
+    stage_detail: input.stage_detail ?? input.stageDetail,
     goal: input.goal,
     greeting: input.greeting,
     system_prompt: input.system_prompt ?? input.systemPrompt,
@@ -2879,12 +2980,39 @@ function phoneNumberReleasePayload(input: LabsPhoneNumberReleaseRequest): Record
   });
 }
 
-function callStagesPayload(input: CreateLabsAgentRequest): Record<string, unknown>[] | undefined {
+function callStagesPayload(
+  input: CreateLabsAgentRequest,
+): Record<string, unknown>[] | LabsStageGeneration | false | undefined {
   const explicit = input.call_stages ?? input.callStages ?? input.stages;
   const auto = input.auto_call_stages ?? input.autoCallStages;
   if (Array.isArray(explicit)) return explicit.map(callStagePayload);
-  if (explicit === false || auto === false) return undefined;
-  return generateCallStages(input).map(callStagePayload);
+  if (explicit === false || auto === false) return false;
+  if (explicit === "oracle" || explicit === "template" || explicit === "off") return explicit;
+  // Omitted means the private Supafone API generates and compiles the plan.
+  return undefined;
+}
+
+function stagePlanPayload(
+  input: CreateLabsAgentRequest & { description?: string },
+): Record<string, unknown> {
+  return compact({
+    agency_id: input.agency_id ?? input.agencyId,
+    description: input.description,
+    name: input.name,
+    assistant_name: input.assistant_name ?? input.assistantName,
+    business_name: input.business_name ?? input.businessName,
+    industry: input.industry,
+    direction: input.direction ?? input.agent_style ?? input.agentStyle ?? input.style,
+    goal: input.goal,
+    system_prompt: input.system_prompt ?? input.systemPrompt,
+    tools: input.tools ? toolsPayload(input.tools) : undefined,
+    call_stages: Array.isArray(input.call_stages ?? input.callStages ?? input.stages)
+      ? (input.call_stages ?? input.callStages ?? input.stages)
+      : undefined,
+    stage_generation: input.stage_generation ?? input.stageGeneration,
+    stage_count: input.stage_count ?? input.stageCount,
+    stage_detail: input.stage_detail ?? input.stageDetail,
+  });
 }
 
 function callStagePayload(input: LabsCallStage): Record<string, unknown> {
@@ -2895,11 +3023,15 @@ function callStagePayload(input: LabsCallStage): Record<string, unknown> {
     instructions: input.instructions,
     exit_criteria: input.exit_criteria ?? input.exitCriteria,
     tools: input.tools,
+    temperature: input.temperature,
+    next_stages: input.next_stages ?? input.nextStages,
     metadata: input.metadata,
   });
 }
 
 export function generateCallStages(input: CreateLabsAgentRequest): LabsCallStage[] {
+  // Offline compatibility template. New code should use
+  // client.generateCallStages(...) for the hosted, executable plan.
   const direction = String(input.direction ?? input.agent_style ?? input.agentStyle ?? input.style ?? "inbound").toLowerCase();
   const haystack = [
     input.name,
