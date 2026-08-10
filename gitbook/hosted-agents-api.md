@@ -1,7 +1,8 @@
-# 📡 Hosted Agents API
+# 📡 Hosted Agents REST API
 
-The hosted-agent API creates and manages Supafone-hosted agents. It is separate
-from Labs Cloud.
+The hosted-agent REST API creates and manages complete Supafone agents. Use it
+directly from any language or let the Python SDK, TypeScript SDK, and MCP server
+wrap the same endpoints. TypeScript is optional.
 
 ```text
 Base URL: https://api.supafone.ai/api/v1/labs
@@ -14,20 +15,62 @@ a legacy scoped `sf_live_...` key also works for hosted-agent-only setups.
 Older clients may use `/api/v1/developer`, but new integrations should use
 `/api/v1/labs`.
 
+## Complete REST Endpoint Map
+
+All routes below use the hosted base URL and the same bearer token. Reads are
+account-scoped. Mutations require the account role shown by the API and cannot
+cross tenants merely by supplying another `agency_id`.
+
+| Area | Method and path | What it does | SDK surface |
+| --- | --- | --- | --- |
+| Discovery | `GET /capabilities` | Contract, planner modes, runtimes, telephony, presets, voices | `labs.capabilities()` |
+| Discovery | `GET /presets` | List built-in industry presets | `labs.presets.list()` |
+| Discovery | `GET /tools` | List built-in runtime tools | `labs.tools.list()` |
+| Planning | `POST /agent-plans` | Generate or validate a reviewable 3–8 stage executable plan | `generateCallStages()` / `generate_call_stages()` / MCP `generate_call_stages` |
+| Agents | `POST /agents` | Create an agent; generates a plan when stages are omitted | `labs.agents.create()` and direction helpers |
+| Agents | `GET /agents` | List account agents; optional `agent_type` | `labs.agents.list()` |
+| Agents | `GET /agents/{agent_key}` | Fetch one agent, runtime, and widget | `labs.agents.get()` |
+| Agents | `DELETE /agents/{agent_key}` | Delete; optional `release_numbers=true` | `labs.agents.delete()` |
+| Voices | `GET /voices` | Paged provider-authorized catalog with filters | `labs.voices.list()` |
+| Voices | `GET /voices/preview?voice=...` | Stream an authenticated MP3 preview | REST; SDK preview helper is on Labs Cloud |
+| Runtime | `GET /runtime` | Masked managed/BYOK Ultravox status | `labs.runtime.get()` |
+| Runtime | `PUT /runtime` | Connect or update account-owned Ultravox runtime credentials | `labs.runtime.configure()` |
+| Telephony | `GET /telephony` | Masked managed/BYOK telephony status | `labs.telephony.get()` |
+| Telephony | `PUT /telephony` | Select managed mode or store Twilio/Telnyx/Plivo/SIP BYOK config | `labs.telephony.configure()` |
+| Numbers | `POST /phone-numbers/search` | Search managed inventory without purchasing | `labs.phoneNumbers.search()` |
+| Numbers | `GET /phone-numbers` | List account-owned numbers | `labs.phoneNumbers.list()` |
+| Numbers | `POST /phone-numbers` | Explicitly provision and assign a managed number | `labs.phoneNumbers.buy()` / `buyAndAssign()` |
+| Numbers | `POST /phone-numbers/{id}/assign` | Attach an owned number to an agent | `labs.phoneNumbers.assign()` |
+| Numbers | `POST /phone-numbers/{id}/unassign` | Detach without releasing | `labs.phoneNumbers.unassign()` |
+| Numbers | `POST /phone-numbers/{id}/release` | Release and detach | `labs.phoneNumbers.release()` |
+| Numbers | `DELETE /phone-numbers/{id}` | Alias for explicit release | `labs.phoneNumbers.delete()` |
+| Calls | `GET /calls` | Account call history; optional `agent_key` and `limit` | `labs.calls.list()` |
+| Calls | `GET /calls/{call_id}` | One account-isolated call and its live/completed data | `labs.calls.get()` |
+| Recordings | `GET /recordings` | Signed recording artifacts; optional call/agent filter | `labs.recordings.list()` |
+| Recordings | `GET /recordings/{call_id}` | One signed recording artifact | `labs.recordings.get()` |
+| Recordings | `DELETE /recordings/{call_id}` | Remove Supafone's reference and audit the request | `labs.recordings.delete()` |
+| Transcripts | `GET /transcripts` | Transcript artifacts; optional call/agent filter | `labs.transcripts.list()` |
+| Transcripts | `GET /transcripts/{call_id}` | Transcript, summary, and classification for one call | `labs.transcripts.get()` |
+
+Recording deletion does not claim to erase a provider-retained source copy. It
+returns `provider_copy_deleted: false`; configure provider retention separately.
+This distinction prevents an application from showing a false compliance
+confirmation.
+
 ## Discovery
 
 ```bash
 curl https://api.supafone.ai/api/v1/labs/capabilities \
-  -H "Authorization: Bearer $SUPAFONE_LABS_API_KEY"
+  -H "Authorization: Bearer $SUPAFONE_TOKEN"
 
 curl https://api.supafone.ai/api/v1/labs/presets \
-  -H "Authorization: Bearer $SUPAFONE_LABS_API_KEY"
+  -H "Authorization: Bearer $SUPAFONE_TOKEN"
 
 curl https://api.supafone.ai/api/v1/labs/tools \
-  -H "Authorization: Bearer $SUPAFONE_LABS_API_KEY"
+  -H "Authorization: Bearer $SUPAFONE_TOKEN"
 
 curl "https://api.supafone.ai/api/v1/labs/voices?provider=cartesia" \
-  -H "Authorization: Bearer $SUPAFONE_LABS_API_KEY"
+  -H "Authorization: Bearer $SUPAFONE_TOKEN"
 ```
 
 Expected capability themes:
@@ -69,12 +112,44 @@ both **managed** (Supafone's platform key) and **BYOK** (your own key); Vapi,
 Retell, Bland, LiveKit, and Pipecat are still coming soon and their agent
 runtimes return **400 "coming soon"**.
 
+## Generate and Review a Call Plan
+
+Give Supafone the same short brief you would give a new employee. The hosted
+planner returns a complete, validated 3–8 stage plan without requiring an
+Anthropic, OpenAI, or other model key in your application.
+
+```bash
+curl https://api.supafone.ai/api/v1/labs/agent-plans \
+  -X POST \
+  -H "Authorization: Bearer $SUPAFONE_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "direction": "inbound",
+    "business_name": "Northline Studio",
+    "industry": "professional_services",
+    "description": "Answer new inquiries, understand the request, and book the right next step.",
+    "tools": {"scheduling": true, "call_routing": true},
+    "stage_count": 5,
+    "stage_detail": "detailed"
+  }'
+```
+
+The response includes `base_system_prompt`, `summary`, `call_stages`,
+`generated_by`, `model`, `fallback`, and `warnings`. Each stage includes its
+goal, full instructions, exit criteria, allowed tools, temperature, and valid
+next stages. Review or edit that plain JSON, then pass `call_stages` to agent
+creation. If you omit it, agent creation generates and installs the plan
+automatically.
+
+Only business context and enabled tool names go to the planner. Carrier,
+telephony, BYOK, billing, and provider credentials do not.
+
 ## Create an Agent
 
 ```bash
 curl https://api.supafone.ai/api/v1/labs/agents \
   -X POST \
-  -H "Authorization: Bearer $SUPAFONE_LABS_API_KEY" \
+  -H "Authorization: Bearer $SUPAFONE_TOKEN" \
   -H "Content-Type: application/json" \
   -d '{
     "agent_key": "northline-web-intake",
@@ -82,6 +157,7 @@ curl https://api.supafone.ai/api/v1/labs/agents \
     "style": "inbound",
     "name": "Website intake agent",
     "assistant_name": "Alex",
+    "description": "Welcome visitors, understand the request, and book or route the correct next step.",
     "business_name": "Northline Studio",
     "industry": "professional_services",
     "website_url": "https://example.com",
@@ -121,6 +197,12 @@ Response shape:
 ```json
 {
   "success": true,
+  "call_plan": {
+    "version": "supafone_call_plan_v1",
+    "generated_by": "supafone_hosted_haiku",
+    "fallback": false,
+    "call_stages": ["...validated executable stages..."]
+  },
   "agent": {
     "agent_key": "northline-web-intake",
     "agent_type": "web",
@@ -148,14 +230,42 @@ In the `runtime` block, `managed` is `false` and `key_source` is `"byok"` when
 the agent runs on your own Ultravox key; `status` is `"simulated"` when neither a
 platform nor a BYOK runtime key is connected.
 
+`call_plan.call_stages` is the reviewed plan installed in the agent's actual
+multi-stage runtime. It is not sample copy or a UI-only preview. If hosted
+generation is unavailable, Supafone returns a safe deterministic plan and
+marks `fallback: true` rather than silently creating a blank agent.
+
 ## List and Fetch
 
 ```bash
 curl "https://api.supafone.ai/api/v1/labs/agents?agent_type=web" \
-  -H "Authorization: Bearer $SUPAFONE_LABS_API_KEY"
+  -H "Authorization: Bearer $SUPAFONE_TOKEN"
 
-curl "https://api.supafone.ai/api/v1/labs/agents/northline-web-intake?agent_type=web" \
-  -H "Authorization: Bearer $SUPAFONE_LABS_API_KEY"
+curl "https://api.supafone.ai/api/v1/labs/agents/northline-web-intake" \
+  -H "Authorization: Bearer $SUPAFONE_TOKEN"
+```
+
+Delete only the agent, or explicitly release its assigned managed number too:
+
+```bash
+curl "https://api.supafone.ai/api/v1/labs/agents/northline-web-intake?release_numbers=true" \
+  -X DELETE \
+  -H "Authorization: Bearer $SUPAFONE_TOKEN"
+```
+
+## Voice Catalog and Preview
+
+`GET /voices` accepts `provider`, `search`, `language`, `cursor`, and `limit`
+(1–250). Results are normalized across configured Ultravox, Cartesia,
+ElevenLabs, and Inworld catalogs and include per-provider connection/errors.
+
+```bash
+curl "https://api.supafone.ai/api/v1/labs/voices?provider=cartesia&language=en-US&limit=50" \
+  -H "Authorization: Bearer $SUPAFONE_TOKEN"
+
+curl "https://api.supafone.ai/api/v1/labs/voices/preview?voice=cartesia-sonic%3Avoice-id" \
+  -H "Authorization: Bearer $SUPAFONE_TOKEN" \
+  --output voice-preview.mp3
 ```
 
 ## TypeScript Helpers
@@ -166,7 +276,16 @@ const created = await supafone.labs.agents.create({
   agentType: "web",
   style: "inbound",
   name: "Website intake agent",
+  description: "Welcome visitors, understand the request, and book or route the next step.",
   labs: { enabled: true, model: "gemma" }
+});
+
+const preview = await supafone.generateCallStages({
+  direction: "inbound",
+  businessName: "Northline Studio",
+  description: "Answer new inquiries and book the right next step.",
+  stageCount: 5,
+  stageDetail: "detailed",
 });
 
 const inbound = await supafone.labs.agents.createInbound({
@@ -194,7 +313,7 @@ Search:
 ```bash
 curl https://api.supafone.ai/api/v1/labs/phone-numbers/search \
   -X POST \
-  -H "Authorization: Bearer $SUPAFONE_LABS_API_KEY" \
+  -H "Authorization: Bearer $SUPAFONE_TOKEN" \
   -H "Content-Type: application/json" \
   -d '{ "area_code": "415", "limit": 3, "number_strategy": "default_pool" }'
 ```
@@ -204,7 +323,7 @@ Buy and assign must be an explicit action:
 ```bash
 curl https://api.supafone.ai/api/v1/labs/phone-numbers \
   -X POST \
-  -H "Authorization: Bearer $SUPAFONE_LABS_API_KEY" \
+  -H "Authorization: Bearer $SUPAFONE_TOKEN" \
   -H "Content-Type: application/json" \
   -d '{
     "phone_number": "+14155550123",
@@ -247,6 +366,8 @@ Advanced BYOK:
 ```
 
 Supported BYOK provider labels include `twilio`, `telnyx`, `plivo`, and `sip`.
+Secrets are encrypted at rest. All read responses are masked; the API never
+returns stored auth tokens or provider API keys.
 
 ## Runtime (managed vs BYOK Ultravox)
 
@@ -264,7 +385,7 @@ Connect or update your key:
 ```bash
 curl https://api.supafone.ai/api/v1/labs/runtime \
   -X PUT \
-  -H "Authorization: Bearer $SUPAFONE_LABS_API_KEY" \
+  -H "Authorization: Bearer $SUPAFONE_TOKEN" \
   -H "Content-Type: application/json" \
   -d '{
     "provider": "ultravox",
@@ -290,6 +411,55 @@ Both `GET` and `PUT` return the same status shape:
 You can also connect the key at agent create via `byok.ultravox`. Non-Ultravox
 agent runtimes (Vapi, Retell, Bland, LiveKit, Pipecat) still return
 **400 "coming soon"**.
+
+## Calls, Recordings, and Transcripts
+
+Call artifacts are account-isolated and use the same key. Filter lists with
+`agent_key`, `call_id` where supported, and `limit` (1–250).
+
+```bash
+curl "https://api.supafone.ai/api/v1/labs/calls?agent_key=northline-phone&limit=25" \
+  -H "Authorization: Bearer $SUPAFONE_TOKEN"
+
+curl "https://api.supafone.ai/api/v1/labs/calls/CALL_ID" \
+  -H "Authorization: Bearer $SUPAFONE_TOKEN"
+
+curl "https://api.supafone.ai/api/v1/labs/recordings?call_id=CALL_ID" \
+  -H "Authorization: Bearer $SUPAFONE_TOKEN"
+
+curl "https://api.supafone.ai/api/v1/labs/transcripts/CALL_ID" \
+  -H "Authorization: Bearer $SUPAFONE_TOKEN"
+```
+
+Recording URLs are short-lived signed links. Transcript artifacts include the
+turns, summary, and classification already attached to the call. Removing a
+recording reference is an explicit staff action:
+
+```bash
+curl "https://api.supafone.ai/api/v1/labs/recordings/CALL_ID?reason=retention" \
+  -X DELETE \
+  -H "Authorization: Bearer $SUPAFONE_TOKEN"
+```
+
+The response distinguishes removal from Supafone from deletion at the upstream
+provider. It never reports provider deletion unless that provider confirms it.
+
+## Errors and Safe Retries
+
+| Status | Meaning | Developer action |
+| --- | --- | --- |
+| `400` | Unsupported runtime/provider or invalid operation | Show `detail`; do not retry unchanged |
+| `401` | Missing, invalid, inactive, or unmapped key | Verify the key owner has a matching Supafone account |
+| `403` | Valid identity without the required account role | Ask an owner/admin; never attempt another tenant ID |
+| `404` | Account-scoped resource does not exist | Refresh identifiers; the API intentionally hides cross-tenant resources |
+| `422` | Plan/payload validation failed | Correct the named field and resubmit |
+| `429` | Plan/resource/usage limit reached | Show the returned limit or checkout path |
+| `502` | A required upstream operation failed | Retry only safe, idempotent reads or use the returned recovery path |
+
+Plan generation itself degrades to a marked deterministic fallback instead of
+returning an unusable blank plan. Number purchase, number release, telephony
+changes, and agent deletion are mutations—do not blindly retry them without an
+idempotency or state check.
 
 
 ## Brand Scan and Intake Generation

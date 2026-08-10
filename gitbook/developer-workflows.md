@@ -1,9 +1,10 @@
 # 🧑‍💻 Developer Workflows
 
-Supafone Labs has two equal product pillars. Keep them mentally separate, then
-combine them when the user wants the complete product.
+Supafone Labs has one defining framework and one secondary delivery path. Lead
+with the model-agnostic supervisor; use Agent Factory when the user also wants
+Supafone to provision the complete hosted product.
 
-## Pillar 1: Provider-Agnostic Framework
+## Primary: Model-Agnostic Voice Watcher
 
 Use this path when the developer already has an agent running on Ultravox,
 Vapi, Retell, ElevenLabs, OpenAI Realtime, Grok, Bland, LiveKit, Pipecat,
@@ -15,12 +16,13 @@ import supafone_labs
 brain = supafone_labs.supercharge(my_agent)
 ```
 
-The framework watches call events, transcripts, tool outcomes, and call state,
-then emits a silent directive only when the live agent needs help. The caller
-does not hear the directive. If the watcher is disabled, out of balance, or
-times out, the call continues without intervention.
+The framework watches empathy and operational patterns across turns—intent,
+urgency, emotion, language, trust, workflow progress, tool outcomes, and call
+state—then emits a silent directive only when the live agent needs help. The
+caller does not hear the directive. If the Watcher is disabled, out of balance,
+or times out, the call continues without intervention.
 
-## Pillar 2: Hosted Agent Factory
+## Secondary: Hosted Agent Factory
 
 Use this path when the developer wants Supafone to create the agent, phone
 number, voice, stages, logs, widget, and optional watcher.
@@ -33,7 +35,7 @@ advanced BYOK.
 import { Supafone } from "supafone-labs";
 
 const supafone = new Supafone({
-  apiKey: process.env.SUPAFONE_LABS_API_KEY!,
+  apiKey: process.env.SUPAFONE_TOKEN!,
   voiceWatcher: true, // default on — provisions agents under the Voice Watcher framework
 });
 
@@ -41,6 +43,7 @@ const agent = await supafone.labs.agents.createInboundWithNumber({
   agentKey: "northline-intake",
   name: "Northline intake",
   assistantName: "Maya",
+  description: "Answer new inquiries, understand the request, and book the right next step.",
   websiteUrl: "https://northline.example",
   number: { search: { areaCode: "415" } },
   labs: { enabled: true, model: "gemma" },
@@ -58,6 +61,7 @@ agent = supafone.labs.agents.create_inbound_with_number({
     "agentKey": "northline-intake",
     "name": "Northline intake",
     "assistantName": "Maya",
+    "description": "Answer new inquiries, understand the request, and book the right next step.",
     "websiteUrl": "https://northline.example",
     "number": {"search": {"areaCode": "415"}},
     "labs": {"enabled": True, "model": "gemma"},
@@ -66,17 +70,19 @@ agent = supafone.labs.agents.create_inbound_with_number({
 
 ## Which One Should the UI Lead With?
 
-The hosted builder should lead with the one `sl_` Labs key because that is the
-lowest-friction happy path — it authenticates every surface:
+The product story should lead with Voice Watcher. Inside the hosted builder,
+the task flow should then lead with the one `sl_` Labs key because that is the
+lowest-friction provisioning path—it authenticates every surface:
 
 1. Paste your `sl_live_...` key (as `SUPAFONE_LABS_API_KEY` / `SUPAFONE_TOKEN`).
 2. Choose inbound or outbound.
 3. Describe the agent.
-4. Pick a voice and preview it.
-5. Keep Supafone-managed providers or open advanced BYOK.
-6. Create the agent and number.
-7. Stream logs.
-8. Export TypeScript and Python code.
+4. Review the generated prompts and 3–8 stage plan when approval matters.
+5. Pick a voice and preview it.
+6. Keep Supafone-managed providers or open advanced BYOK.
+7. Create the agent and number.
+8. Stream logs.
+9. Export REST, TypeScript, Python, MCP, or JSON.
 
 The BYOK panel should be advanced. Developers should not need Twilio, Telnyx,
 Plivo, SignalWire, SIP, Ultravox, Retell, Vapi, Bland, LiveKit, Pipecat,
@@ -157,8 +163,9 @@ Every builder-created agent should be exportable as:
 - TypeScript SDK code,
 - Python SDK code,
 - raw REST/curl,
+- MCP tool calls,
 - JSON configuration.
 
 The export should contain the exact choices from the UI, including direction,
 voice, number strategy, `labs.enabled`, `labs.mode`, BYOK providers, tools, and
-stage preset.
+stage preset, and the exact generated or edited call plan.

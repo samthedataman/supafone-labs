@@ -23,7 +23,7 @@ def test_initialize_and_list_tools():
         }
     )
     assert init["result"]["serverInfo"]["name"] == "supafone-labs-mcp"
-    assert init["result"]["serverInfo"]["version"] == "0.4.9"
+    assert init["result"]["serverInfo"]["version"] == "0.4.12"
 
     listed = server.handle({"jsonrpc": "2.0", "id": 2, "method": "tools/list"})
     tool_names = {tool["name"] for tool in listed["result"]["tools"]}
@@ -32,6 +32,7 @@ def test_initialize_and_list_tools():
         "create_outbound_agent",
         "create_inbound_agent_with_number",
         "create_outbound_agent_with_number",
+        "generate_call_stages",
         "get_usage",
         "get_call_modes",
         "grade_existing_phone_agent",
@@ -40,6 +41,10 @@ def test_initialize_and_list_tools():
         "generate_qa_scenarios",
         "list_qa_runs",
         "run_watcher_qa",
+        "start_billing_checkout",
+        "get_billing_checkout",
+        "open_billing_portal",
+        "buy_phone_number",
         "list_logs",
         "tail_logs",
         "poll_logs",
@@ -95,6 +100,162 @@ def test_create_inbound_agent_uses_python_sdk(monkeypatch):
             "labs": {"enabled": True},
         },
     )
+
+
+def test_generate_call_stages_uses_hosted_one_key_planner(monkeypatch):
+    calls = []
+
+    class FakeAgents:
+        def plan(self, config):
+            calls.append(("plan", config))
+            return {
+                "version": "supafone_call_plan_v1",
+                "generated_by": "supafone_hosted_haiku",
+                "call_stages": [{"key": "welcome"}, {"key": "action"}, {"key": "close"}],
+            }
+
+    class FakeLabs:
+        def __init__(self):
+            self.agents = FakeAgents()
+
+    class FakeSupafone:
+        def __init__(self, **kwargs):
+            calls.append(("client", kwargs))
+            self.labs = FakeLabs()
+
+    monkeypatch.setattr(supafone_mcp, "Supafone", FakeSupafone)
+    result = supafone_mcp.SupafoneMCPServer().call_tool(
+        "generate_call_stages",
+        {
+            "apiKey": "sl_live_one_key",
+            "description": "Qualify callers and schedule an estimate",
+            "direction": "inbound",
+            "stageCount": 4,
+        },
+    )
+
+    assert result["generated_by"] == "supafone_hosted_haiku"
+    assert calls[0][1]["api_key"] == "sl_live_one_key"
+    assert calls[1] == (
+        "plan",
+        {
+            "description": "Qualify callers and schedule an estimate",
+            "direction": "inbound",
+            "stageCount": 4,
+        },
+    )
+
+
+def test_billing_checkout_returns_clickable_browser_handoff(monkeypatch):
+    calls = []
+
+    class FakeBilling:
+        def checkout(self, config):
+            calls.append(("checkout", config))
+            return {
+                "status": "requires_payment",
+                "checkout_session_id": "cs_test_123",
+                "checkout_url": "https://checkout.stripe.com/c/pay/test",
+            }
+
+        def status(self, session_id):
+            calls.append(("status", session_id))
+            return {"status": "paid", "checkout_session_id": session_id}
+
+        def portal(self):
+            calls.append(("portal",))
+            return {"url": "https://billing.stripe.com/p/session/test"}
+
+    class FakeLabs:
+        def __init__(self):
+            self.billing = FakeBilling()
+
+    class FakeSupafone:
+        def __init__(self, **_kwargs):
+            self.labs = FakeLabs()
+
+    monkeypatch.setattr(supafone_mcp, "Supafone", FakeSupafone)
+    server = supafone_mcp.SupafoneMCPServer(sleep=lambda _seconds: None)
+
+    checkout = server.call_tool(
+        "start_billing_checkout",
+        {
+            "apiKey": "sl_test",
+            "kind": "number_addon",
+            "numberStrategy": "premium",
+            "phoneNumber": "+14155550123",
+        },
+    )
+    status = server.call_tool(
+        "get_billing_checkout",
+        {"apiKey": "sl_test", "checkoutSessionId": "cs_test_123"},
+    )
+    portal = server.call_tool("open_billing_portal", {"apiKey": "sl_test"})
+
+    assert checkout["checkout_requires_browser"] is True
+    assert checkout["checkout_url"].startswith("https://checkout.stripe.com/")
+    assert status["status"] == "paid"
+    assert portal["portal_requires_browser"] is True
+    assert calls == [
+        (
+            "checkout",
+            {
+                "kind": "number_addon",
+                "numberStrategy": "premium",
+                "phoneNumber": "+14155550123",
+            },
+        ),
+        ("status", "cs_test_123"),
+        ("portal",),
+    ]
+
+
+def test_buy_phone_number_returns_checkout_handoff_and_paid_retry(monkeypatch):
+    calls = []
+
+    class FakePhoneNumbers:
+        def buy(self, config):
+            calls.append(config)
+            if not config.get("billingCheckoutSessionId"):
+                return {
+                    "status": "requires_payment",
+                    "checkout_session_id": "cs_test_number",
+                    "checkout_url": "https://checkout.stripe.com/c/pay/test-number",
+                }
+            return {"success": True, "number": {"number_id": "num_123"}}
+
+    class FakeLabs:
+        def __init__(self):
+            self.phone_numbers = FakePhoneNumbers()
+
+    class FakeSupafone:
+        def __init__(self, **_kwargs):
+            self.labs = FakeLabs()
+
+    monkeypatch.setattr(supafone_mcp, "Supafone", FakeSupafone)
+    server = supafone_mcp.SupafoneMCPServer(sleep=lambda _seconds: None)
+    checkout = server.call_tool(
+        "buy_phone_number",
+        {
+            "apiKey": "sl_test",
+            "phoneNumber": "+14155550123",
+            "numberStrategy": "dedicated",
+        },
+    )
+    provisioned = server.call_tool(
+        "buy_phone_number",
+        {
+            "apiKey": "sl_test",
+            "phoneNumber": "+14155550123",
+            "numberStrategy": "dedicated",
+            "billingCheckoutSessionId": "cs_test_number",
+        },
+    )
+
+    assert checkout["checkout_requires_browser"] is True
+    assert checkout["checkout_url"].startswith("https://checkout.stripe.com/")
+    assert provisioned["number"]["number_id"] == "num_123"
+    assert calls[1]["billingCheckoutSessionId"] == "cs_test_number"
 
 
 def test_poll_logs_returns_bounded_batches(monkeypatch):
@@ -190,6 +351,7 @@ def test_tools_list_includes_campaign_and_call_tools():
     tool_names = {tool["name"] for tool in listed["result"]["tools"]}
     assert {
         "call_from_owned_agent",
+        "start_call_and_watch",
         "list_voice_agents",
         "list_campaigns",
         "create_campaign",
@@ -219,7 +381,20 @@ def test_call_from_owned_agent_dials_through_phone_endpoint(monkeypatch):
     monkeypatch.setattr(
         server,
         "_main_http",
-        _fake_main_http(log, [(200, {"success": True, "call_sid": "CA123", "provider": "native"})]),
+        _fake_main_http(
+            log,
+            [
+                (
+                    200,
+                    {
+                        "success": True,
+                        "call_sid": "CA123",
+                        "call_record_id": "call-record-123",
+                        "provider": "native",
+                    },
+                )
+            ],
+        ),
     )
 
     result = server.call_tool(
@@ -234,6 +409,8 @@ def test_call_from_owned_agent_dials_through_phone_endpoint(monkeypatch):
 
     assert result["success"] is True and result["call_sid"] == "CA123"
     assert result["call_mode"] == "call_from_owned_agent"
+    assert result["dashboard_url"] == "https://app.supafone.ai/app/calls?call=call-record-123"
+    assert result["dashboard_requires_sign_in"] is True
     assert log == [
         {
             "method": "POST",
@@ -256,6 +433,34 @@ def test_call_from_owned_agent_requires_confirmation_agent_and_e164_number():
             {"jsonrpc": "2.0", "id": 9, "method": "tools/call", "params": {"name": "call_from_owned_agent", "arguments": arguments}}
         )
         assert response["result"]["isError"] is True
+
+
+def test_start_call_and_watch_is_a_safe_discoverable_alias(monkeypatch):
+    server = supafone_mcp.SupafoneMCPServer(sleep=lambda _seconds: None)
+    log = []
+    monkeypatch.setattr(
+        server,
+        "_main_http",
+        _fake_main_http(
+            log,
+            [(200, {"success": True, "call_record_id": "call-live", "provider": "byo_telnyx"})],
+        ),
+    )
+
+    result = server.call_tool(
+        "start_call_and_watch",
+        {
+            "token": "jwt-abc",
+            "agentId": "agent-1",
+            "toNumber": "+15551234567",
+            "confirmRealCall": True,
+        },
+    )
+
+    assert result["dashboard_url"] == "https://app.supafone.ai/app/calls?call=call-live"
+    assert result["provider"] == "byo_telnyx"
+    assert result["next_step"].startswith("Open dashboard_url")
+    assert log[0]["url"].endswith("/api/v1/phone/test-call")
 
 
 def test_campaign_flow_create_add_launch(monkeypatch):
@@ -436,6 +641,7 @@ def test_get_call_fetches_call_record(monkeypatch):
     )
     result = server.call_tool("get_call", {"token": "jwt", "callId": "call-live"})
     assert result["call"]["id"] == "call-live"
+    assert result["dashboard_url"] == "https://app.supafone.ai/app/calls?call=call-live"
     assert log[0]["url"].endswith("/api/v1/calls/call-live")
 
 

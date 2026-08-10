@@ -5,10 +5,15 @@ agent for you. This is a convenience layer over the Supafone runtime: Ultravox
 calls, multistage state, managed voice provider accounts, tools, transcripts,
 recordings, web widget sync, and Supafone Pro stay attached.
 
-This is the agent-building framework path. Developers bring a Supafone key and
-the business goal; Supafone Labs gives them voice choices, built-in stage
-presets, routing and workflow tools, call artifacts, and live call coaching
-without forcing them to wire provider accounts by hand.
+Give Supafone the business goal in plain English. The private control plane
+turns it into complete prompts and a validated runtime stage plan, then returns
+that plan alongside the created agent. Developers get something they can show,
+edit, test, and version—not an invisible prompt hidden behind an API.
+
+For customers, that means the first agent can answer, qualify, route, book, and
+produce call artifacts without a week of provider integration. For developers,
+it means one Supafone key, one contract across Python/TypeScript/MCP, and no
+Anthropic/OpenRouter credential shipped to a browser or client environment.
 
 The public namespace is:
 
@@ -19,19 +24,41 @@ https://api.supafone.ai/api/v1/labs
 The compatibility namespace `/api/v1/developer` exists for older clients, but
 new code should use `/api/v1/labs`.
 
+## REST endpoint reference
+
+The full public hosted namespace is available without either SDK:
+
+| Area | Endpoints |
+| --- | --- |
+| Discovery | `GET /capabilities`, `GET /presets`, `GET /tools` |
+| Planning | `POST /agent-plans` |
+| Agents | `POST /agents`, `GET /agents`, `GET /agents/{agent_key}`, `DELETE /agents/{agent_key}` |
+| Voices | `GET /voices`, `GET /voices/preview` |
+| Runtime | `GET /runtime`, `PUT /runtime` |
+| Telephony | `GET /telephony`, `PUT /telephony` |
+| Numbers | `POST /phone-numbers/search`, `GET /phone-numbers`, `POST /phone-numbers`, assign, unassign, release, and delete by ID |
+| Calls | `GET /calls`, `GET /calls/{call_id}` |
+| Recordings | list, fetch, and remove under `/recordings` |
+| Transcripts | list and fetch under `/transcripts` |
+
+Python, TypeScript, and MCP wrap this same REST contract. The sections below
+cover the request shapes, role rules, safe retries, and error behavior for
+developers using REST directly.
+
 The recommended TypeScript package is `supafone-labs`:
 
 ```ts
 import { Supafone } from "supafone-labs";
 
 const supafone = new Supafone({
-  apiKey: process.env.SUPAFONE_API_KEY!,
+  apiKey: process.env.SUPAFONE_TOKEN!,
 });
 
 const agent = await supafone.labs.agents.createInboundWithNumber({
   agentKey: "northline-intake",
   name: "Northline intake",
   assistantName: "Maya",
+  description: "Answer new inquiries, understand the request, and book the right next step.",
   websiteUrl: "https://northline.example",
   number: { search: { areaCode: "415" } },
   labs: { enabled: true, model: "gemma" },
@@ -42,11 +69,14 @@ console.log(agent.agent.agent_key, agent.number?.number.phone_number);
 
 ## Auth
 
-Hosted-agent API calls use a Supafone hosted-agent API key. It starts with
-`sf_live_...`.
+Use the linked `sl_live_...` Supafone key for the simplest experience. The same
+key authenticates hosted agent creation, call-plan generation, Labs model
+services, MCP, campaigns, and calls according to its account and scopes.
+Existing scoped `sf_live_...` product keys remain supported for product-only
+integrations.
 
 ```bash
-export SUPAFONE_API_KEY=sf_live_...
+export SUPAFONE_TOKEN=sl_live_...
 export SUPAFONE_API_BASE_URL=https://api.supafone.ai
 ```
 
@@ -54,14 +84,33 @@ Pass the key as a bearer token:
 
 ```bash
 curl "$SUPAFONE_API_BASE_URL/api/v1/labs/capabilities" \
-  -H "Authorization: Bearer $SUPAFONE_API_KEY"
+  -H "Authorization: Bearer $SUPAFONE_TOKEN"
 ```
 
-The same key also works in `x-supafone-key` or `x-supafone-api-key`.
+Bearer authentication is recommended. Raw credentials are never placed in
+URLs, generated plans, dashboard links, or agent configuration responses.
 
-Do not confuse this with the Labs cloud key (`SUPAFONE_LABS_API_KEY=sl_live_...`)
-used for oracle/TTS/STT calls on `https://api.labs.supafone.ai`. If you use the
-TypeScript SDK for both products, pass the hosted key as `supafoneApiKey`.
+## Generate the plan before creating the agent
+
+```http
+POST /api/v1/labs/agent-plans
+Authorization: Bearer sl_live_...
+Content-Type: application/json
+
+{
+  "description": "Call warm homeowners, qualify the project, and schedule an estimate.",
+  "business_name": "Northline Roofing",
+  "direction": "outbound",
+  "stage_count": 5,
+  "stage_detail": "detailed",
+  "tools": { "scheduling": true, "sms": true }
+}
+```
+
+The response includes `base_system_prompt`, `call_stages`, `generated_by`,
+`model`, and `fallback`. Agent creation runs this planner automatically when
+`call_stages` is omitted. If you submit an explicit reviewed stage array,
+Supafone validates and executes that exact plan.
 
 ## API keys
 
@@ -120,7 +169,7 @@ Start with capabilities so your app can check what the key can do:
 
 ```bash
 curl "$SUPAFONE_API_BASE_URL/api/v1/labs/capabilities" \
-  -H "Authorization: Bearer $SUPAFONE_API_KEY"
+  -H "Authorization: Bearer $SUPAFONE_TOKEN"
 ```
 
 Important response fields:
@@ -170,21 +219,21 @@ List presets:
 
 ```bash
 curl "$SUPAFONE_API_BASE_URL/api/v1/labs/presets" \
-  -H "Authorization: Bearer $SUPAFONE_API_KEY"
+  -H "Authorization: Bearer $SUPAFONE_TOKEN"
 ```
 
 List built-in tools:
 
 ```bash
 curl "$SUPAFONE_API_BASE_URL/api/v1/labs/tools" \
-  -H "Authorization: Bearer $SUPAFONE_API_KEY"
+  -H "Authorization: Bearer $SUPAFONE_TOKEN"
 ```
 
 List Supafone-managed voices:
 
 ```bash
 curl "$SUPAFONE_API_BASE_URL/api/v1/labs/voices?provider=cartesia" \
-  -H "Authorization: Bearer $SUPAFONE_API_KEY"
+  -H "Authorization: Bearer $SUPAFONE_TOKEN"
 ```
 
 Voice responses include:
@@ -214,7 +263,7 @@ Voice responses include:
 ```bash
 curl "$SUPAFONE_API_BASE_URL/api/v1/labs/agents" \
   -X POST \
-  -H "Authorization: Bearer $SUPAFONE_API_KEY" \
+  -H "Authorization: Bearer $SUPAFONE_TOKEN" \
   -H "Content-Type: application/json" \
   -d '{
     "agent_key": "northline-web-intake",
@@ -300,14 +349,14 @@ List agents:
 
 ```bash
 curl "$SUPAFONE_API_BASE_URL/api/v1/labs/agents?agent_type=web" \
-  -H "Authorization: Bearer $SUPAFONE_API_KEY"
+  -H "Authorization: Bearer $SUPAFONE_TOKEN"
 ```
 
 Fetch one agent:
 
 ```bash
 curl "$SUPAFONE_API_BASE_URL/api/v1/labs/agents/northline-web-intake?agent_type=web" \
-  -H "Authorization: Bearer $SUPAFONE_API_KEY"
+  -H "Authorization: Bearer $SUPAFONE_TOKEN"
 ```
 
 The API key is scoped to one Supafone account. Passing another `agency_id`
@@ -325,7 +374,7 @@ Search inventory:
 ```bash
 curl "$SUPAFONE_API_BASE_URL/api/v1/labs/phone-numbers/search" \
   -X POST \
-  -H "Authorization: Bearer $SUPAFONE_API_KEY" \
+  -H "Authorization: Bearer $SUPAFONE_TOKEN" \
   -H "Content-Type: application/json" \
   -d '{ "area_code": "787", "limit": 3 }'
 ```
@@ -335,7 +384,7 @@ Buy and assign a Supafone-managed number:
 ```bash
 curl "$SUPAFONE_API_BASE_URL/api/v1/labs/phone-numbers" \
   -X POST \
-  -H "Authorization: Bearer $SUPAFONE_API_KEY" \
+  -H "Authorization: Bearer $SUPAFONE_TOKEN" \
   -H "Content-Type: application/json" \
   -d '{
     "phone_number": "+17875550123",
@@ -412,7 +461,7 @@ Connect or update the key:
 ```bash
 curl "$SUPAFONE_API_BASE_URL/api/v1/labs/runtime" \
   -X PUT \
-  -H "Authorization: Bearer $SUPAFONE_API_KEY" \
+  -H "Authorization: Bearer $SUPAFONE_TOKEN" \
   -H "Content-Type: application/json" \
   -d '{
     "provider": "ultravox",
@@ -467,7 +516,7 @@ Run the production smoke script before handing an API key to a developer:
 
 ```bash
 cd supafone-labs
-SUPAFONE_API_KEY=sf_live_... \
+SUPAFONE_TOKEN=sl_live_... \
 SUPAFONE_API_BASE_URL=https://api.supafone.ai \
 npx tsx examples/smoke-hosted-agent.ts
 ```

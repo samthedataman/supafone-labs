@@ -7,12 +7,19 @@ supafone-labs/mcp/supafone_mcp.py
 ```
 
 It is a dependency-light Python stdio JSON-RPC server. Claude can use it to
-create hosted agents, provision numbers, check usage, and poll Labs logs.
+create hosted agents, turn a plain-English job description into production call
+prompts, provision numbers, check usage, and poll Labs logs.
 
 Use this when you want Claude Desktop to run agent-team experiments: one tool
 call can create an inbound receptionist, another can create an outbound sales
 agent, and a third can tail logs while the team evaluates different provider
 configurations.
+
+The human benefit is that the conversation can begin with the outcome instead
+of infrastructure: “Build a warm lead caller for a roofing company.” The MCP
+generates an editable plan, explains the stages, and can create the hosted agent
+with the same key. It never asks Claude—or the user—to paste Supafone's Haiku,
+telephony, TTS, or SMTP credentials into the conversation.
 
 ## Environment
 
@@ -77,6 +84,7 @@ Restart Claude Desktop after saving the config.
 | `create_outbound_agent` | Create an outbound hosted voice agent through the Python SDK. |
 | `create_inbound_agent_with_number` | Create an inbound agent and provision or assign a number. |
 | `create_outbound_agent_with_number` | Create an outbound agent and provision or assign a number. |
+| `generate_call_stages` | Turn one description into complete, validated prompts and a 3-8 stage runtime plan. |
 | `get_usage` | Read Labs Cloud usage and caps from `/v1/usage`. |
 | `list_logs` | Read recent Labs Cloud logs from `/v1/logs`. |
 | `tail_logs` | Poll Labs Cloud logs for a bounded live-looking stream. |
@@ -111,6 +119,7 @@ the saved Builder configuration is session-scoped.
 | Tool | Purpose |
 | --- | --- |
 | `call_from_owned_agent` | **Owned agent → human**: places a real outbound call and requires `confirmRealCall:true`. |
+| `start_call_and_watch` | Preferred natural-language action: places the guarded owned-agent call and returns its authenticated live-dashboard link. |
 | `list_voice_agents` | List the account's voice agents to pick an `agentId` for calls and campaigns. |
 | `list_campaigns` | List outbound campaigns with live stats. |
 | `create_campaign` | Create a draft campaign (`goal`: book / qualify / follow_up / reengage). |
@@ -125,6 +134,11 @@ the saved Builder configuration is session-scoped.
 | `create_sign_link` | Mint a recipient's tracked tap-to-sign page (inherits the campaign's signing PDF). |
 | `monitor_campaign` | Watch a campaign live: in-flight calls + recent calls, each with a portal listen link. |
 | `get_call` | One call's record — poll it while in progress to follow the live transcript. |
+
+Owned-agent calls are carrier-neutral. Supafone resolves the provider already
+configured for the account—native, BYO Twilio, **BYO Telnyx**, BYO Plivo, or
+BYO SIP—inside the private runtime. Provider credentials never enter the MCP
+process or the returned dashboard URL.
 
 ### Campaigns as code (YAML config)
 
@@ -277,17 +291,39 @@ MCP also exposes lifecycle and artifact tools:
 - `list_voices` / `preview_voice`
 - `list_phone_numbers`
 - `search_phone_numbers`
+- `buy_phone_number` (returns Stripe Checkout first for paid strategies)
 - `unassign_phone_number`
 - `return_phone_number_to_pool`
 - `delete_phone_number`
+- `start_billing_checkout`
+- `get_billing_checkout`
+- `open_billing_portal`
 - `list_calls`
 - `list_recordings`
 - `delete_recording`
 - `list_transcripts`
 - `list_logs` / `tail_logs`
 
+### Ask naturally
+
+Examples that map directly to `generate_call_stages`:
+
+- “Build a five-stage inbound agent that screens plumbing emergencies and
+  books ordinary service calls.”
+- “Draft an outbound follow-up agent for warm, consented leads; make the
+  opt-out explicit and never claim an appointment until the calendar confirms.”
+- “Show me the generated plan before creating anything.”
+
+The response includes `generated_by` and `fallback`. An MCP client can explain
+whether the hosted planner or safe deterministic template produced the result,
+then present the ordinary JSON for human review.
+
 ## Log Streaming Note
 
 MCP tool calls are request/response. The local MCP server therefore exposes
 `tail_logs` and `poll_logs` as bounded polling tools. The browser and SDKs can
 use the true SSE stream documented in [Log Streaming](log-streaming.md).
+
+Stripe card entry always stays on Stripe-hosted Checkout. MCP responses contain
+only the public `checkout_url` and session reference—never Stripe secrets or
+card data.

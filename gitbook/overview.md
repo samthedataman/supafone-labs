@@ -8,30 +8,39 @@ can improve the call.
 
 ## Product Surfaces
 
+**Voice Watcher is the defining product surface.** It is the model-agnostic
+supervisor contract that observes empathy and operational patterns across
+turns, verifies tool truth and workflow progress, and emits a silent native
+directive only when intervention is useful.
+
+**Labs Cloud** is hosted at `https://api.labs.supafone.ai` with an `sl_live_...`
+key. This path runs the oracle, hosted TTS/STT, live multilingual
+transcription, logs, usage, QA, optimizer, and the managed side of Voice
+Watcher.
+
+**Open-source SDK runtime** lives in the Python package `supafone-labs` and can
+supervise an existing stack. It includes the canonical call-state contract,
+deterministic runtime policies, provider adapters, replay, telemetry, and
+local or hosted supervisor-model modes.
+
 **Hosted Supafone agents** are created through the Supafone hosted-agent API at
 `https://api.supafone.ai/api/v1/labs` with your `sl_live_...` key (one-key
 auth) or a scoped `sf_live_...` key. This path is
 for complete agents: inbound receptionists, outbound sales agents, web agents,
-campaign agents, managed numbers, presets, tools, artifacts, and Supafone Pro.
+campaign agents, generated executable call plans, managed numbers, presets,
+tools, artifacts, and Supafone Pro.
 This is the Agent Factory path: by default, Supafone supplies the operational
 provider layer so the developer does not need to bring voice-platform,
-telephony, TTS, STT, or LLM keys to get started.
-
-**Labs Cloud** is hosted at `https://api.labs.supafone.ai` with an `sl_live_...`
-key. This path is for the oracle, hosted TTS/STT, live multilingual
-transcription, logs, usage, builder, QA, and optimizer. This is also the
-managed side of the self-healing watcher.
-
-**Open-source SDK runtime** lives in the Python package `supafone-labs` and can
-supervise your existing stack. It includes deterministic runtime policies,
-provider adapters, replay, telemetry, and local or hosted LLM modes.
+telephony, TTS, STT, or LLM keys to get started. This Agent Factory path is a
+secondary delivery convenience; the supervisor also works when Supafone did
+not create the agent.
 
 ## Core Concepts
 
-- **Agent Factory**: hosted-agent creation with managed defaults for platform,
-  telephony, TTS/STT/LLM, numbers, stages, tools, logs, and code export.
 - **Self-healing watcher**: the Supafone Labs second mind that supervises a
   hosted or BYOK agent and emits silent corrections.
+- **Empathy pattern state**: cross-turn intent, urgency, emotion, language,
+  trust, progress, and tool truth used to decide whether a nudge is warranted.
 - **Runtime**: canonical call events, state, policies, and provider adapters.
 - **Oracle**: hosted or BYO LLM layer that decides whether to whisper.
 - **Whisper**: a silent directive injected into the agent's native control
@@ -39,6 +48,9 @@ provider adapters, replay, telemetry, and local or hosted LLM modes.
 - **Watcher**: Supafone Pro live supervision attached to a hosted or BYO agent.
 - **Standing directive**: a persistent coaching preamble improved from
   post-call outcomes.
+- **Agent Factory**: the secondary hosted-agent creation path that turns one
+  job description into validated prompts and a 3–8 stage runtime, then adds
+  managed platform, telephony, TTS/STT/LLM, numbers, tools, and logs.
 - **Number strategy**: shared pool by default, dedicated/premium only by
   explicit choice.
 

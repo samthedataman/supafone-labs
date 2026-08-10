@@ -111,6 +111,19 @@ class Supafone:
         self.qa = QANamespace(self)
         self.tester = TesterNamespace(self)
 
+    def generate_call_stages(
+        self, config: Optional[Mapping[str, Any]] = None, **kwargs: Any
+    ) -> Any:
+        """Generate a complete hosted call plan with the same Supafone key.
+
+        Supafone's model credential stays server-side.  Use the module-level
+        ``generate_call_stages`` only when an explicitly local template is
+        desired.
+        """
+        return self.labs.agents.plan(config, **kwargs)
+
+    generateCallStages = generate_call_stages
+
     def _request_supafone_api(
         self, method: str, path: str, payload: Optional[dict[str, Any]] = None
     ) -> Any:
@@ -289,6 +302,29 @@ class Supafone:
     place_call = call_from_agent
     placeCall = call_from_agent
 
+    def start_webrtc_call(
+        self,
+        *,
+        agent_id: Optional[str] = None,
+        agentId: Optional[str] = None,
+    ) -> Any:
+        """Create a browser WebRTC session for an owned voice agent.
+
+        The returned ``browser_session.join_url`` is consumed by the browser's
+        provider client. This starts no PSTN leg and requires no phone number.
+        """
+        agent = agent_id or agentId
+        if not agent:
+            raise SupafoneError("agent_id is required (see list_voice_agents())")
+        encoded_agent = parse.quote(str(agent), safe="")
+        return self._request_account_api(
+            "POST", f"/api/v1/agents/{encoded_agent}/test-call"
+        )
+
+    startWebRtcCall = start_webrtc_call
+    start_browser_call = start_webrtc_call
+    startBrowserCall = start_webrtc_call
+
     def list_voice_agents(self) -> Any:
         """The account's voice agents — pick an agent id for campaigns/calls."""
         return self._request_account_api("GET", "/api/v1/agents")
@@ -357,6 +393,8 @@ class Supafone:
         *,
         use_session: bool = False,
     ) -> Any:
+        if self._transport:
+            return self._transport(method, path, payload)
         token = (
             self._labs_session_token
             if use_session and self._labs_session_token
@@ -679,6 +717,11 @@ class TesterNamespace:
 class LabsNamespace:
     def __init__(self, client: Supafone) -> None:
         self.agents = LabsAgentsNamespace(client)
+        self.billing = LabsBillingNamespace(client)
+        self.presets = LabsPresetsNamespace(client)
+        self.tools = LabsToolsNamespace(client)
+        self.voices = LabsVoicesNamespace(client)
+        self.runtime = LabsRuntimeNamespace(client)
         self.phone_numbers = LabsPhoneNumbersNamespace(client)
         self.phoneNumbers = self.phone_numbers
         self.telephony = LabsTelephonyNamespace(client)
@@ -688,6 +731,44 @@ class LabsNamespace:
 
     def capabilities(self) -> Any:
         return self.agents._client._request_supafone_api("GET", "/api/v1/labs/capabilities")
+
+
+class LabsBillingNamespace:
+    """Stripe-backed Labs plans, credits, and managed-number add-ons."""
+
+    def __init__(self, client: Supafone) -> None:
+        self._client = client
+
+    def checkout(self, config: Optional[Mapping[str, Any]] = None, **kwargs: Any) -> Any:
+        data = _merge(config, kwargs)
+        payload = _compact(
+            {
+                "kind": data.get("kind") or "plan",
+                "plan_key": _pick(data, "plan_key", "planKey"),
+                "number_strategy": _pick(data, "number_strategy", "numberStrategy"),
+                "phone_number": _pick(data, "phone_number", "phoneNumber"),
+                "quantity": data.get("quantity"),
+                "success_url": _pick(data, "success_url", "successUrl"),
+                "cancel_url": _pick(data, "cancel_url", "cancelUrl"),
+            }
+        )
+        return self._client._request_labs_api("POST", "/v1/billing/checkout", payload)
+
+    def status(self, checkout_session_id: str) -> Any:
+        if not str(checkout_session_id or "").strip():
+            raise ValueError("checkout_session_id is required")
+        return self._client._request_labs_api(
+            "GET",
+            f"/v1/billing/checkout/{parse.quote(str(checkout_session_id), safe='')}",
+        )
+
+    def portal(self) -> Any:
+        return self._client._request_labs_api("POST", "/v1/billing/portal", {})
+
+    create_checkout = checkout
+    createCheckout = checkout
+    get_checkout = status
+    getCheckout = status
 
 
 class CampaignsNamespace:
@@ -1021,6 +1102,16 @@ class LabsAgentsNamespace:
             _labs_agent_payload(data),
         )
 
+    def plan(self, config: Optional[Mapping[str, Any]] = None, **kwargs: Any) -> Any:
+        """Turn one description into the executable Supafone call-stage contract."""
+        data = _merge(config, kwargs)
+        return self._client._request_supafone_api(
+            "POST", "/api/v1/labs/agent-plans", _stage_plan_payload(data)
+        )
+
+    generate_call_stages = plan
+    generateCallStages = plan
+
     def _apply_voice_watcher(self, data: dict[str, Any]) -> None:
         """Apply the client watcher default without overwriting agent config."""
         if "voice_watcher" not in data and "voiceWatcher" not in data:
@@ -1138,6 +1229,62 @@ class LabsAgentsNamespace:
         )
 
 
+class LabsPresetsNamespace:
+    def __init__(self, client: Supafone) -> None:
+        self._client = client
+
+    def list(self) -> Any:
+        return self._client._request_supafone_api("GET", "/api/v1/labs/presets")
+
+
+class LabsToolsNamespace:
+    def __init__(self, client: Supafone) -> None:
+        self._client = client
+
+    def list(self) -> Any:
+        return self._client._request_supafone_api("GET", "/api/v1/labs/tools")
+
+
+class LabsVoicesNamespace:
+    def __init__(self, client: Supafone) -> None:
+        self._client = client
+
+    def list(self, config: Optional[Mapping[str, Any]] = None, **kwargs: Any) -> Any:
+        data = _merge(config, kwargs)
+        query = _compact(
+            {
+                "provider": data.get("provider"),
+                "search": data.get("search"),
+                "language": data.get("language"),
+                "cursor": data.get("cursor"),
+                "limit": data.get("limit"),
+            }
+        )
+        suffix = f"?{parse.urlencode(query)}" if query else ""
+        return self._client._request_supafone_api("GET", f"/api/v1/labs/voices{suffix}")
+
+
+class LabsRuntimeNamespace:
+    def __init__(self, client: Supafone) -> None:
+        self._client = client
+
+    def get(self, *, agency_id: Optional[str] = None, agencyId: Optional[str] = None) -> Any:
+        agency = agency_id or agencyId
+        suffix = f"?{parse.urlencode({'agency_id': agency})}" if agency else ""
+        return self._client._request_supafone_api("GET", f"/api/v1/labs/runtime{suffix}")
+
+    def configure(self, config: Optional[Mapping[str, Any]] = None, **kwargs: Any) -> Any:
+        data = _merge(config, kwargs)
+        payload = _compact(
+            {
+                "agency_id": _pick(data, "agency_id", "agencyId"),
+                "provider": data.get("provider") or "ultravox",
+                "credentials": data.get("credentials") or data.get("ultravox"),
+            }
+        )
+        return self._client._request_supafone_api("PUT", "/api/v1/labs/runtime", payload)
+
+
 class LabsPhoneNumbersNamespace:
     def __init__(self, client: Supafone) -> None:
         self._client = client
@@ -1169,6 +1316,23 @@ class LabsPhoneNumbersNamespace:
 
     def buy(self, config: Optional[Mapping[str, Any]] = None, **kwargs: Any) -> Any:
         data = _merge(config, kwargs)
+        strategy = str(
+            _pick(data, "number_strategy", "numberStrategy")
+            or ("premium" if data.get("premium") else "default_pool")
+        ).strip().lower()
+        data["number_strategy"] = strategy
+        checkout_session_id = _pick(
+            data, "billing_checkout_session_id", "billingCheckoutSessionId"
+        )
+        if strategy in {"dedicated", "premium"} and not checkout_session_id:
+            phone_number = _pick(data, "phone_number", "phoneNumber")
+            if not phone_number:
+                raise SupafoneError("phone_number is required before starting number Checkout")
+            return self._client.labs.billing.checkout(
+                kind="number_addon",
+                number_strategy=strategy,
+                phone_number=phone_number,
+            )
         data.setdefault("telephony", {"mode": "supafone_managed", "provider": "supafone"})
         return self._client._request_supafone_api(
             "POST",
@@ -1437,6 +1601,7 @@ def _labs_agent_payload(data: Mapping[str, Any]) -> dict[str, Any]:
             "agent_type": _pick(data, "agent_type", "agentType"),
             "style": _pick(data, "agent_style", "agentStyle", "style"),
             "name": data.get("name"),
+            "description": data.get("description"),
             "assistant_name": _pick(data, "assistant_name", "assistantName"),
             "business_name": _pick(data, "business_name", "businessName"),
             "industry": data.get("industry"),
@@ -1449,6 +1614,9 @@ def _labs_agent_payload(data: Mapping[str, Any]) -> dict[str, Any]:
             "preset_key": _pick(data, "preset_key", "presetKey"),
             "runtime_mode": _pick(data, "runtime_mode", "runtimeMode"),
             "call_stages": _call_stages_payload(data),
+            "stage_generation": _pick(data, "stage_generation", "stageGeneration"),
+            "stage_count": _pick(data, "stage_count", "stageCount"),
+            "stage_detail": _pick(data, "stage_detail", "stageDetail"),
             "goal": data.get("goal"),
             "greeting": data.get("greeting"),
             "system_prompt": _pick(data, "system_prompt", "systemPrompt"),
@@ -1798,6 +1966,9 @@ def _phone_number_provision_payload(data: Mapping[str, Any]) -> dict[str, Any]:
             "number_strategy": _pick(data, "number_strategy", "numberStrategy"),
             "number_pool": _pick(data, "number_pool", "numberPool"),
             "premium": data.get("premium"),
+            "billing_checkout_session_id": _pick(
+                data, "billing_checkout_session_id", "billingCheckoutSessionId"
+            ),
             "style": _pick(data, "agent_style", "agentStyle", "style"),
             "direction": data.get("direction"),
             "telephony": _telephony_payload(data["telephony"]) if data.get("telephony") else None,
@@ -1837,14 +2008,41 @@ def _phone_number_release_payload(data: Mapping[str, Any]) -> dict[str, Any]:
     )
 
 
-def _call_stages_payload(data: Mapping[str, Any]) -> Optional[list[dict[str, Any]]]:
+def _call_stages_payload(data: Mapping[str, Any]) -> Any:
     explicit = _pick(data, "call_stages", "callStages", "stages")
     auto = _pick(data, "auto_call_stages", "autoCallStages")
     if isinstance(explicit, list):
         return [_call_stage_payload(stage) for stage in explicit if isinstance(stage, Mapping)]
     if explicit is False or auto is False:
-        return None
-    return [_call_stage_payload(stage) for stage in _generate_call_stages(data)]
+        return False
+    if str(explicit or "").lower() in {"oracle", "template", "off"}:
+        return str(explicit).lower()
+    # Omitted means "generate on the private Supafone backend".  This keeps
+    # the server-side Haiku credential private and makes the generated plan the
+    # exact one compiled into the runtime.
+    return None
+
+
+def _stage_plan_payload(data: Mapping[str, Any]) -> dict[str, Any]:
+    """Bounded planner input: deliberately excludes telephony/BYOK secrets."""
+    return _compact(
+        {
+            "agency_id": _pick(data, "agency_id", "agencyId"),
+            "description": data.get("description"),
+            "name": data.get("name"),
+            "assistant_name": _pick(data, "assistant_name", "assistantName"),
+            "business_name": _pick(data, "business_name", "businessName"),
+            "industry": data.get("industry"),
+            "direction": _pick(data, "direction", "agent_style", "agentStyle", "style"),
+            "goal": data.get("goal"),
+            "system_prompt": _pick(data, "system_prompt", "systemPrompt"),
+            "tools": _tools_payload(data["tools"]) if data.get("tools") else None,
+            "call_stages": _pick(data, "call_stages", "callStages", "stages"),
+            "stage_generation": _pick(data, "stage_generation", "stageGeneration"),
+            "stage_count": _pick(data, "stage_count", "stageCount"),
+            "stage_detail": _pick(data, "stage_detail", "stageDetail"),
+        }
+    )
 
 
 def _call_stage_payload(data: Mapping[str, Any]) -> dict[str, Any]:
@@ -1912,7 +2110,12 @@ def _generate_call_stages(data: Mapping[str, Any]) -> list[dict[str, Any]]:
 
 
 def generate_call_stages(config: Optional[Mapping[str, Any]] = None, **kwargs: Any) -> list[dict[str, Any]]:
-    """Generate the same default call stages the hosted-agent SDK sends by default."""
+    """Build the offline compatibility template (no hosted model call).
+
+    New code should prefer ``client.generate_call_stages(...)`` so Supafone's
+    hosted planner produces complete prompts and the runtime uses that exact
+    validated plan.
+    """
     return _generate_call_stages(_merge(config, kwargs))
 
 

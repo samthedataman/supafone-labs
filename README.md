@@ -22,6 +22,41 @@ Supafone Pro watcher built in — or attach the same second mind to any platform
 
 ---
 
+## Start here: Supafone Voice Watcher
+
+The Watcher is the core of Supafone Labs: a second AI runs beside the realtime
+agent, observes the live conversation off the latency-critical audio path, and
+silently corrects the agent when it detects tool failures, unsafe claims,
+language changes, missed intent, or a broken workflow. If the Watcher has
+nothing useful to add—or cannot respond in time—the call continues unchanged.
+
+It is enabled by default in both SDKs:
+
+```python
+from supafone_labs import Supafone
+
+supafone = Supafone(api_key="sl_live_...", voice_watcher=True)
+```
+
+```ts
+import { Supafone } from "supafone-labs";
+
+const supafone = new Supafone({
+  apiKey: process.env.SUPAFONE_TOKEN!,
+  voiceWatcher: true,
+});
+```
+
+Already running Vapi, Retell, Ultravox, OpenAI Realtime, LiveKit, Pipecat, or
+another stack? Keep it. Feed provider events into the Watcher and deliver its
+canonical silent directive through the matching adapter.
+
+**Read this first:** [Voice Watcher framework](gitbook/self-healing-watcher.md) ·
+[production problems it solves](gitbook/production-voice-ai-challenges.md) ·
+[framework support](gitbook/framework-support.md) ·
+[adversarial QA](gitbook/voice-qa-landscape.md) ·
+[MCP setup](mcp/README.md)
+
 ```python
 import supafone_labs
 
@@ -31,12 +66,13 @@ brain = supafone_labs.supercharge(my_agent)   # that's the whole integration
 ```ts
 import { Supafone } from "supafone-labs";
 
-const supafone = new Supafone({ apiKey: process.env.SUPAFONE_API_KEY! });
+const supafone = new Supafone({ apiKey: process.env.SUPAFONE_TOKEN! });
 
 const agent = await supafone.labs.agents.createInboundWithNumber({
   agentKey: "northline-intake",
   name: "Northline intake",
   assistantName: "Maya",
+  description: "Answer new inquiries, understand the request, and book the right next step.",
   websiteUrl: "https://northline.example",
   number: { search: { areaCode: "415" } },
   labs: { enabled: true, model: "gemma" },
@@ -49,18 +85,49 @@ routes Supafone-managed numbers, so developers do not need to create Twilio,
 Ultravox, Cartesia, Inworld, ElevenLabs, or Deepgram accounts just to ship an
 agent. BYOK remains available when a team already owns those provider accounts.
 
-## The two product pillars
+### Describe the job once
 
-Supafone Labs has two equally important features:
+Agent Factory now turns that `description` into the complete prompt and staged
+call plan that the runtime actually executes. Developers do not need a second
+Haiku/Anthropic key, and customers do not have to accept a black-box prompt:
 
-1. **Agent Factory**: create complete inbound, outbound, web, and campaign
-   agents from one Supafone API key. This is the managed path. It eliminates
-   the need to bring your own voice-platform, telephony, TTS, STT, or LLM keys
-   before you can launch.
-2. **Self-healing Labs watcher**: attach the Supafone second mind to a hosted
-   agent or to an agent you already run. It listens beside the call, watches
-   transcripts, tools, state, and outcomes, then sends silent corrective
-   directives through the provider's native control channel.
+```ts
+const plan = await supafone.generateCallStages({
+  name: "Warm lead caller",
+  description: "Call consented leads, understand fit, and book a demo without pressure.",
+  direction: "outbound",
+  stageCount: 5,
+});
+
+// Preview, edit, approve, or version ordinary JSON.
+console.log(plan.call_stages);
+```
+
+The practical advantage is simple: less prompt plumbing for the developer and
+a calmer, more consistent conversation for the customer. Stages remember where
+the call is, tool claims require real tool confirmation, outbound opt-outs are
+explicit, and the safe template keeps creation available if the hosted planner
+is temporarily unavailable.
+
+## The core product: a model-agnostic supervisor
+
+Supafone Labs is built around one defining capability:
+
+1. **Primary — Voice Watcher model supervisor**: attach the Supafone second
+   mind to a hosted agent or an agent you already run. It watches empathy and
+   operational patterns across turns—intent, urgency, emotion, language,
+   workflow progress, tool truth, and outcomes—then sends a silent corrective
+   directive through the provider's native control channel only when it can
+   improve the call.
+2. **Secondary — Agent Factory delivery path**: create complete inbound,
+   outbound, web, and campaign agents from one Supafone API key with the same
+   supervisor already attached. This managed path removes provisioning work;
+   it does not define or constrain the Watcher framework.
+
+The supervisor is model agnostic by construction. Provider adapters normalize
+each stack into one call-state contract and compile one abstract directive back
+into the provider's supported control channel. The speaking model, supervisor
+model, carrier, STT, and TTS can therefore evolve independently.
 
 Managed is the default. BYOK is available when the customer already owns
 provider accounts or needs provider-specific controls. Keep the BYOK lanes
@@ -268,25 +335,27 @@ happens.
 {
   "mcpServers": {
     "supafone": {
-      "command": "python3",
-      "args": ["<repo>/services/supafone-labs/mcp/supafone_mcp.py"],
+      "command": "python3.12",
+      "args": ["<repo>/mcp/supafone_mcp.py"],
       "env": {
-        "SUPAFONE_EMAIL": "you@company.com",
-        "SUPAFONE_PASSWORD": "...",
-        "SUPAFONE_API_KEY": "sf_live_...",
-        "SUPAFONE_LABS_API_KEY": "sl_live_..."
+        "SUPAFONE_TOKEN": "sl_live_..."
       }
     }
   }
 }
 ```
 
+`<repo>` is the absolute path to the cloned **public `supafone-labs` repository**.
+After changing this file, fully restart the MCP client so it refreshes
+`tools/list`. A correct connection advertises `start_call_and_watch`; a short
+models/usage-only list means Claude is still launching a different command.
+
 Two independent auth lanes — set the ones you use:
 
 | Lane | Env | Unlocks |
 | --- | --- | --- |
-| Account login (same as app.supafone.ai) | `SUPAFONE_EMAIL` + `SUPAFONE_PASSWORD`, or `SUPAFONE_TOKEN` (a JWT) | Campaigns, real calls, live monitoring, sign links |
-| API keys | `SUPAFONE_API_KEY` / `SUPAFONE_LABS_API_KEY` | Hosted-agent provisioning, numbers, Labs logs/usage/voices |
+| One-key setup | Linked `SUPAFONE_TOKEN=sl_live_...` | Agents, campaigns, guarded real calls, monitoring, numbers, Labs logs/usage/voices |
+| Explicit fallback | `SUPAFONE_EMAIL` + `SUPAFONE_PASSWORD`, or separate `SUPAFONE_API_KEY` / `SUPAFONE_LABS_API_KEY` | Same surfaces when one-key linking is unavailable |
 
 The server logs in lazily with the email/password and transparently re-logs-in
 when the token expires — a long Claude session never goes stale.
@@ -297,9 +366,10 @@ when the token expires — a long Claude session never goes stale.
   (built-in playbooks or your saved custom presets), `add_campaign_recipients`
   (consented leads), `launch_campaign` / `pause_campaign`, `update_campaign`
   (scripts, cadence, settings — including the e-sign document config).
-- **Real phone calls** — `call_from_owned_agent` dials any number from your calling
-  provider and bridges your voice agent onto the line. `list_voice_agents`
-  picks the agent.
+- **Real phone calls** — `start_call_and_watch` (or `call_from_owned_agent`)
+  dials through your configured calling provider, bridges your voice agent onto
+  the line, and returns a secret-free authenticated dashboard link for the live
+  call. `list_voice_agents` picks the agent.
 - **Live monitoring** — `monitor_campaign` returns the live funnel, the calls
   in flight *right now*, and a listen link per call plus the campaign's
   developer-portal link; `get_call` polled during a call follows the live
@@ -311,7 +381,8 @@ when the token expires — a long Claude session never goes stale.
 
 Full tool reference: [`gitbook/mcp-server.md`](gitbook/mcp-server.md). The same
 campaign surface is available in code via `supafone_labs` (PyPI) and
-`supafone-labs` (npm) — `client.campaigns.*` + `callFromAgent()`.
+`supafone-labs` (npm) — `client.campaigns.*`, `callFromAgent()`, and
+`startWebRtcCall()` for browser voice sessions without a phone number.
 
 ## How it works
 
@@ -347,6 +418,9 @@ minute; every request itemized.
 | `WS   /v1/stt/live` | Live streaming STT — the multilingual tap, zero Deepgram account |
 | `GET  /v1/usage` | Today's request counts |
 | `GET  /v1/billing/balance` | Minutes remaining + top-up links |
+| `POST /v1/billing/checkout` | Server-authored plan, credit, or paid-number Stripe Checkout |
+| `GET  /v1/billing/checkout/{session_id}` | Poll payment and number-entitlement readiness |
+| `POST /v1/billing/portal` | Authenticated Stripe Customer Portal link |
 | `GET  /v1/logs` | The audit trail: every whisper, timestamped and billed |
 | `POST /v1/qa/generate` | Adversarial test scenarios generated from your agent's own prompt |
 | `POST /v1/qa/suite` | One-call auto QA suite: mock calls vs your real config, pass/fail + SSR grades |

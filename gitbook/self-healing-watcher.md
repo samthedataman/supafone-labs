@@ -5,6 +5,87 @@ self-healing watcher that runs beside every agent. It observes the call off the
 realtime hot path and returns a silent directive only when the live agent needs
 help, then scores and QAs the call after it ends.
 
+For the practical developer view—multilingual continuity, provider switching,
+cross-worker state, safety, telemetry, and failover—start with
+[Production Voice AI: Daily Problems Supafone Solves](production-voice-ai-challenges.md).
+
+## The first principle: the model speaking cannot fully supervise itself
+
+Realtime voice models are optimized to answer quickly. A production supervisor
+has a different job: watch patterns across turns, compare spoken claims with
+tool ground truth, remember the operator's objective, notice a change in
+language or urgency, and decide whether an intervention is worth interrupting
+the agent's current trajectory.
+
+Putting both jobs in one prompt creates a structural conflict. More reasoning
+adds latency; less reasoning misses the moment. Supafone separates the roles:
+
+```text
+speaking model                         supervisor model
+--------------                        ----------------
+fast, natural response                slower cross-turn reasoning
+owns the customer audio               never speaks to the customer
+uses tools and follows stages         checks tool truth and stage progress
+continues if supervisor is absent     emits a bounded silent directive or no-op
+```
+
+The supervisor is not a replacement agent and not a transcript summarizer. It
+is a second control loop beside the call.
+
+## The secret sauce: empathy as observable patterns
+
+“Empathy” is not a personality adjective in the runtime. It is a changing set
+of observable patterns that affect what the agent should do next:
+
+- intent: what outcome the caller is actually trying to reach,
+- urgency: whether waiting, escalation, or a shorter path matters,
+- emotion: confusion, frustration, fear, confidence, or relief across turns,
+- language: an explicit request or clear utterance in an approved language,
+- trust: whether the agent acknowledged, verified, and followed through,
+- progress: whether the current workflow stage is advancing or looping,
+- truth: whether a booking, transfer, send, or CRM action really succeeded.
+
+The Watcher maintains that belief state over time. It does not route from a
+name, accent, nationality, or presumed demographic. It waits for evidence,
+compares the call with the operator's objective and tool results, and whispers
+only when a short directive is likely to improve the outcome.
+
+## The supervisor loop
+
+```text
+provider event
+    -> normalize into one call contract
+    -> update intent / emotion / language / stage / tool truth
+    -> compare with objective, policy, and standing directive
+    -> guard on evidence, tenant, provider, cooldown, and timeout
+    -> compile one silent native instruction—or do nothing
+    -> observe the next turn and verify whether it helped
+    -> grade the completed call and improve the standing directive
+```
+
+This is why the framework can become more useful without taking over the live
+audio path. The speaking agent stays fast; the supervisor accumulates context,
+detects patterns, and closes the verification loop.
+
+## Model agnostic by construction
+
+The contract is between call events and supervisor directives, not between
+Supafone and one model vendor. The speaking model, supervisor model, carrier,
+STT, and TTS can be selected independently when the provider exposes the
+required control surface.
+
+Adapters translate provider-native events into the canonical state and compile
+the resulting directive back to the provider's native silent channel. A team
+can therefore keep Vapi, Retell, Ultravox, OpenAI Realtime, LiveKit, Pipecat,
+Deepgram, ElevenLabs, or another compatible stack while retaining the same
+supervision, QA, telemetry, and improvement loop. See
+[Framework Support](framework-support.md) for exact capabilities and caveats.
+
+The hosted Agent Factory is intentionally secondary: it is the fastest way to
+provision a complete agent with the supervisor already attached. The defining
+product is the supervisor contract, which also works when Supafone did not
+create the agent.
+
 ## Run Agents Under the Voice Watcher (SDK client flag)
 
 Since SDK 0.4.6 the SDK client takes a single `voice_watcher` flag. It is

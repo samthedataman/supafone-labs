@@ -7,7 +7,7 @@ and live provider paths.
 
 ```bash
 cd supafone-labs
-SUPAFONE_API_KEY=sf_live_... \
+SUPAFONE_TOKEN=sl_live_... \
 SUPAFONE_API_BASE_URL=https://api.supafone.ai \
 npx tsx examples/smoke-hosted-agent.ts
 ```
@@ -22,6 +22,27 @@ The script verifies:
 - `provider_accounts.mode` is `supafone_managed`,
 - developer provider keys are not required,
 - a widget snippet is returned.
+
+## Hosted Call-Plan Contract
+
+Test the same feature through REST, Python, TypeScript, and MCP. Each surface
+must return the same versioned plan fields and agent creation must install the
+stages into the executable runtime.
+
+| Test | Expected result |
+| --- | --- |
+| REST `POST /api/v1/labs/agent-plans` | Valid 3–8 stage `supafone_call_plan_v1` response |
+| Python `generate_call_stages()` | Same hosted contract using one `SUPAFONE_TOKEN` |
+| TypeScript `generateCallStages()` | Same hosted contract using one `SUPAFONE_TOKEN` |
+| MCP `generate_call_stages` | Calls hosted planner; no local fake plan |
+| Create with description only | Backend generates and installs executable stages |
+| Create with edited stages | Exact approved stages are validated and installed |
+| Planner timeout/invalid JSON | Safe deterministic plan, `fallback: true`, warning returned |
+| Secret-boundary test | BYOK, carrier, provider, billing, and API secrets never enter planner input |
+| Custom stage names | Runtime transitions through configured names, not hard-coded templates |
+
+The automated contract suite is credential-free: model calls are stubbed,
+HTTP is mocked, and no phone number is purchased or dialed.
 
 ## Python SDK Tests
 

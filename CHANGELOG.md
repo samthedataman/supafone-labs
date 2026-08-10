@@ -4,6 +4,58 @@ All notable changes to this project are documented here. The format is based on
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project adheres to
 [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.4.12] - 2026-08-09
+
+### Added
+- Hosted call-plan generation from one plain-language description, returning a
+  versioned, editable 3–8 stage runtime plan through REST, Python, TypeScript,
+  and MCP.
+- Public `/api/v1/labs/agent-plans`, presets, tools, runtime, calls,
+  recordings, and transcripts contracts with matching SDK helpers.
+- A complete GitBook REST endpoint map with curl examples, roles, error
+  handling, customer outcomes, developer benefits, and safe-retry guidance.
+
+### Changed
+- Agent creation now defaults to hosted plan generation and returns the exact
+  plan installed in the live multi-stage runtime. Explicit reviewed stages and
+  deterministic template/off modes remain supported.
+- Custom generated stage names and reviewed transition branches execute in the
+  runtime instead of being reduced to hard-coded intake/booking/confirmation.
+
+### Security
+- Planner requests are bounded and exclude Supafone credentials, provider
+  keys, telephony/carrier secrets, billing data, and BYOK configuration.
+- Invalid or unavailable model output degrades to a marked safe deterministic
+  plan; account call artifacts remain tenant-isolated.
+
+## [0.4.11] - 2026-08-09
+
+### Added
+- Stripe-hosted Checkout, payment-status polling, and Customer Portal methods
+  in the Python and TypeScript SDKs.
+- MCP billing tools that return browser-safe `checkout_url` handoffs for plans,
+  credit packs, and paid phone numbers.
+- A two-step dedicated/premium number flow: pay on Stripe, then redeem a
+  server-verified single-use entitlement before carrier provisioning.
+- A first-class Oracle models/control guide and supervisor-first GitBook
+  navigation that keeps the Agent Factory in its secondary delivery role.
+
+### Security
+- Card data, Stripe secrets, webhooks, and carrier credentials remain in the
+  private Supafone services and are never returned through SDK or MCP tools.
+
+## [0.4.10] - 2026-08-09
+
+### Added
+- First-class browser WebRTC session creation in the Python and TypeScript
+  clients through `start_webrtc_call()` and `startWebRtcCall()`.
+- A stable, typed browser-session response exposing the provider transport,
+  join URL, microphone/audio support, and live-transcript capability.
+
+### Changed
+- Documented the browser-call path separately from PSTN `callFromAgent()` so
+  applications can test agents without buying or dialing a phone number.
+
 ## [0.4.9] - 2026-07-12
 
 ### Added

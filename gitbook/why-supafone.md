@@ -1,13 +1,14 @@
 # 💡 Why Supafone — the pain points, and the fixes
 
-Building a production voice agent today means fighting five problems at once.
-Supafone's stack exists to delete them. **One API key** (`sl_…`) drives all of
-it — provisioning, supervision, QA, grading, the builder copilot.
+Building a production voice agent today means fighting six problems at once.
+Supafone's stack exists to remove them. **One API key** (`sl_…`) drives all of
+it — planning, provisioning, supervision, QA, grading, and the builder copilot.
 
-## The five pain points
+## The six pain points
 
 | Pain | What it looks like | The Supafone fix |
 | --- | --- | --- |
+| **Every new agent starts as a blank prompt** | A developer spends days turning a business brief into prompts, stages, transitions, tools, and fallbacks, then repeats the work for the next customer. | **Hosted call planner**: one description becomes a complete, editable 3–8 stage program. The private service keeps the model key; validation and a safe deterministic fallback keep creation reliable. |
 | **You can't see failures until a customer hits one** | Agents pass the demo, then hallucinate a refund policy on call #400. | **Self-healing watcher**: every live call is tapped, a supervisor oracle watches the transcript off the latency path and *whispers* corrections into the agent's native control channel — silently, mid-call. |
 | **No objective function** | "Did the agent do well?" is a vibe, so prompts drift and regressions ship. | **The objective function is explicit**: every agent carries an operator objective; every call is graded against it — not against generic "helpfulness". |
 | **LLM judges give noisy scores** | The same call scores 0.62 then 0.81; dashboards are judge noise. | **SSR grading**: the judge picks one of five *nominal* levels — "the agent did *{poorly, ok, good, great, perfectly}* at achieving the objective". The score AND a full bucket distribution are derived deterministically from the label. Reliable labels in; a real score distribution out. |
@@ -42,3 +43,16 @@ email. Set one env var — `SUPAFONE_TOKEN=sl_live_...` — and the MCP server a
 both SDKs work end to end; in the SDKs a lone `sl_` credential fills both the
 labs and account lanes automatically. Account login (email/password or JWT)
 still works everywhere it did before.
+
+## What this changes for developers and customers
+
+Developers can use raw REST, Python, TypeScript, or MCP against the same
+versioned plan and agent contract. They can preview, edit, approve, diff, and
+store the plain JSON rather than trusting an invisible prompt. Their frontend
+never needs a model credential or carrier secret to generate the plan.
+
+Customers receive a consistent working flow—greeting, discovery,
+qualification or routing, confirmed action, and close—plus the recordings,
+transcripts, summaries, and supervision needed to operate it. They are not
+locked into generated copy: every stage remains editable before creation and
+observable afterward.

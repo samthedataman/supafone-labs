@@ -2,7 +2,7 @@
 
 🐍 [Python — `pip install "supafone-labs[all]"`](https://pypi.org/project/supafone-labs/) ·
 🟦 [TypeScript — `npm i supafone-labs`](https://www.npmjs.com/package/supafone-labs) ·
-⭐ [GitHub — samthedataman/supafone](https://github.com/samthedataman/supafone) ·
+⭐ [GitHub — samthedataman/supafone-labs](https://github.com/samthedataman/supafone-labs) ·
 🌐 [labs.supafone.ai](https://labs.supafone.ai) ·
 📄 [*Grading the Call* (paper)](https://labs.supafone.ai/research.html)
 

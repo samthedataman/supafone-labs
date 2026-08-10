@@ -1,7 +1,7 @@
 # SDK Installation
 
 Supafone Labs publishes a Python package and an unscoped TypeScript package.
-Current release: **0.4.9** on both
+This branch prepares **0.4.12** for both
 [PyPI](https://pypi.org/project/supafone-labs/) and
 [npm](https://www.npmjs.com/package/supafone-labs).
 
@@ -45,6 +45,39 @@ export SUPAFONE_LABS_API_KEY=sl_live_...
 
 If no Labs key is present, use BYO provider keys such as `ANTHROPIC_API_KEY`,
 `OPENAI_API_KEY`, `XAI_API_KEY`, or local fake providers for tests.
+
+### Oracle provider and controls
+
+`labs.enabled: true` attaches the model-agnostic supervisor. A Supafone
+`sl_...` key uses the hosted Oracle; BYOK can use Anthropic, OpenAI, xAI/Grok,
+or an explicitly constructed OpenAI-compatible provider. The speaking agent
+and supervisor providers are independent.
+
+```python
+from supafone_labs import SupafoneLabs
+from supafone_labs.config import Settings
+
+watcher = SupafoneLabs(
+    provider="ultravox",       # speaking-agent adapter
+    llm="anthropic",           # supervisor provider
+    oracle_model="claude-haiku-4-5-20251001",
+    config=Settings(
+        confidence_threshold=0.65,
+        oracle_timeout_seconds=5.0,
+    ),
+    oracle_instructions="Prioritize empathy, tool truth, and the next required intake step.",
+    scenario="intake",
+    mode="apply",
+    telemetry=True,
+    post_call_analysis=True,
+)
+```
+
+For raw hosted completions, both SDKs expose `model`, `max_tokens`/
+`maxTokens`, and `temperature`. `whisper()` additionally accepts operator
+`guardrails`. The full watcher also accepts custom belief/directive prompts,
+an injection adapter, telemetry and post-call controls, and an `agent_label`
+for optimization history.
 
 ## TypeScript
 
@@ -138,6 +171,46 @@ const finished = await supafone.tester.wait(started.session_id);
 
 This places a real call and spends tester credits. Both SDKs reject missing
 authorization and malformed E.164 numbers before dialing.
+
+## Browser WebRTC calls
+
+Version `0.4.10` adds first-class browser-session creation without buying or
+dialing a phone number:
+
+```ts
+const started = await supafone.startWebRtcCall({ agentId: "agent-123" });
+console.log(started.browser_session.join_url);
+```
+
+```python
+started = supafone.start_webrtc_call(agent_id="agent-123")
+print(started["browser_session"]["join_url"])
+```
+
+See [Browser WebRTC Calls](browser-webrtc-calls.md) for React integration,
+security boundaries, transport details, and transfer limitations.
+
+## Stripe-hosted billing handoff
+
+Version `0.4.11` adds plan, credit-pack, and managed-number Checkout links to
+both SDKs and the MCP server. Clients receive a public `checkout_url`; Stripe
+card entry and entitlement verification remain in Supafone's private services.
+See [Pricing and Credits](pricing-and-credits.md) for the full flow.
+
+## Hosted call planning and complete REST parity
+
+Version `0.4.12` turns one plain-language description into a validated,
+reviewable 3–8 stage plan through REST, Python, TypeScript, or MCP. Agent
+creation installs the generated or developer-edited plan in the executable
+runtime. It also completes hosted discovery, runtime, call, recording, and
+transcript route parity across the public clients.
+
+## Outbound campaigns
+
+The same account-authenticated clients create, launch, monitor, pause, and
+round-trip call campaigns as YAML. See
+[Outbound Call Campaigns](outbound-call-campaigns.md) for the complete
+TypeScript and Python lifecycle.
 
 ## Package Names
 

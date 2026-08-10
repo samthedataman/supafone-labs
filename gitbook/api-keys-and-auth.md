@@ -82,21 +82,21 @@ from the Supafone account-admin flow. It is the exception, not the default.
 The hosted-agent API also accepts `x-supafone-key` and `x-supafone-api-key`, but
 bearer auth is the recommended default.
 
-In TypeScript, pass `supafoneApiKey` when the same SDK instance also talks to
-Labs Cloud:
+The recommended TypeScript setup for every public surface is one token:
+
+```ts
+const supafone = new Supafone({
+  apiKey: process.env.SUPAFONE_TOKEN!,
+});
+```
+
+Separate per-surface credentials remain an advanced compatibility option for
+teams that deliberately want scoped keys:
 
 ```ts
 const supafone = new Supafone({
   apiKey: process.env.SUPAFONE_LABS_API_KEY!,
   supafoneApiKey: process.env.SUPAFONE_API_KEY!,
-});
-```
-
-If you only use hosted-agent methods, this is enough:
-
-```ts
-const supafone = new Supafone({
-  apiKey: process.env.SUPAFONE_API_KEY!,
 });
 ```
 
