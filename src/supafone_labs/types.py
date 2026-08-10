@@ -2,12 +2,11 @@
 from __future__ import annotations
 
 from enum import Enum
-from typing import Optional
+from typing import Literal, Optional
 
 from pydantic import BaseModel, Field
 
 from supafone_labs.runtime.core.decision import RuntimeDecision
-
 
 SUPPORTED_LANGUAGE_NAMES = {
     "ar": "Arabic",
@@ -138,6 +137,48 @@ class DirectiveKind(str, Enum):
     TACTICAL = "tactical"
     GUARDRAIL = "guardrail"
     MIXED = "mixed"
+
+
+class DirectiveTextControl(BaseModel):
+    """Developer controls for one generated directive string."""
+
+    model_config = {"extra": "forbid"}
+
+    enabled: bool = True
+    instructions: str = ""
+    max_chars: int = Field(default=240, ge=1, le=2000)
+
+
+class DirectiveListControl(BaseModel):
+    """Developer controls for one generated directive list."""
+
+    model_config = {"extra": "forbid"}
+
+    enabled: bool = True
+    instructions: str = ""
+    max_items: int = Field(default=4, ge=0, le=20)
+    item_max_chars: int = Field(default=180, ge=1, le=2000)
+
+
+class DirectiveContract(BaseModel):
+    """Serializable policy controlling SecondMind's structured output.
+
+    The contract controls generated coaching. Standing scenario/platform
+    guardrails are still enforced and cannot be removed by disabling the
+    generated ``guardrails`` field.
+    """
+
+    model_config = {"extra": "forbid"}
+
+    empathy_directive: DirectiveTextControl = Field(default_factory=DirectiveTextControl)
+    tactical_directive: DirectiveTextControl = Field(default_factory=DirectiveTextControl)
+    surface_facts: DirectiveListControl = Field(default_factory=DirectiveListControl)
+    guardrails: DirectiveListControl = Field(default_factory=DirectiveListControl)
+    language_mode: Literal["caller", "model", "fixed"] = "caller"
+    fixed_language: str = ""
+    allowed_kinds: list[DirectiveKind] = Field(default_factory=lambda: list(DirectiveKind))
+    confidence_threshold: Optional[float] = Field(default=None, ge=0.0, le=1.0)
+    operator_guardrails: list[str] = Field(default_factory=list, max_length=50)
 
 
 class BeliefState(BaseModel):

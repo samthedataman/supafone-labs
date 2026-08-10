@@ -3,10 +3,12 @@
 The deterministic, provider-agnostic runtime lives at ``supafone_labs.runtime``; the LLM
 oracle and the developer-facing facade live here.
 """
-from supafone_labs import runtime  # noqa: F401  (re-export the vendored runtime subpackage)
-from supafone_labs.config import ORACLE_MODELS, Settings, get_settings, provider_for_model
+from supafone_labs import (
+    runtime,  # noqa: F401  (re-export the vendored runtime subpackage)
+    stt,  # noqa: F401  (live multilingual transcription subpackage)
+)
 from supafone_labs.client import Supafone, SupafoneError, VoicePreview, generate_call_stages
-from supafone_labs.models import clear_model_cache, discover_oracle_models
+from supafone_labs.config import ORACLE_MODELS, Settings, get_settings, provider_for_model
 from supafone_labs.facade import (
     CRM,
     SCENARIO_PRESETS,
@@ -28,6 +30,7 @@ from supafone_labs.llm import (
     get_default_provider,
     get_provider,
 )
+from supafone_labs.models import clear_model_cache, discover_oracle_models
 from supafone_labs.oracle import (
     BeliefStateEngine,
     DirectiveGenerator,
@@ -35,7 +38,6 @@ from supafone_labs.oracle import (
     OracleWorkflow,
     should_emit,
 )
-from supafone_labs import stt  # noqa: F401  (live multilingual transcription subpackage)
 from supafone_labs.tiers import Tier, TierError, current_tier, has_feature, require_feature
 from supafone_labs.tts import (
     FakeTTSProvider,
@@ -45,7 +47,15 @@ from supafone_labs.tts import (
     get_default_tts_provider,
     get_tts_provider,
 )
-from supafone_labs.types import BeliefState, Directive, DirectiveKind, directive_to_decision
+from supafone_labs.types import (
+    BeliefState,
+    Directive,
+    DirectiveContract,
+    DirectiveKind,
+    DirectiveListControl,
+    DirectiveTextControl,
+    directive_to_decision,
+)
 
 __version__ = "0.4.12"
 
@@ -73,7 +83,10 @@ __all__ = [
     # types
     "BeliefState",
     "Directive",
+    "DirectiveContract",
     "DirectiveKind",
+    "DirectiveListControl",
+    "DirectiveTextControl",
     "directive_to_decision",
     # llm
     "LLMProvider",

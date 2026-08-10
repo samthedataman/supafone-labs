@@ -211,6 +211,25 @@ Python SDK, TypeScript SDK, and MCP server call these same endpoints, so a
 developer can choose the interface that fits their stack without losing
 capabilities.
 
+## Fixed Language and Voice Intent
+
+Agent Factory can resolve a current provider voice from plain-language intent:
+
+```ts
+await supafone.labs.agents.createInbound({
+  name: "Spanish intake",
+  preferredLanguage: "es-MX",
+  voicePreference: {
+    description: "warm Latin American Spanish intake voice",
+    configuredOnly: true,
+  },
+});
+```
+
+`preferredLanguage` applies one validated language and compatible voice for the
+entire call. It does not add a language-switch tool or change voices mid-call.
+See [Dynamic Voice Catalog and Selection](voice-catalog-and-selection.md).
+
 ## Advanced BYOK Agent Factory
 
 Developers can bring any combination of their own runtime, telephony, and TTS

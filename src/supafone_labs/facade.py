@@ -7,13 +7,14 @@ from __future__ import annotations
 
 import asyncio
 import time
+from collections.abc import Mapping
 from dataclasses import dataclass, field
 from typing import Any, Callable, Optional
 
 from supafone_labs.config import Settings, get_settings
 from supafone_labs.llm.registry import get_default_provider
 from supafone_labs.oracle.policy import OracleWorkflow
-from supafone_labs.oracle.session import OracleSession
+from supafone_labs.oracle.session import DirectiveTransform, OracleSession
 from supafone_labs.runtime.adapters import (
     BlandAdapter,
     CartesiaAdapter,
@@ -33,7 +34,7 @@ from supafone_labs.runtime.adapters import (
 )
 from supafone_labs.runtime.core.decision import ProviderAction, RuntimeDecision
 from supafone_labs.runtime.core.state import RuntimeState, build_initial_state
-from supafone_labs.types import BeliefState, Directive, directive_to_decision
+from supafone_labs.types import BeliefState, Directive, DirectiveContract, directive_to_decision
 
 # Scenario presets pre-tune the oracle's guardrails/lens for common verticals.
 SCENARIO_PRESETS: dict[str, list[str]] = {
@@ -227,6 +228,8 @@ class SupafoneLabs:
         oracle_instructions: Optional[str] = None,
         belief_prompt: Optional[str] = None,
         directive_prompt: Optional[str] = None,
+        directive_contract: Optional[DirectiveContract | Mapping[str, Any]] = None,
+        directive_transform: Optional[DirectiveTransform] = None,
         inject_via: Optional[str] = None,
         telemetry: bool = True,
         post_call_analysis: bool = False,
@@ -284,10 +287,17 @@ class SupafoneLabs:
             instructions=oracle_instructions,
             belief_prompt=belief_prompt,
             directive_prompt=directive_prompt,
+            directive_contract=directive_contract,
+            directive_transform=directive_transform,
         )
-        self.workflow = OracleWorkflow(self.oracle, threshold=self.config.confidence_threshold)
+        self.confidence_threshold = float(
+            getattr(self.oracle, "confidence_threshold", self.config.confidence_threshold)
+        )
+        self.workflow = OracleWorkflow(self.oracle, threshold=self.confidence_threshold)
 
-        from supafone_labs.runtime.core.runtime import AdheraRuntime  # local: avoid heavy import cost
+        from supafone_labs.runtime.core.runtime import (
+            AdheraRuntime,  # local: avoid heavy import cost
+        )
 
         self.runtime = AdheraRuntime(workflow=self.workflow, adapters=adapters or _default_adapters())
         self._states: dict[str, RuntimeState] = {}
@@ -298,7 +308,9 @@ class SupafoneLabs:
     def tts(self) -> Any:
         """Supafone Labs' own TTS (lazy): hosted on pro, BYO keys on free, fake offline."""
         if self._tts is None:
-            from supafone_labs.tts import SupafoneLabsTTS  # local: keep import cost off the hot path
+            from supafone_labs.tts import (
+                SupafoneLabsTTS,  # local: keep import cost off the hot path
+            )
 
             self._tts = SupafoneLabsTTS()
         return self._tts
@@ -346,7 +358,7 @@ class SupafoneLabs:
         if directive is None:
             return result
 
-        decision = directive_to_decision(directive, self.config.confidence_threshold)
+        decision = directive_to_decision(directive, self.confidence_threshold)
         if decision is None:
             self._report_nudge(sid, provider, directive, next_state, oracle_ms, injected=False)
             return result
@@ -539,6 +551,8 @@ def supercharge(
     oracle_instructions: Optional[str] = None,
     belief_prompt: Optional[str] = None,
     directive_prompt: Optional[str] = None,
+    directive_contract: Optional[DirectiveContract | Mapping[str, Any]] = None,
+    directive_transform: Optional[DirectiveTransform] = None,
 ) -> SupafoneLabs:
     """Give any voice agent a second mind in one line. Provider is auto-detected from `agent`."""
     return SupafoneLabs(
@@ -557,6 +571,8 @@ def supercharge(
         oracle_instructions=oracle_instructions,
         belief_prompt=belief_prompt,
         directive_prompt=directive_prompt,
+        directive_contract=directive_contract,
+        directive_transform=directive_transform,
     )
 
 

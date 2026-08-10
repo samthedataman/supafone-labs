@@ -71,7 +71,14 @@ curl https://api.supafone.ai/api/v1/labs/tools \
 
 curl "https://api.supafone.ai/api/v1/labs/voices?provider=cartesia" \
   -H "Authorization: Bearer $SUPAFONE_TOKEN"
+
+curl https://api.supafone.ai/api/v1/labs/voices/capabilities \
+  -H "Authorization: Bearer $SUPAFONE_TOKEN"
 ```
+
+The voice endpoint supports native-language, live-compatible-language, gender,
+voice-type, model, runtime-provider, configured-provider, and text filters. See
+[Dynamic Voice Catalog and Selection](voice-catalog-and-selection.md).
 
 Expected capability themes:
 

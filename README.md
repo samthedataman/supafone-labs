@@ -54,6 +54,8 @@ canonical silent directive through the matching adapter.
 **Read this first:** [Voice Watcher framework](gitbook/self-healing-watcher.md) ·
 [production problems it solves](gitbook/production-voice-ai-challenges.md) ·
 [framework support](gitbook/framework-support.md) ·
+[programmable directives](gitbook/secondmind-directive-contract.md) ·
+[live voice catalog](gitbook/voice-catalog-and-selection.md) ·
 [adversarial QA](gitbook/voice-qa-landscape.md) ·
 [MCP setup](mcp/README.md)
 

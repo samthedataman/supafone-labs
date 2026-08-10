@@ -157,6 +157,34 @@ class Supafone:
             detail = parsed.get("detail") if isinstance(parsed, dict) else parsed
             raise SupafoneError(str(detail or exc.reason), status=exc.code, body=parsed) from exc
 
+    def _request_supafone_binary(self, path: str) -> VoicePreview:
+        if self._transport:
+            value = self._transport("GET_BINARY", path, None)
+            if isinstance(value, VoicePreview):
+                return value
+            if isinstance(value, bytes):
+                return VoicePreview(value)
+            raise SupafoneError("Binary transport must return VoicePreview or bytes")
+        req = request.Request(
+            self.supafone_api_base_url + path,
+            headers={"Authorization": f"Bearer {self.supafone_api_key}"},
+            method="GET",
+        )
+        try:
+            with request.urlopen(req, timeout=self.timeout) as resp:
+                return VoicePreview(
+                    resp.read(),
+                    resp.headers.get("content-type", "application/octet-stream"),
+                )
+        except error.HTTPError as exc:
+            raw = exc.read().decode("utf-8", errors="replace")
+            try:
+                parsed: Any = json.loads(raw)
+            except json.JSONDecodeError:
+                parsed = raw
+            detail = parsed.get("detail") if isinstance(parsed, dict) else parsed
+            raise SupafoneError(str(detail or exc.reason), status=exc.code, body=parsed) from exc
+
     # --- account API (campaigns + real calls) --------------------------------
     # Same product base URL as _request_supafone_api but authenticated with the
     # ACCOUNT JWT (app.supafone.ai login), not an API key. Honors the same
@@ -1245,25 +1273,6 @@ class LabsToolsNamespace:
         return self._client._request_supafone_api("GET", "/api/v1/labs/tools")
 
 
-class LabsVoicesNamespace:
-    def __init__(self, client: Supafone) -> None:
-        self._client = client
-
-    def list(self, config: Optional[Mapping[str, Any]] = None, **kwargs: Any) -> Any:
-        data = _merge(config, kwargs)
-        query = _compact(
-            {
-                "provider": data.get("provider"),
-                "search": data.get("search"),
-                "language": data.get("language"),
-                "cursor": data.get("cursor"),
-                "limit": data.get("limit"),
-            }
-        )
-        suffix = f"?{parse.urlencode(query)}" if query else ""
-        return self._client._request_supafone_api("GET", f"/api/v1/labs/voices{suffix}")
-
-
 class LabsRuntimeNamespace:
     def __init__(self, client: Supafone) -> None:
         self._client = client
@@ -1283,6 +1292,189 @@ class LabsRuntimeNamespace:
             }
         )
         return self._client._request_supafone_api("PUT", "/api/v1/labs/runtime", payload)
+
+
+class LabsVoicesNamespace:
+    """Live normalized TTS catalog from every connected/managed provider."""
+
+    def __init__(self, client: Supafone) -> None:
+        self._client = client
+
+    def list(
+        self,
+        *,
+        provider: Optional[str] = None,
+        search: Optional[str] = None,
+        language: Optional[str] = None,
+        compatible_language: Optional[str] = None,
+        compatibleLanguage: Optional[str] = None,
+        gender: Optional[str] = None,
+        voice_type: Optional[str] = None,
+        voiceType: Optional[str] = None,
+        model: Optional[str] = None,
+        runtime_provider: Optional[str] = None,
+        runtimeProvider: Optional[str] = None,
+        configured_only: Optional[bool] = None,
+        configuredOnly: Optional[bool] = None,
+        cursor: Optional[int] = None,
+        limit: Optional[int] = None,
+        agency_id: Optional[str] = None,
+        agencyId: Optional[str] = None,
+    ) -> Any:
+        query: dict[str, Any] = {}
+        if provider:
+            query["provider"] = provider
+        if search:
+            query["search"] = search
+        if language:
+            query["language"] = language
+        compatible = compatible_language or compatibleLanguage
+        if compatible:
+            query["compatible_language"] = compatible
+        if gender:
+            query["gender"] = gender
+        kind = voice_type or voiceType
+        if kind:
+            query["voice_type"] = kind
+        if model:
+            query["model"] = model
+        runtime = runtime_provider or runtimeProvider
+        if runtime:
+            query["runtime_provider"] = runtime
+        configured = configured_only if configured_only is not None else configuredOnly
+        if configured is not None:
+            query["configured_only"] = str(bool(configured)).lower()
+        if cursor is not None:
+            query["cursor"] = int(cursor)
+        if limit is not None:
+            query["limit"] = int(limit)
+        agency = agency_id or agencyId
+        if agency:
+            query["agency_id"] = agency
+        suffix = f"?{parse.urlencode(query)}" if query else ""
+        return self._client._request_supafone_api("GET", f"/api/v1/labs/voices{suffix}")
+
+    def capabilities(self) -> Any:
+        """Provider/model language limits and the Ultravox-compatible intersection."""
+        return self._client._request_supafone_api(
+            "GET", "/api/v1/labs/voices/capabilities"
+        )
+
+    def list_all(
+        self,
+        *,
+        provider: Optional[str] = None,
+        search: Optional[str] = None,
+        language: Optional[str] = None,
+        compatible_language: Optional[str] = None,
+        compatibleLanguage: Optional[str] = None,
+        gender: Optional[str] = None,
+        voice_type: Optional[str] = None,
+        voiceType: Optional[str] = None,
+        model: Optional[str] = None,
+        runtime_provider: Optional[str] = None,
+        runtimeProvider: Optional[str] = None,
+        configured_only: Optional[bool] = None,
+        configuredOnly: Optional[bool] = None,
+        agency_id: Optional[str] = None,
+        agencyId: Optional[str] = None,
+        page_size: int = 250,
+        max_pages: int = 100,
+    ) -> Any:
+        page_size = max(1, min(int(page_size), 250))
+        max_pages = max(1, int(max_pages))
+        cursor: Optional[int] = 0
+        pages = 0
+        first: Optional[dict[str, Any]] = None
+        voices: list[dict[str, Any]] = []
+        seen: set[int] = set()
+        while cursor is not None and pages < max_pages:
+            if cursor in seen:
+                raise SupafoneError("Voice catalog returned a repeated cursor")
+            seen.add(cursor)
+            page = self.list(
+                provider=provider,
+                search=search,
+                language=language,
+                compatible_language=compatible_language or compatibleLanguage,
+                gender=gender,
+                voice_type=voice_type or voiceType,
+                model=model,
+                runtime_provider=runtime_provider or runtimeProvider,
+                configured_only=(
+                    configured_only
+                    if configured_only is not None
+                    else configuredOnly
+                ),
+                cursor=cursor,
+                limit=page_size,
+                agency_id=agency_id or agencyId,
+            )
+            if not isinstance(page, dict):
+                raise SupafoneError("Voice catalog returned an invalid response")
+            first = first or page
+            voices.extend(item for item in page.get("voices", []) if isinstance(item, dict))
+            next_cursor = page.get("next_cursor")
+            cursor = int(next_cursor) if next_cursor is not None else None
+            pages += 1
+        if cursor is not None:
+            raise SupafoneError(f"Voice catalog exceeded max_pages={max_pages}")
+        result = dict(first or {"total": 0, "providers": []})
+        result.update(voices=voices, total=(first or {}).get("total", len(voices)), cursor=0, next_cursor=None)
+        return result
+
+    def recommend(
+        self,
+        config: Optional[Mapping[str, Any]] = None,
+        **kwargs: Any,
+    ) -> Any:
+        data = _merge(config, kwargs)
+        description = str(data.get("description") or "").strip()
+        if not description:
+            raise SupafoneError("description is required — describe the voice you want")
+        payload = _voice_preference_payload(data)
+        payload["description"] = description
+        agency = _pick(data, "agency_id", "agencyId")
+        if agency:
+            payload["agency_id"] = agency
+        if data.get("limit") is not None:
+            payload["limit"] = int(data["limit"])
+        return self._client._request_supafone_api(
+            "POST", "/api/v1/labs/voices/recommend", payload
+        )
+
+    def preview(
+        self,
+        voice_id: str,
+        *,
+        agency_id: Optional[str] = None,
+        agencyId: Optional[str] = None,
+    ) -> VoicePreview:
+        voice = str(voice_id or "").strip()
+        if not voice:
+            raise SupafoneError("voice_id is required")
+        query = {"voice": voice}
+        agency = agency_id or agencyId
+        if agency:
+            query["agency_id"] = agency
+        return self._client._request_supafone_binary(
+            f"/api/v1/labs/voices/preview?{parse.urlencode(query)}"
+        )
+
+    @staticmethod
+    def selection(voice: Mapping[str, Any]) -> dict[str, Any]:
+        voice_id = str(voice.get("id") or voice.get("voice_id") or "").strip()
+        if not voice_id:
+            raise SupafoneError("A catalog voice with id is required")
+        return _compact(
+            {
+                "provider": voice.get("provider_key") or voice.get("source"),
+                "voice_id": voice_id,
+                "model": voice.get("model"),
+            }
+        )
+
+    listAll = list_all
 
 
 class LabsPhoneNumbersNamespace:
@@ -1594,6 +1786,9 @@ def _agent_key(agent: Any, config: Mapping[str, Any]) -> str:
 
 
 def _labs_agent_payload(data: Mapping[str, Any]) -> dict[str, Any]:
+    fixed_language = _pick(
+        data, "preferred_language", "preferredLanguage", "language"
+    )
     return _compact(
         {
             "agency_id": _pick(data, "agency_id", "agencyId"),
@@ -1620,8 +1815,12 @@ def _labs_agent_payload(data: Mapping[str, Any]) -> dict[str, Any]:
             "goal": data.get("goal"),
             "greeting": data.get("greeting"),
             "system_prompt": _pick(data, "system_prompt", "systemPrompt"),
-            "language": data.get("language"),
+            "language": fixed_language,
             "voice": _voice_payload(data["voice"]) if data.get("voice") else None,
+            "voice_preference": _voice_preference_payload(
+                _pick(data, "voice_preference", "voicePreference") or {},
+                default_language=fixed_language,
+            ),
             "provider_keys": _provider_keys_payload(
                 _pick(data, "provider_keys", "providerKeys") or {}
             ),
@@ -1648,6 +1847,23 @@ def _voice_payload(data: Mapping[str, Any]) -> dict[str, Any]:
             "provider": data.get("provider"),
             "voice_id": _pick(data, "voice_id", "voiceId"),
             "model": data.get("model"),
+        }
+    )
+
+
+def _voice_preference_payload(
+    data: Mapping[str, Any], *, default_language: Any = None
+) -> dict[str, Any]:
+    return _compact(
+        {
+            "description": data.get("description"),
+            "language": data.get("language") or default_language,
+            "provider": data.get("provider"),
+            "gender": data.get("gender"),
+            "voice_type": _pick(data, "voice_type", "voiceType"),
+            "model": data.get("model"),
+            "configured_only": _pick(data, "configured_only", "configuredOnly"),
+            "premium": data.get("premium"),
         }
     )
 

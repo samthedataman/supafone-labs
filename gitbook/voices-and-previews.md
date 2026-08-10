@@ -21,6 +21,24 @@ curl "https://api.supafone.ai/api/v1/labs/voices?provider=cartesia" \
 The response includes provider metadata, whether the account is
 Supafone-managed, and whether developer provider keys are required.
 
+For the normalized metadata contract, model language ceilings, live-runtime
+intersection, filtering, and plain-language matching, see
+[Dynamic Voice Catalog and Selection](voice-catalog-and-selection.md).
+
+```ts
+const match = await supafone.labs.voices.recommend({
+  description: "warm Spanish patient-support voice",
+  language: "es-MX",
+  configuredOnly: true,
+});
+
+const voice = match.matches[0].voice;
+await supafone.labs.agents.createInbound({
+  name: "Patient intake",
+  voice: supafone.labs.voices.selection(voice),
+});
+```
+
 ## Labs Cloud Voice Catalog
 
 Use Labs Cloud when the UI is previewing speech or building a playground:

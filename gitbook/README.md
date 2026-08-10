@@ -194,6 +194,8 @@ Start with [Developer Workflows](developer-workflows.md) and
 [Quickstart](quickstart.md), then read [API Keys and Auth](api-keys-and-auth.md).
 For the full builder surface, read [Agent Factory](agent-factory.md),
 [Call Stages](call-stages.md), [Voices and Previews](voices-and-previews.md),
-and [Log Streaming](log-streaming.md). For how our QA stacks up against the
+[Dynamic Voice Catalog and Selection](voice-catalog-and-selection.md),
+[Programmable SecondMind Directives](secondmind-directive-contract.md), and
+[Log Streaming](log-streaming.md). For how our QA stacks up against the
 2026 field — and the enterprise roadmap it drives — read
 [Testing Voice Agents (QA)](voice-qa-landscape.md).

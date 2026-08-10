@@ -1,6 +1,6 @@
 import json
 
-from supafone_labs import Supafone
+from supafone_labs import Supafone, VoicePreview
 
 
 def test_create_inbound_serializes_hosted_agent_payload():
@@ -169,6 +169,125 @@ def test_agent_factory_honors_watcher_override():
     supafone.labs.agents.create({"agentKey": "raw-agent"})
 
     assert calls[0][2]["voice_watcher"] is False
+
+
+def test_python_voice_catalog_sdk_parity():
+    calls = []
+
+    def transport(method, path, payload):
+        calls.append((method, path, payload))
+        if method == "GET_BINARY":
+            return VoicePreview(b"abc", "audio/mpeg")
+        if path == "/api/v1/labs/voices/capabilities":
+            return {
+                "runtime": "ultravox",
+                "runtime_spoken_language_count": 26,
+                "providers": [],
+            }
+        if path == "/api/v1/labs/voices/recommend":
+            return {"description": payload["description"], "matches": []}
+        if path.startswith("/api/v1/labs/voices?"):
+            query = parse_qs(urlparse(path).query)
+            cursor = int(query.get("cursor", [0])[0])
+            return {
+                "voices": [
+                    {
+                        "id": f"cartesia-sonic:voice-{cursor}",
+                        "provider_key": "cartesia_sonic",
+                        "model": "sonic-3.5",
+                    }
+                ],
+                "total": 2,
+                "cursor": cursor,
+                "next_cursor": 1 if cursor == 0 else None,
+                "providers": [],
+            }
+        if path == "/api/v1/labs/agents":
+            return {"agent": {"id": "agent-1"}}
+        raise AssertionError((method, path, payload))
+
+    # Imported locally so existing tests keep their intentionally tiny import surface.
+    from urllib.parse import parse_qs, urlparse
+
+    supafone = Supafone(api_key="sf_test", transport=transport)
+    catalog = supafone.labs.voices.list_all(
+        provider="cartesia_sonic",
+        language="es-MX",
+        compatibleLanguage="es",
+        gender="female",
+        voiceType="warm empathetic",
+        model="sonic-3.5",
+        runtimeProvider="cartesia",
+        configuredOnly=True,
+        search="warm",
+        page_size=1,
+    )
+    assert len(catalog["voices"]) == 2
+    assert "provider=cartesia_sonic" in calls[0][1]
+    assert "language=es-MX" in calls[0][1]
+    assert "compatible_language=es" in calls[0][1]
+    assert "gender=female" in calls[0][1]
+    assert "voice_type=warm+empathetic" in calls[0][1]
+    assert "model=sonic-3.5" in calls[0][1]
+    assert "runtime_provider=cartesia" in calls[0][1]
+    assert "configured_only=true" in calls[0][1]
+    assert "search=warm" in calls[0][1]
+
+    assert supafone.labs.voices.capabilities()["runtime_spoken_language_count"] == 26
+    supafone.labs.voices.recommend(
+        {
+            "description": "warm Latin American support voice",
+            "language": "es",
+            "provider": "cartesia",
+            "voiceType": "warm_empathetic",
+            "model": "sonic-3.5",
+            "configuredOnly": True,
+            "limit": 3,
+        }
+    )
+    recommend_call = next(call for call in calls if call[1] == "/api/v1/labs/voices/recommend")
+    assert recommend_call[2] == {
+        "description": "warm Latin American support voice",
+        "language": "es",
+        "provider": "cartesia",
+        "voice_type": "warm_empathetic",
+        "model": "sonic-3.5",
+        "configured_only": True,
+        "limit": 3,
+    }
+
+    assert supafone.labs.voices.selection(
+        {
+            "id": "cartesia-sonic:voice-1",
+            "provider_key": "cartesia_sonic",
+            "model": "sonic-3.5",
+        }
+    ) == {
+        "provider": "cartesia_sonic",
+        "voice_id": "cartesia-sonic:voice-1",
+        "model": "sonic-3.5",
+    }
+    preview = supafone.labs.voices.preview("cartesia-sonic:voice-1")
+    assert preview.content == b"abc"
+    assert preview.media_type == "audio/mpeg"
+
+    supafone.labs.agents.create(
+        {
+            "name": "Spanish intake",
+            "preferredLanguage": "es-MX",
+            "voicePreference": {
+                "description": "female Spanish patient support voice",
+                "configuredOnly": True,
+            },
+        }
+    )
+    agent_call = next(call for call in calls if call[1] == "/api/v1/labs/agents")
+    assert agent_call[2]["voice_preference"] == {
+        "description": "female Spanish patient support voice",
+        "language": "es-MX",
+        "configured_only": True,
+    }
+    assert agent_call[2]["language"] == "es-MX"
 
 
 def test_python_client_reads_labs_logs_and_stream(monkeypatch):

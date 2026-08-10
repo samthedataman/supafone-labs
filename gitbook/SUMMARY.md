@@ -8,6 +8,7 @@
 * [Voice Watcher Framework](self-healing-watcher.md)
 * [Production Voice AI Challenges](production-voice-ai-challenges.md)
 * [Oracle Models and Controls](oracle-models-and-controls.md)
+* [Programmable SecondMind Directives](secondmind-directive-contract.md)
 * [Framework Support](framework-support.md)
 * [Provider-Agnostic Runtime](provider-agnostic-framework.md)
 * [Testing Voice Agents (QA)](voice-qa-landscape.md)
@@ -40,6 +41,7 @@
 * [Hosted Agents API](hosted-agents-api.md)
 * [Call Stages](call-stages.md)
 * [Voices and Previews](voices-and-previews.md)
+* [Dynamic Voice Catalog and Selection](voice-catalog-and-selection.md)
 * [Product Overview](overview.md)
 * [Why Supafone](why-supafone.md)
 
