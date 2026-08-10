@@ -754,6 +754,8 @@ class LabsNamespace:
         self.phoneNumbers = self.phone_numbers
         self.telephony = LabsTelephonyNamespace(client)
         self.calls = LabsCallsNamespace(client)
+        self.activity = LabsActivityNamespace(client)
+        self.plans = LabsPlansNamespace(client)
         self.recordings = LabsRecordingsNamespace(client)
         self.transcripts = LabsTranscriptsNamespace(client)
 
@@ -1630,11 +1632,13 @@ class LabsCallsNamespace:
         agent_key: Optional[str] = None,
         agentKey: Optional[str] = None,
         limit: Optional[int] = None,
+        offset: Optional[int] = None,
     ) -> Any:
         query = _list_query(
             agency_id=agency_id or agencyId,
             agent_key=agent_key or agentKey,
             limit=limit,
+            offset=offset,
         )
         return self._client._request_supafone_api("GET", f"/api/v1/labs/calls{query}")
 
@@ -1642,6 +1646,67 @@ class LabsCallsNamespace:
         query = _list_query(agency_id=agency_id or agencyId)
         return self._client._request_supafone_api(
             "GET", f"/api/v1/labs/calls/{parse.quote(call_id)}{query}"
+        )
+
+    def delete(
+        self,
+        call_id: str,
+        *,
+        agency_id: Optional[str] = None,
+        agencyId: Optional[str] = None,
+    ) -> Any:
+        query = _list_query(agency_id=agency_id or agencyId)
+        return self._client._request_supafone_api(
+            "DELETE", f"/api/v1/labs/calls/{parse.quote(call_id)}{query}"
+        )
+
+
+class LabsActivityNamespace:
+    """Durable account-scoped agent, call, plan, and Watcher activity."""
+
+    def __init__(self, client: Supafone) -> None:
+        self._client = client
+
+    def list(
+        self,
+        *,
+        account_id: Optional[str] = None,
+        accountId: Optional[str] = None,
+        agency_id: Optional[str] = None,
+        agencyId: Optional[str] = None,
+        event_type: Optional[str] = None,
+        eventType: Optional[str] = None,
+        resource_type: Optional[str] = None,
+        resourceType: Optional[str] = None,
+        resource_id: Optional[str] = None,
+        resourceId: Optional[str] = None,
+        limit: Optional[int] = None,
+        offset: Optional[int] = None,
+    ) -> Any:
+        query = _list_query(
+            account_id=account_id or accountId or agency_id or agencyId,
+            event_type=event_type or eventType,
+            resource_type=resource_type or resourceType,
+            resource_id=resource_id or resourceId,
+            limit=limit,
+            offset=offset,
+        )
+        return self._client._request_supafone_api(
+            "GET", f"/api/v1/labs/activity{query}"
+        )
+
+
+class LabsPlansNamespace:
+    """Generated Studio plans persisted in the developer activity ledger."""
+
+    def __init__(self, client: Supafone) -> None:
+        self._activity = LabsActivityNamespace(client)
+
+    def list(self, **kwargs: Any) -> Any:
+        return self._activity.list(
+            **kwargs,
+            event_type="studio.plan.created",
+            resource_type="studio_plan",
         )
 
 

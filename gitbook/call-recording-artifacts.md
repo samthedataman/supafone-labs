@@ -44,10 +44,28 @@ The SDK exposes call artifacts under the hosted-agent namespace:
 
 ```ts
 const calls = await supafone.labs.calls.list({ agentKey: "northline-intake" });
+const call = await supafone.labs.calls.get("call_123");
 const recordings = await supafone.labs.recordings.list({ callId: "call_123" });
 const transcripts = await supafone.labs.transcripts.list({ agentKey: "northline-intake" });
 
+// Signed, short-lived URLs for browser playback and downloads.
+console.log(call.call.recording_url, call.call.recording_download_url);
+
+// Removes the account-owned call, transcript, Watcher history, and archived audio.
+await supafone.labs.calls.delete("call_123");
 await supafone.labs.recordings.delete("rec_123", { reason: "retention request" });
+```
+
+Every agent creation, call lifecycle, transcript, recording archive, Watcher
+observation, and generated Studio plan is also queryable from the durable
+activity ledger:
+
+```ts
+const watcher = await supafone.labs.activity.list({
+  eventType: "watcher.whispered",
+  resourceId: "call_123",
+});
+const plans = await supafone.labs.plans.list();
 ```
 
 Builder UI should expose:

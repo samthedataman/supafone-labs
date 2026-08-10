@@ -4,6 +4,26 @@ All notable changes to this project are documented here. The format is based on
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project adheres to
 [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.4.13] - 2026-08-10
+
+### Added
+- A live, normalized voice catalog across connected Cartesia, Inworld,
+  ElevenLabs, and Ultravox providers, including compatibility metadata,
+  filtering, recommendation, and authenticated previews.
+- Fixed-language Agent Factory selection with provider/model validation. This
+  is call-long configuration and does not add a mid-call language-switch tool.
+- Developer-controlled SecondMind directive contracts for empathy, tactics,
+  facts, guardrails, language, confidence gates, and final transforms.
+- Durable account-scoped activity and generated-plan listing in both SDKs,
+  including Watcher observations and whispers.
+- Paginated call history, Watcher history on call detail, signed playback and
+  download links, and full account-owned call deletion.
+
+### Security
+- SDK packages contain API clients, public types, tests, and documentation
+  only. Storage credentials, provider secrets, prompts, tenant persistence,
+  and private dashboard/runtime code remain server-side.
+
 ## [0.4.12] - 2026-08-09
 
 ### Added

@@ -643,8 +643,18 @@ def test_agent_delete_and_call_artifact_routes_are_exposed():
 
     supafone = Supafone(api_key="sf_test", transport=transport)
     supafone.labs.agents.delete("agent_123", releaseNumbers=True)
-    supafone.labs.calls.list(agentKey="agent_123", limit=10)
+    supafone.labs.calls.list(agentKey="agent_123", limit=10, offset=20)
     supafone.labs.calls.get("call_123")
+    supafone.labs.calls.delete("call_123", agencyId="acct_123")
+    supafone.labs.activity.list(
+        agencyId="acct_123",
+        eventType="watcher.whispered",
+        resourceType="call",
+        resourceId="call_123",
+        limit=25,
+        offset=5,
+    )
+    supafone.labs.plans.list(agencyId="acct_123", limit=10)
     supafone.labs.recordings.list(callId="call_123", limit=5)
     supafone.labs.recordings.delete("rec_123", reason="retention")
     supafone.labs.transcripts.list(agentKey="agent_123", limit=5)
@@ -652,8 +662,19 @@ def test_agent_delete_and_call_artifact_routes_are_exposed():
 
     assert calls == [
         ("DELETE", "/api/v1/labs/agents/agent_123?release_numbers=true", None),
-        ("GET", "/api/v1/labs/calls?agent_key=agent_123&limit=10", None),
+        ("GET", "/api/v1/labs/calls?agent_key=agent_123&limit=10&offset=20", None),
         ("GET", "/api/v1/labs/calls/call_123", None),
+        ("DELETE", "/api/v1/labs/calls/call_123?agency_id=acct_123", None),
+        (
+            "GET",
+            "/api/v1/labs/activity?account_id=acct_123&event_type=watcher.whispered&resource_type=call&resource_id=call_123&limit=25&offset=5",
+            None,
+        ),
+        (
+            "GET",
+            "/api/v1/labs/activity?account_id=acct_123&event_type=studio.plan.created&resource_type=studio_plan&limit=10",
+            None,
+        ),
         ("GET", "/api/v1/labs/recordings?call_id=call_123&limit=5", None),
         ("DELETE", "/api/v1/labs/recordings/rec_123?reason=retention", None),
         ("GET", "/api/v1/labs/transcripts?agent_key=agent_123&limit=5", None),

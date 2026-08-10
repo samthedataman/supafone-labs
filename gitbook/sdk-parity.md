@@ -106,7 +106,8 @@ with either SDK without translating the contract.
 | Search numbers | `supafone.labs.phoneNumbers.search()` | `supafone.labs.phone_numbers.search()` |
 | Buy and assign number | `buyAndAssign()` | `buy_and_assign()` / `buyAndAssign()` |
 | Configure telephony | `supafone.labs.telephony.configure()` | `supafone.labs.telephony.configure()` |
-| List/fetch hosted calls | `supafone.labs.calls.list/get()` | `supafone.labs.calls.list/get()` |
+| List/fetch/delete hosted calls | `supafone.labs.calls.list/get/delete()` | `supafone.labs.calls.list/get/delete()` |
+| Durable activity and generated plans | `supafone.labs.activity/plans.list()` | `supafone.labs.activity/plans.list()` |
 | List/fetch/remove recordings | `supafone.labs.recordings.list/get/delete()` | `supafone.labs.recordings.list/get/delete()` |
 | List/fetch transcripts | `supafone.labs.transcripts.list/get()` | `supafone.labs.transcripts.list/get()` |
 | Usage | `supafone.usage()` | `supafone.usage()` |

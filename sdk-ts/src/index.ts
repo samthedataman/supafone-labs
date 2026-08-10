@@ -891,9 +891,11 @@ export interface LabsRuntimeResponse {
 
 export interface LabsCallListOptions {
   agencyId?: string;
+  agency_id?: string;
   agentKey?: string;
   agent_key?: string;
   limit?: number;
+  offset?: number;
 }
 
 export interface LabsCallArtifact {
@@ -904,7 +906,11 @@ export interface LabsCallArtifact {
   started_at?: string;
   duration_seconds?: number;
   recording_url?: string;
+  recording_download_url?: string;
+  recording_archived?: boolean;
   transcript_url?: string;
+  watcher_events?: LabsDeveloperActivityEvent[];
+  watcher_event_count?: number;
   [extra: string]: unknown;
 }
 
@@ -931,6 +937,40 @@ export interface LabsTranscriptListOptions extends LabsCallListOptions {
 export interface LabsTranscriptListResponse {
   transcripts: Array<Record<string, unknown>>;
   [extra: string]: unknown;
+}
+
+export interface LabsDeveloperActivityEvent {
+  id: string;
+  account_id: string;
+  event_type: string;
+  resource_type: string;
+  resource_id: string;
+  source?: string;
+  detail?: Record<string, unknown>;
+  created_at: string;
+  [extra: string]: unknown;
+}
+
+export interface LabsActivityListOptions {
+  accountId?: string;
+  account_id?: string;
+  agencyId?: string;
+  agency_id?: string;
+  eventType?: string;
+  event_type?: string;
+  resourceType?: string;
+  resource_type?: string;
+  resourceId?: string;
+  resource_id?: string;
+  limit?: number;
+  offset?: number;
+}
+
+export interface LabsActivityListResponse {
+  events: LabsDeveloperActivityEvent[];
+  count: number;
+  next_offset?: number | null;
+  account_id?: string;
 }
 
 export interface LabsPhoneNumberSearchOptions {
@@ -2614,6 +2654,8 @@ class LabsNamespace {
   readonly phoneNumbers: LabsPhoneNumbersNamespace;
   readonly telephony: LabsTelephonyNamespace;
   readonly calls: LabsCallsNamespace;
+  readonly activity: LabsActivityNamespace;
+  readonly plans: LabsPlansNamespace;
   readonly recordings: LabsRecordingsNamespace;
   readonly transcripts: LabsTranscriptsNamespace;
 
@@ -2627,6 +2669,8 @@ class LabsNamespace {
     this.phoneNumbers = new LabsPhoneNumbersNamespace(sm);
     this.telephony = new LabsTelephonyNamespace(sm);
     this.calls = new LabsCallsNamespace(sm);
+    this.activity = new LabsActivityNamespace(sm);
+    this.plans = new LabsPlansNamespace(sm);
     this.recordings = new LabsRecordingsNamespace(sm);
     this.transcripts = new LabsTranscriptsNamespace(sm);
   }
@@ -3013,11 +3057,53 @@ class LabsCallsNamespace {
     return this.sm.requestSupafoneApi<LabsCallListResponse>("GET", `/api/v1/labs/calls${suffix}`);
   }
 
-  get(callId: string, opts: { agencyId?: string } = {}): Promise<Record<string, unknown>> {
+  get(callId: string, opts: { agencyId?: string; agency_id?: string } = {}): Promise<{ call: LabsCallArtifact }> {
     const q = new URLSearchParams();
-    if (opts.agencyId) q.set("agency_id", opts.agencyId);
+    const agencyId = opts.agency_id ?? opts.agencyId;
+    if (agencyId) q.set("agency_id", agencyId);
     const suffix = q.toString() ? `?${q}` : "";
-    return this.sm.requestSupafoneApi("GET", `/api/v1/labs/calls/${encodeURIComponent(callId)}${suffix}`);
+    return this.sm.requestSupafoneApi<{ call: LabsCallArtifact }>("GET", `/api/v1/labs/calls/${encodeURIComponent(callId)}${suffix}`);
+  }
+
+  delete(callId: string, opts: { agencyId?: string; agency_id?: string } = {}): Promise<Record<string, unknown>> {
+    const q = new URLSearchParams();
+    const agencyId = opts.agency_id ?? opts.agencyId;
+    if (agencyId) q.set("agency_id", agencyId);
+    const suffix = q.toString() ? `?${q}` : "";
+    return this.sm.requestSupafoneApi("DELETE", `/api/v1/labs/calls/${encodeURIComponent(callId)}${suffix}`);
+  }
+}
+
+class LabsActivityNamespace {
+  constructor(private sm: SupafoneLabs) {}
+
+  list(opts: LabsActivityListOptions = {}): Promise<LabsActivityListResponse> {
+    const q = new URLSearchParams();
+    const accountId = opts.account_id ?? opts.accountId ?? opts.agency_id ?? opts.agencyId;
+    if (accountId) q.set("account_id", accountId);
+    const eventType = opts.event_type ?? opts.eventType;
+    if (eventType) q.set("event_type", eventType);
+    const resourceType = opts.resource_type ?? opts.resourceType;
+    if (resourceType) q.set("resource_type", resourceType);
+    const resourceId = opts.resource_id ?? opts.resourceId;
+    if (resourceId) q.set("resource_id", resourceId);
+    if (opts.limit !== undefined) q.set("limit", String(opts.limit));
+    if (opts.offset !== undefined) q.set("offset", String(opts.offset));
+    const suffix = q.toString() ? `?${q}` : "";
+    return this.sm.requestSupafoneApi<LabsActivityListResponse>("GET", `/api/v1/labs/activity${suffix}`);
+  }
+}
+
+class LabsPlansNamespace {
+  constructor(private sm: SupafoneLabs) {}
+
+  list(opts: Omit<LabsActivityListOptions, "eventType" | "event_type" | "resourceType" | "resource_type"> = {}): Promise<LabsActivityListResponse> {
+    const activity = new LabsActivityNamespace(this.sm);
+    return activity.list({
+      ...opts,
+      eventType: "studio.plan.created",
+      resourceType: "studio_plan",
+    });
   }
 }
 
@@ -3432,10 +3518,12 @@ function labsAgentPayload(input: CreateLabsAgentRequest): Record<string, unknown
 
 function hostedListQuery(opts: LabsCallListOptions): URLSearchParams {
   const q = new URLSearchParams();
-  if (opts.agencyId) q.set("agency_id", opts.agencyId);
+  const agencyId = opts.agency_id ?? opts.agencyId;
+  if (agencyId) q.set("agency_id", agencyId);
   const agentKey = opts.agent_key ?? opts.agentKey;
   if (agentKey) q.set("agent_key", agentKey);
   if (opts.limit !== undefined) q.set("limit", String(opts.limit));
+  if (opts.offset !== undefined) q.set("offset", String(opts.offset));
   return q;
 }
 
