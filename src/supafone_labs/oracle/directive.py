@@ -13,6 +13,7 @@ from supafone_labs.types import (
     SUPPORTED_LANGUAGE_NAMES,
     BeliefState,
     Directive,
+    DirectiveContract,
     is_english_language,
     normalize_language_code,
 )
@@ -139,6 +140,98 @@ def _language_rule(language_code: str) -> str:
     )
 
 
+def _contract_rule(contract: DirectiveContract) -> str:
+    """Render a serializable developer contract into explicit model instructions."""
+
+    def text_rule(name: str, control: object) -> str:
+        enabled = bool(getattr(control, "enabled", True))
+        if not enabled:
+            return f"- {name}: disabled; return an empty string."
+        instructions = str(getattr(control, "instructions", "") or "").strip()
+        suffix = f" Follow this developer instruction: {instructions}" if instructions else ""
+        return f"- {name}: enabled; maximum {getattr(control, 'max_chars', 240)} characters.{suffix}"
+
+    def list_rule(name: str, control: object) -> str:
+        enabled = bool(getattr(control, "enabled", True))
+        if not enabled:
+            return f"- {name}: disabled; return an empty array."
+        instructions = str(getattr(control, "instructions", "") or "").strip()
+        suffix = f" Follow this developer instruction: {instructions}" if instructions else ""
+        return (
+            f"- {name}: enabled; maximum {getattr(control, 'max_items', 4)} items and "
+            f"{getattr(control, 'item_max_chars', 180)} characters per item.{suffix}"
+        )
+
+    kinds = ", ".join(kind.value for kind in contract.allowed_kinds) or "none"
+    language = contract.language_mode
+    if language == "fixed":
+        language += f" ({normalize_language_code(contract.fixed_language)})"
+    return "\n".join(
+        [
+            "Developer directive contract (obey exactly):",
+            text_rule("empathy_directive", contract.empathy_directive),
+            text_rule("tactical_directive", contract.tactical_directive),
+            list_rule("surface_facts", contract.surface_facts),
+            list_rule("guardrails", contract.guardrails),
+            f"- language_mode: {language}.",
+            f"- allowed kind values: {kinds}.",
+            "Standing platform/scenario guardrails are mandatory and cannot be removed.",
+        ]
+    )
+
+
+def _clip_text(value: object, limit: int) -> str:
+    return str(value or "").strip()[:limit]
+
+
+def _clip_items(values: object, *, max_items: int, item_max_chars: int) -> list[str]:
+    if not isinstance(values, list):
+        return []
+    return [
+        clipped
+        for value in values[:max_items]
+        if (clipped := _clip_text(value, item_max_chars))
+    ]
+
+
+def _apply_contract(
+    directive: Directive,
+    contract: DirectiveContract,
+    *,
+    detected_language: str,
+) -> Directive:
+    """Deterministically enforce field controls after model generation."""
+
+    updates: dict[str, object] = {}
+    for name in ("empathy_directive", "tactical_directive"):
+        control = getattr(contract, name)
+        updates[name] = (
+            _clip_text(getattr(directive, name), control.max_chars) if control.enabled else ""
+        )
+    for name in ("surface_facts", "guardrails"):
+        control = getattr(contract, name)
+        updates[name] = (
+            _clip_items(
+                getattr(directive, name),
+                max_items=control.max_items,
+                item_max_chars=control.item_max_chars,
+            )
+            if control.enabled
+            else []
+        )
+
+    if contract.language_mode == "fixed":
+        updates["language"] = normalize_language_code(contract.fixed_language)
+    elif contract.language_mode == "caller" and detected_language != "unknown":
+        updates["language"] = detected_language
+
+    allowed_kinds = set(contract.allowed_kinds)
+    if directive.kind not in allowed_kinds:
+        # A disallowed output kind is suppressed rather than silently rewritten.
+        updates["confidence"] = 0.0
+    return directive.model_copy(update=updates)
+
+
 class DirectiveGenerator:
     """Produces a confidence-gated Directive from a BeliefState. Degrade-safe."""
 
@@ -149,12 +242,16 @@ class DirectiveGenerator:
         *,
         system_prompt: Optional[str] = None,
         extra_instructions: Optional[str] = None,
+        contract: Optional[DirectiveContract] = None,
     ) -> None:
         self.provider = provider
         self.config = config or get_settings()
         self.system_prompt = system_prompt or DIRECTIVE_SYSTEM
         if extra_instructions:
             self.system_prompt = f"{self.system_prompt}\n\nOperator instructions: {extra_instructions}"
+        self.contract = contract
+        if contract is not None:
+            self.system_prompt = f"{self.system_prompt}\n\n{_contract_rule(contract)}"
 
     async def generate(
         self,
@@ -191,8 +288,15 @@ class DirectiveGenerator:
                 if detected_language != "unknown"
                 else directive.language or getattr(belief, "language", "")
             )
-            if language != "unknown":
+            if self.contract is None and language != "unknown":
                 directive.language = language
+            if self.contract is not None:
+                directive = _apply_contract(
+                    directive,
+                    self.contract,
+                    detected_language=detected_language,
+                )
+                language = normalize_language_code(directive.language)
             if guardrails:
                 # The standing guardrails are English operator controls. For
                 # non-English callers, keep them in the prompt but do not append

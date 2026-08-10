@@ -107,6 +107,13 @@ Supafone Labs has two main features:
 - **Self-healing watcher**: enable `labs.enabled` to attach the Supafone Labs
   second mind to a hosted or BYOK agent.
 
+The daily developer workflow is documented in
+[Developer Workflows](../gitbook/developer-workflows.md): one normalized live
+voice catalog, fixed BCP-47 language selection, automatic voice compatibility
+filtering, structured SecondMind directives, and the same configuration model
+across TypeScript and Python. Fixed language selection does not enable
+mid-call language or voice switching.
+
 BYOK is advanced and split into three independent lanes:
 
 | Lane | Examples |
@@ -278,6 +285,29 @@ and the runtime is managed (`runtime.managed === true`, no developer Ultravox ke
 required); and prints the returned widget snippet.
 
 ## Hosted voices
+
+Select a current provider voice from plain-language intent:
+
+```ts
+const matches = await supafone.labs.voices.recommend({
+  description: "calm Spanish customer-support voice",
+  language: "es-MX",
+  configuredOnly: true,
+});
+
+const voice = matches.matches[0].voice;
+await supafone.labs.agents.createInbound({
+  name: "Spanish support",
+  voice: supafone.labs.voices.selection(voice),
+});
+```
+
+The hosted catalog refreshes Ultravox, Cartesia, ElevenLabs, and Inworld and
+normalizes names, languages, gender, accent, voice type, model limits, and the
+Ultravox-compatible language intersection. Full reference:
+[Dynamic Voice Catalog and Selection](../gitbook/voice-catalog-and-selection.md).
+
+Labs Cloud also exposes direct hosted TTS and STT:
 
 ```ts
 const wav = await supafone.tts("You're all set — talk soon!", "supafone-labs-calm-en");

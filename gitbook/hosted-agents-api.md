@@ -46,6 +46,8 @@ cross tenants merely by supplying another `agency_id`.
 | Numbers | `DELETE /phone-numbers/{id}` | Alias for explicit release | `labs.phoneNumbers.delete()` |
 | Calls | `GET /calls` | Account call history; optional `agent_key` and `limit` | `labs.calls.list()` |
 | Calls | `GET /calls/{call_id}` | One account-isolated call and its live/completed data | `labs.calls.get()` |
+| Calls | `DELETE /calls/{call_id}` | Delete the call, Supafone-owned archive, transcript, and call-scoped activity | `labs.calls.delete()` |
+| Activity | `GET /activity` | Durable agent, call, Watcher, transcript, recording, and plan events | `labs.activity.list()` / `labs.plans.list()` |
 | Recordings | `GET /recordings` | Signed recording artifacts; optional call/agent filter | `labs.recordings.list()` |
 | Recordings | `GET /recordings/{call_id}` | One signed recording artifact | `labs.recordings.get()` |
 | Recordings | `DELETE /recordings/{call_id}` | Remove Supafone's reference and audit the request | `labs.recordings.delete()` |
@@ -71,7 +73,14 @@ curl https://api.supafone.ai/api/v1/labs/tools \
 
 curl "https://api.supafone.ai/api/v1/labs/voices?provider=cartesia" \
   -H "Authorization: Bearer $SUPAFONE_TOKEN"
+
+curl https://api.supafone.ai/api/v1/labs/voices/capabilities \
+  -H "Authorization: Bearer $SUPAFONE_TOKEN"
 ```
+
+The voice endpoint supports native-language, live-compatible-language, gender,
+voice-type, model, runtime-provider, configured-provider, and text filters. See
+[Dynamic Voice Catalog and Selection](voice-catalog-and-selection.md).
 
 Expected capability themes:
 

@@ -125,6 +125,24 @@ for older callers.
 - compliance rules such as no fee quotes or no legal/medical advice,
 - whether the agent is following the current standing directive.
 
+## Transcript Source and STT Model
+
+Voice Watcher does not force every provider through one speech-to-text model.
+It selects exactly one transcript source for each call:
+
+| Call path | Transcript source | Default model |
+|---|---|---|
+| Provider emits usable transcript events | The provider's transcript stream | The provider controls its STT model |
+| Supafone Labs multilingual audio tap | Deepgram streaming STT | `nova-3`, `language=multi` |
+| Host-integrated narrowband phone tap | The host's configured Deepgram consumer | Host controlled; Supafone's current Twilio reference defaults to `nova-2-phonecall` |
+
+The narrowband phone default is deliberate: Twilio PSTN audio arrives as 8 kHz
+mu-law. The multilingual SDK tap uses Nova-3 when language tagging and live
+code-switching are required. Set `DEEPGRAM_MODEL` in a host deployment to
+change its telephony-tap model. Do not run the Deepgram tap when the selected
+agent provider already supplies the required transcript and language metadata;
+that would duplicate turns and transcription cost.
+
 ## Enable on Hosted Agents
 
 ```json

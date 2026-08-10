@@ -68,6 +68,125 @@ agent = supafone.labs.agents.create_inbound_with_number({
 })
 ```
 
+## What This Removes From Daily Development
+
+### One voice catalog instead of provider-specific integrations
+
+The Python and TypeScript SDKs expose one normalized catalog across Cartesia,
+Inworld, ElevenLabs, and Ultravox. Developers can search by language, provider,
+model, gender, accent, voice type, configured status, or free text without
+maintaining separate provider response types or voice-ID spreadsheets.
+
+```ts
+const matches = await supafone.labs.voices.recommend({
+  description: "warm Puerto Rican Spanish patient-support voice",
+  language: "es-PR",
+  configuredOnly: true,
+});
+```
+
+The catalog separates three facts that providers commonly blur together:
+
+- the language native to the individual speaker;
+- the languages supported by the selected TTS model;
+- the intersection the managed Ultravox runtime can actually use.
+
+This makes an incompatible selection a provisioning error instead of a failed
+customer call. Direct voice selection remains available when the developer
+already knows the exact provider voice ID.
+
+### Configure a fixed language once
+
+Agent Factory accepts one preferred BCP-47 language and uses it as the default
+voice-compatibility filter:
+
+```ts
+const agent = await supafone.labs.agents.createInbound({
+  name: "Spanish intake",
+  preferredLanguage: "es-MX",
+  greeting: "Gracias por llamar. ¿Cómo puedo ayudarle?",
+  voicePreference: {
+    description: "warm female patient-support voice",
+    configuredOnly: true,
+  },
+});
+```
+
+```python
+agent = supafone.labs.agents.create_inbound({
+    "name": "Spanish intake",
+    "preferred_language": "es-MX",
+    "greeting": "Gracias por llamar. ¿Cómo puedo ayudarle?",
+    "voice_preference": {
+        "description": "warm female patient-support voice",
+        "configured_only": True,
+    },
+})
+```
+
+The locale is applied to the initial PSTN or WebRTC call and every later call
+stage. It is fixed for the full call. This option does **not** install a
+language-switch tool, detect accents, or change voices mid-call.
+
+The fixed-language marker is additive and Agent-Factory-specific. Existing
+agents and agents made in a manual builder keep their historical payloads when
+the option is omitted.
+
+### Make the supervisor output an application contract
+
+SecondMind can return a typed, inspectable decision instead of an unstructured
+coaching sentence:
+
+```ts
+const directive = await supafone.whisperStructured(transcript, {
+  directiveContract: {
+    confidenceThreshold: 0.8,
+    languageMode: "caller",
+    empathyDirective: {
+      enabled: true,
+      instructions: "Use one short acknowledgement; do not over-apologize.",
+    },
+    tacticalDirective: {
+      enabled: true,
+      instructions: "Choose one next operational action.",
+    },
+    operatorGuardrails: [
+      "Do not claim a booking, transfer, or delivery until its tool confirms it.",
+    ],
+  },
+});
+```
+
+Developers can enable or disable fields, constrain directive kinds, set a
+confidence gate, add standing guardrails, and transform or suppress the final
+directive before delivery. Facts, empathy, tactics, and policy stay separate,
+which makes the supervisor output easier to log, test, audit, and replay.
+
+See [Programmable SecondMind Directives](secondmind-directive-contract.md).
+
+### Reuse the same integration across clients
+
+The same agent configuration works from Python services, TypeScript servers,
+React applications, scripts, and exported campaign configurations. Provider
+identity stays in normalized selection objects instead of leaking throughout
+business code. A consulting team can therefore change the industry prompt,
+tools, voice preference, number, and branding without rebuilding telephony,
+voice discovery, supervision, or validation for every client.
+
+### Debug failures before and after a call
+
+- Provisioning responses contain the selected provider, voice ID, model,
+  matching score, and reasons.
+- Structured SecondMind output records facts, directives, language, kind,
+  confidence, and guardrails independently.
+- Invalid language/model/runtime combinations fail before dialing.
+- Watcher timeouts or suppressed low-confidence directives leave the live call
+  unchanged.
+
+These behaviors reduce provider-specific glue code while preserving explicit
+failure boundaries. See [Dynamic Voice Catalog and Selection](voice-catalog-and-selection.md),
+[Agent Factory](agent-factory.md), and [Self-Healing Watcher](self-healing-watcher.md).
+
 ## Which One Should the UI Lead With?
 
 The product story should lead with Voice Watcher. Inside the hosted builder,
