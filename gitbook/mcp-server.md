@@ -97,6 +97,12 @@ Restart Claude Desktop after saving the config.
 | `list_qa_runs` | Read prior QA and Watcher benchmark results. |
 | `run_watcher_qa` | Run every scenario with and without Watcher supervision (Labs login required). |
 
+The four hosted creation tools also accept `languageVoiceRouting`,
+`routingLanguages`, and `languageProfiles`. These are public provisioning
+preferences only; the MCP server does not contain the private live-routing
+implementation. See
+[Live Language and Voice Routing](live-language-voice-routing.md).
+
 #### Test any voice stack
 
 `grade_existing_phone_agent` uses PSTN as the provider-neutral boundary. The target may

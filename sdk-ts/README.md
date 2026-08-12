@@ -114,6 +114,24 @@ filtering, structured SecondMind directives, and the same configuration model
 across TypeScript and Python. Fixed language selection does not enable
 mid-call language or voice switching.
 
+Agent Factory can opt into managed live language and matching-voice routing
+with one field. It remains absent and disabled for existing agents:
+
+```ts
+const agent = await supafone.labs.agents.createInbound({
+  agentKey: "bilingual-intake",
+  name: "Bilingual intake",
+  languageVoiceRouting: true,
+  routingLanguages: ["en-US", "es-MX"], // optional; defaults to English + Spanish
+});
+```
+
+The package sends only these preferences. Supafone's private hosted runtime
+selects compatible live-catalog voices and performs the in-call transition.
+The first configured language owns the opening, and a non-English primary
+greeting is translated during provisioning. See
+[Live Language and Voice Routing](../gitbook/live-language-voice-routing.md).
+
 BYOK is advanced and split into three independent lanes:
 
 | Lane | Examples |

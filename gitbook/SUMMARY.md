@@ -37,6 +37,7 @@
 ## Agent Factory — Managed Delivery
 
 * [Agent Factory](agent-factory.md)
+* [Live Language and Voice Routing](live-language-voice-routing.md)
 * [Hosted Agent Builder](hosted-agent-builder.md)
 * [Hosted Agents API](hosted-agents-api.md)
 * [Call Stages](call-stages.md)

@@ -41,6 +41,7 @@ Go directly to [Voice Watcher Framework](self-healing-watcher.md), then review
 | Test the supervised agent against the raw agent | [Testing Voice Agents](voice-qa-landscape.md) | `qa.suite()`, `run_watcher_qa` |
 | Let Claude start a real call and return the live dashboard | [MCP Server](mcp-server.md) | `start_call_and_watch` |
 | Embed a browser voice session | [Browser WebRTC Calls](browser-webrtc-calls.md) | `startWebRtcCall()` / `start_webrtc_call()` |
+| Route one call across approved languages and voices | [Live Language and Voice Routing](live-language-voice-routing.md) | Agent Factory create fields across REST, Python, TypeScript, and MCP |
 | Build consented outbound sequences | [Outbound Call Campaigns](outbound-call-campaigns.md) | campaign SDK, YAML config, monitoring |
 | Bring your own agent, carrier, voice, STT, or LLM | [BYOK Providers](byok-providers.md) | independent provider/telephony/TTS/Oracle lanes |
 | Buy a dedicated number or add credits | [Pricing, Credits, and Checkout](pricing-and-credits.md) | Stripe-hosted SDK/MCP checkout link |

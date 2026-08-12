@@ -1850,6 +1850,26 @@ def _agent_key(agent: Any, config: Mapping[str, Any]) -> str:
     return str(_pick(config, "agentKey", "agent_key") or "")
 
 
+def _language_profiles_payload(value: Any) -> list[dict[str, Any]] | None:
+    if not isinstance(value, list):
+        return None
+    profiles: list[dict[str, Any]] = []
+    for item in value:
+        if not isinstance(item, Mapping):
+            continue
+        voice = item.get("voice")
+        profiles.append(
+            _compact(
+                {
+                    "language": item.get("language"),
+                    "language_hint": _pick(item, "language_hint", "languageHint"),
+                    "voice": _voice_payload(voice) if isinstance(voice, Mapping) else None,
+                }
+            )
+        )
+    return profiles or None
+
+
 def _labs_agent_payload(data: Mapping[str, Any]) -> dict[str, Any]:
     fixed_language = _pick(
         data, "preferred_language", "preferredLanguage", "language"
@@ -1881,6 +1901,15 @@ def _labs_agent_payload(data: Mapping[str, Any]) -> dict[str, Any]:
             "greeting": data.get("greeting"),
             "system_prompt": _pick(data, "system_prompt", "systemPrompt"),
             "language": fixed_language,
+            "language_voice_routing": _pick(
+                data, "language_voice_routing", "languageVoiceRouting"
+            ),
+            "routing_languages": _pick(
+                data, "routing_languages", "routingLanguages"
+            ),
+            "language_profiles": _language_profiles_payload(
+                _pick(data, "language_profiles", "languageProfiles")
+            ),
             "voice": _voice_payload(data["voice"]) if data.get("voice") else None,
             "voice_preference": _voice_preference_payload(
                 _pick(data, "voice_preference", "voicePreference") or {},

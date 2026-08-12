@@ -51,6 +51,14 @@ def test_initialize_and_list_tools():
     }.issubset(tool_names)
     assert {"test_phone_agent", "get_phone_test", "wait_for_phone_test"}.isdisjoint(tool_names)
 
+    inbound = next(
+        tool for tool in listed["result"]["tools"] if tool["name"] == "create_inbound_agent"
+    )
+    properties = inbound["inputSchema"]["properties"]
+    assert properties["languageVoiceRouting"]["type"] == "boolean"
+    assert properties["languageVoiceRouting"]["default"] is False
+    assert properties["routingLanguages"]["maxItems"] == 4
+
 
 def test_create_inbound_agent_uses_python_sdk(monkeypatch):
     calls = []

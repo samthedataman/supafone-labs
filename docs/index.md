@@ -62,6 +62,8 @@ with your own keys.
 - [Hosted Agents API](hosted-agents-api.md) — create Supafone-hosted agents from
   code with managed voices, built-in stages, tools, widget snippets, and
   Supafone Pro.
+- [Live language and voice routing](live-language-voice-routing.md) — opt-in
+  same-call language changes with a matching voice and translated primary greeting.
 - [Providers & frameworks](providers.md) — Ultravox, Vapi, Retell, Pipecat,
   GPT-Realtime, Grok, LiveKit, ElevenLabs, Deepgram, Cartesia, Inworld, and the generic
   adapter.

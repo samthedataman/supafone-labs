@@ -132,6 +132,23 @@ The fixed-language marker is additive and Agent-Factory-specific. Existing
 agents and agents made in a manual builder keep their historical payloads when
 the option is omitted.
 
+### Route language and voice during one call
+
+Live routing is a separate, explicit Agent Factory option:
+
+```ts
+const agent = await supafone.labs.agents.createInbound({
+  name: "Puerto Rico intake",
+  languageVoiceRouting: true,
+  routingLanguages: ["es-PR", "en-US", "vi-VN"],
+});
+```
+
+The first language owns the automatically translated greeting. A later
+language change keeps the stage, tools, and collected facts and activates that
+profile's compatible voice. Existing and manual-builder agents remain
+unchanged. Read [Live Language and Voice Routing](live-language-voice-routing.md).
+
 ### Make the supervisor output an application contract
 
 SecondMind can return a typed, inspectable decision instead of an unstructured

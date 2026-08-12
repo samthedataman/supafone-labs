@@ -235,6 +235,14 @@ export interface LabsVoiceSelection {
   model?: string;
 }
 
+/** Public Agent Factory preference for one routed language. */
+export interface LabsLanguageVoiceProfile {
+  language: string;
+  languageHint?: string;
+  language_hint?: string;
+  voice?: LabsVoiceSelection;
+}
+
 export type LabsVoiceGender = "female" | "male" | "neutral";
 
 export interface LabsVoiceLanguage {
@@ -707,6 +715,15 @@ export interface CreateLabsAgentRequest {
   language?: string;
   preferredLanguage?: string;
   preferred_language?: string;
+  /** Opt in to managed live language and matching-voice routing. Defaults to false. */
+  languageVoiceRouting?: boolean;
+  language_voice_routing?: boolean;
+  /** Optional ordered language list. The first language controls the greeting. */
+  routingLanguages?: string[];
+  routing_languages?: string[];
+  /** Optional per-language voice preferences. Supports two to four profiles. */
+  languageProfiles?: LabsLanguageVoiceProfile[];
+  language_profiles?: LabsLanguageVoiceProfile[];
   voice?: LabsVoiceSelection;
   /** Resolve a real current catalog voice from this plain-language preference. */
   voicePreference?: LabsVoicePreference;
@@ -1149,6 +1166,16 @@ export interface CreateLabsAgentResponse {
     [extra: string]: unknown;
   };
   call_plan?: LabsCallPlan;
+  language_voice_routing?: {
+    enabled: boolean;
+    voice_routing_enabled: boolean;
+    profiles: Array<Record<string, unknown>>;
+    greeting_translation?: {
+      language: string;
+      language_hint: string;
+      status: "not_needed" | "translated";
+    };
+  };
   [extra: string]: unknown;
 }
 
@@ -3494,6 +3521,9 @@ function labsAgentPayload(input: CreateLabsAgentRequest): Record<string, unknown
     greeting: input.greeting,
     system_prompt: input.system_prompt ?? input.systemPrompt,
     language: fixedLanguage,
+    language_voice_routing: input.language_voice_routing ?? input.languageVoiceRouting,
+    routing_languages: input.routing_languages ?? input.routingLanguages,
+    language_profiles: languageProfilesPayload(input.language_profiles ?? input.languageProfiles),
     voice: input.voice ? voicePayload(input.voice) : undefined,
     voice_preference: voicePreferencePayload(
       input.voice_preference ?? input.voicePreference,
@@ -3759,6 +3789,18 @@ function voicePayload(input: LabsVoiceSelection): Record<string, unknown> {
     voice_id: input.voice_id ?? input.voiceId,
     model: input.model,
   });
+}
+
+function languageProfilesPayload(
+  input?: LabsLanguageVoiceProfile[],
+): Record<string, unknown>[] | undefined {
+  if (!Array.isArray(input)) return undefined;
+  const profiles = input.map((profile) => compact({
+    language: profile.language,
+    language_hint: profile.language_hint ?? profile.languageHint,
+    voice: profile.voice ? voicePayload(profile.voice) : undefined,
+  }));
+  return profiles.length ? profiles : undefined;
 }
 
 function voicePreferencePayload(
