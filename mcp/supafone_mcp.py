@@ -195,6 +195,33 @@ def _agent_schema(*, with_number: bool = False) -> dict[str, Any]:
         "greeting": {"type": "string"},
         "systemPrompt": {"type": "string"},
         "language": {"type": "string"},
+        "languageVoiceRouting": {
+            "type": "boolean",
+            "default": False,
+            "description": "Opt in to managed live language and matching-voice routing.",
+        },
+        "routingLanguages": {
+            "type": "array",
+            "minItems": 2,
+            "maxItems": 4,
+            "items": {"type": "string"},
+            "description": "Ordered languages; the first language controls the greeting.",
+        },
+        "languageProfiles": {
+            "type": "array",
+            "minItems": 2,
+            "maxItems": 4,
+            "items": {
+                "type": "object",
+                "properties": {
+                    "language": {"type": "string"},
+                    "voice": {"type": "object", "additionalProperties": True},
+                },
+                "required": ["language"],
+                "additionalProperties": True,
+            },
+            "description": "Optional language-specific voice preferences.",
+        },
         "voice": {
             "type": "object",
             "additionalProperties": True,

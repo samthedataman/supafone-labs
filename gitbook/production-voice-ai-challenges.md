@@ -26,7 +26,7 @@ infrastructure.
 | Every voice vendor exposes different controls | One canonical Watcher event/directive contract compiled through provider adapters | Teams can change voice stacks without rebuilding supervision and QA |
 | Tool calls fail but the agent claims success | Voice Watcher compares spoken claims with tool results and can inject a silent correction | Fewer false booking, sending, pricing, and policy confirmations |
 | A supervisor is needed, but another agent would add latency | SecondMind reasons off the audio hot path and privately guides the speaking agent | Live coaching without making every caller wait for the slower model |
-| Multiple workers lose live-call state | Redis-backed language, voice, stage, and telemetry state plus cross-worker tool execution | Scaling Render workers does not break routing or handoffs |
+| Multiple workers lose live-call state | Durable language, voice, stage, and telemetry continuity across workers | Scaling application workers does not break routing or handoffs |
 | Automatic language routing becomes unsafe guesswork | Explicit requests take priority; inference requires a clear utterance, a cooldown, configured-language enforcement, and tenant/call validation | No routing based only on accent, name, nationality, or presumed identity |
 | A provider or coaching feature fails mid-call | Timeout-bounded, degrade-safe behavior and voice fallback | The underlying customer call continues instead of crashing |
 | Inbound, outbound, browser, and campaign agents drift apart | The same routing overlay and tool-preservation contract span standard inbound, normal outbound, Warm Campaign, staged, and mono-agent paths | One behavior model instead of four separate implementations |
@@ -90,8 +90,8 @@ Server-controlled identifiers bind internal tools to the active tenant and
 call. Inference-driven language changes have a cooldown, and the system cannot
 invent an unconfigured language.
 
-Live state is stored outside one web worker so the worker receiving
-`route_spoken_language` does not need to be the worker that created the call.
+Live state is stored outside one web worker, so a call remains coherent when a
+later runtime event reaches a different worker than the one that created it.
 Voice routing, Voice Watcher, and SecondMind are isolated from the underlying
 call: a timeout or provider error yields no intervention rather than a dropped
 caller.

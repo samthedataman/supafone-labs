@@ -103,6 +103,7 @@ with either SDK without translating the contract.
 | Create outbound agent | `createOutbound()` | `create_outbound()` / `createOutbound()` |
 | Create inbound + number | `createInboundWithNumber()` | `create_inbound_with_number()` / `createInboundWithNumber()` |
 | Create outbound + number | `createOutboundWithNumber()` | `create_outbound_with_number()` / `createOutboundWithNumber()` |
+| Configure live language/voice routing | Agent create config: `languageVoiceRouting`, `routingLanguages`, `languageProfiles` | Same fields, plus snake_case aliases |
 | Search numbers | `supafone.labs.phoneNumbers.search()` | `supafone.labs.phone_numbers.search()` |
 | Buy and assign number | `buyAndAssign()` | `buy_and_assign()` / `buyAndAssign()` |
 | Configure telephony | `supafone.labs.telephony.configure()` | `supafone.labs.telephony.configure()` |

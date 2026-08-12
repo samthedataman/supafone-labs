@@ -40,6 +40,105 @@ def test_create_inbound_serializes_hosted_agent_payload():
     assert "call_stages" not in payload  # private API generates + executes the plan
 
 
+def test_language_voice_routing_serializes_only_public_preferences():
+    calls = []
+
+    def transport(method, path, payload):
+        calls.append((method, path, payload))
+        return {"success": True, "agent": {"agent_key": "bilingual"}, "runtime": {}}
+
+    supafone = Supafone(api_key="sf_test", transport=transport)
+    supafone.labs.agents.create_inbound(
+        {
+            "agentKey": "bilingual",
+            "name": "Bilingual intake",
+            "languageVoiceRouting": True,
+            "routingLanguages": ["en-US", "es-MX"],
+        }
+    )
+
+    payload = calls[0][2]
+    assert payload["language_voice_routing"] is True
+    assert payload["routing_languages"] == ["en-US", "es-MX"]
+    assert "language_profiles" not in payload
+
+
+def test_language_voice_routing_is_omitted_by_default():
+    calls = []
+
+    def transport(method, path, payload):
+        calls.append((method, path, payload))
+        return {"success": True, "agent": {}, "runtime": {}}
+
+    supafone = Supafone(api_key="sf_test", transport=transport)
+    supafone.labs.agents.create_inbound({"name": "Legacy agent"})
+
+    payload = calls[0][2]
+    assert "language_voice_routing" not in payload
+    assert "routing_languages" not in payload
+    assert "language_profiles" not in payload
+
+
+def test_language_profiles_strip_private_or_unknown_nested_fields():
+    calls = []
+
+    def transport(method, path, payload):
+        calls.append((method, path, payload))
+        return {"success": True, "agent": {}, "runtime": {}}
+
+    supafone = Supafone(api_key="sf_test", transport=transport)
+    supafone.labs.agents.create_inbound(
+        {
+            "name": "Curated bilingual agent",
+            "languageVoiceRouting": True,
+            "languageProfiles": [
+                {
+                    "language": "en-US",
+                    "languageHint": "en-US",
+                    "privatePolicy": "must-not-serialize",
+                    "voice": {
+                        "provider": "cartesia",
+                        "voiceId": "voice-en",
+                        "model": "sonic-3.5",
+                        "apiKey": "must-not-serialize",
+                    },
+                },
+                {"language": "es-MX", "voice": {"provider": "cartesia", "voiceId": "voice-es"}},
+            ],
+        }
+    )
+
+    profiles = calls[0][2]["language_profiles"]
+    assert profiles[0] == {
+        "language": "en-US",
+        "language_hint": "en-US",
+        "voice": {"provider": "cartesia", "voice_id": "voice-en", "model": "sonic-3.5"},
+    }
+    assert "privatePolicy" not in profiles[0]
+
+
+def test_language_profiles_are_not_silently_truncated_before_backend_validation():
+    calls = []
+
+    def transport(method, path, payload):
+        calls.append((method, path, payload))
+        return {"success": True, "agent": {}, "runtime": {}}
+
+    supafone = Supafone(api_key="sf_test", transport=transport)
+    supafone.labs.agents.create_inbound(
+        {
+            "name": "Too many profiles",
+            "languageVoiceRouting": True,
+            "languageProfiles": [
+                {"language": language}
+                for language in ("en-US", "es-MX", "fr-FR", "de-DE", "vi-VN")
+            ],
+        }
+    )
+
+    assert len(calls[0][2]["language_profiles"]) == 5
+
+
 def test_create_inbound_with_number_searches_and_assigns_number():
     calls = []
 

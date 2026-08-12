@@ -64,6 +64,65 @@ console.log(agent.call_plan?.summary);
 console.log(agent.call_plan?.call_stages); // the exact stages now running
 ```
 
+### Optional live language and voice routing
+
+Live routing is an Agent Factory opt-in. It is **off by default**, so existing
+agents and manually built product agents keep their current language and voice
+behavior.
+
+The smallest configuration enables English and Spanish with compatible voices
+selected from the account's live voice catalog:
+
+```ts
+const agent = await supafone.labs.agents.createInbound({
+  agentKey: "northline-bilingual",
+  name: "Northline bilingual intake",
+  languageVoiceRouting: true,
+});
+```
+
+Use `routingLanguages` to configure two to four languages. The first language
+controls the greeting:
+
+```ts
+const agent = await supafone.labs.agents.createInbound({
+  agentKey: "northline-multilingual",
+  name: "Northline multilingual intake",
+  languageVoiceRouting: true,
+  routingLanguages: ["es-MX", "en-US", "vi-VN"],
+});
+```
+
+When the caller clearly requests or speaks another configured language, the
+same call continues with that language's selected voice. The current call
+stage, collected facts, campaign context, and available tools remain active.
+The server never routes from accent alone.
+
+Voice selection is automatic by default. Advanced applications can provide a
+current catalog voice for each language:
+
+```ts
+const agent = await supafone.labs.agents.createInbound({
+  agentKey: "northline-curated",
+  name: "Northline curated multilingual intake",
+  languageVoiceRouting: true,
+  languageProfiles: [
+    { language: "en-US", voice: { provider: "cartesia", voiceId: "<catalog-voice-id>" } },
+    { language: "es-MX", voice: { provider: "cartesia", voiceId: "<catalog-voice-id>" } },
+  ],
+});
+```
+
+Only the preference contract is published in the SDK. Detection policy,
+provider resolution, live call-state transitions, and telephony implementation
+remain server-side Supafone infrastructure.
+
+The first configured language owns the opening. If it is not English, Agent
+Factory translates the supplied or generated greeting during provisioning and
+returns translation status with the resolved profiles. See
+[Live Language and Voice Routing](live-language-voice-routing.md) for REST,
+Python, TypeScript, MCP, PSTN, campaign, WebRTC, and troubleshooting details.
+
 Python:
 
 ```python
@@ -85,6 +144,17 @@ agent = supafone.labs.agents.create_inbound_with_number({
 })
 
 print(agent["call_plan"]["summary"])
+```
+
+Python uses the same opt-in:
+
+```python
+agent = supafone.labs.agents.create_inbound({
+    "agentKey": "northline-bilingual",
+    "name": "Northline bilingual intake",
+    "languageVoiceRouting": True,
+    "routingLanguages": ["en-US", "es-MX"],
+})
 ```
 
 ## Outbound Agents

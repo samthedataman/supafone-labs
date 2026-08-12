@@ -22,6 +22,7 @@ nav:
   - Home: index.md
   - Quickstart: quickstart.md
   - Hosted Agents API: hosted-agents-api.md
+  - Live language and voice routing: live-language-voice-routing.md
   - Providers & frameworks: providers.md
 
 markdown_extensions:

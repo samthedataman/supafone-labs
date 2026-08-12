@@ -59,6 +59,44 @@ returns `provider_copy_deleted: false`; configure provider retention separately.
 This distinction prevents an application from showing a false compliance
 confirmation.
 
+## Live Language And Voice Routing
+
+`POST /agents` accepts an optional Agent Factory routing contract:
+
+| Field | Type | Behavior |
+| --- | --- | --- |
+| `language_voice_routing` | boolean | Explicit opt-in. Omitted or `false` preserves historical behavior. |
+| `routing_languages` | string[] | Two to four ordered language/locale codes. The first controls the greeting. |
+| `language_profiles` | object[] | Optional language plus current catalog voice selection for each profile. |
+
+Minimal request:
+
+```json
+{
+  "name": "Bilingual intake",
+  "language_voice_routing": true
+}
+```
+
+The minimal request defaults to English and Spanish. The server selects
+distinct configured voices that are compatible with the managed runtime. Agent
+creation returns `422` instead of accepting a missing, stale, disconnected, or
+incompatible voice.
+
+This supports Agent Factory calls on managed Ultravox, including inbound PSTN,
+outbound PSTN/campaign calls, and browser WebRTC calls. It is not an accent
+classifier: accent, name, country, background speech, and isolated borrowed
+words do not independently request a switch.
+
+The response includes the resolved public profiles so an application can show
+which language and voice choices will run. Operational routing logic remains in
+the private hosted runtime and is not shipped in the npm or Python package.
+
+For a non-English primary profile, provisioning also translates the supplied
+or generated greeting and returns `greeting_translation` status. The request
+fails instead of storing mismatched opening copy if that translation cannot be
+produced safely. See [Live Language and Voice Routing](live-language-voice-routing.md).
+
 ## Discovery
 
 ```bash

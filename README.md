@@ -81,6 +81,25 @@ const agent = await supafone.labs.agents.createInboundWithNumber({
 });
 ```
 
+Multilingual Agent Factory calls are also opt-in and default off:
+
+```ts
+await supafone.labs.agents.createInbound({
+  agentKey: "bilingual-intake",
+  name: "Bilingual intake",
+  languageVoiceRouting: true,
+  routingLanguages: ["en-US", "es-MX"],
+});
+```
+
+Only the boolean and optional language/voice preferences are public. Supafone
+keeps detection, voice resolution, and live call transitions in the hosted
+backend.
+
+The first configured language owns the greeting. A non-English primary
+greeting is translated during provisioning; see the
+[complete public guide](gitbook/live-language-voice-routing.md).
+
 The TypeScript package is also the canonical client for the Supafone hosted
 agent API at `https://api.supafone.ai/api/v1/labs`. The default path buys and
 routes Supafone-managed numbers, so developers do not need to create Twilio,

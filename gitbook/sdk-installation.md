@@ -123,6 +123,10 @@ const supafone = new Supafone({
 The package works in Node 18+ and browsers using native `fetch`. Live STT needs
 a global `WebSocket`; on older Node versions, pass a WebSocket implementation.
 
+Hosted Agent Factory creation can also opt into same-call language and voice
+routing. See [Live Language and Voice Routing](live-language-voice-routing.md)
+for the shared TypeScript, Python, REST, and MCP contract.
+
 ```ts
 import WebSocket from "ws";
 

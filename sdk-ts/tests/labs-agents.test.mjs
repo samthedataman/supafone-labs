@@ -50,3 +50,81 @@ test("deprecated labs alias sets voiceWatcher", () => {
   const sf = new Supafone({ apiKey: "sf_test", labs: false });
   assert.equal(sf.voiceWatcher, false);
 });
+
+test("languageVoiceRouting serializes the public opt-in contract", async (t) => {
+  const log = [];
+  t.mock.method(globalThis, "fetch", mockFetch([agentResponse], log));
+  const sf = new Supafone({ apiKey: "sf_test" });
+
+  await sf.labs.agents.createInbound({
+    agentKey: "bilingual",
+    name: "Bilingual intake",
+    languageVoiceRouting: true,
+    routingLanguages: ["en-US", "es-MX"],
+  });
+
+  assert.equal(log[0].body.language_voice_routing, true);
+  assert.deepEqual(log[0].body.routing_languages, ["en-US", "es-MX"]);
+  assert.equal("language_profiles" in log[0].body, false);
+});
+
+test("languageVoiceRouting is absent unless the developer opts in", async (t) => {
+  const log = [];
+  t.mock.method(globalThis, "fetch", mockFetch([agentResponse], log));
+  const sf = new Supafone({ apiKey: "sf_test" });
+
+  await sf.labs.agents.createInbound({ agentKey: "legacy", name: "Legacy" });
+
+  assert.equal("language_voice_routing" in log[0].body, false);
+  assert.equal("routing_languages" in log[0].body, false);
+});
+
+test("languageProfiles serialize only documented public fields", async (t) => {
+  const log = [];
+  t.mock.method(globalThis, "fetch", mockFetch([agentResponse], log));
+  const sf = new Supafone({ apiKey: "sf_test" });
+
+  await sf.labs.agents.createInbound({
+    agentKey: "curated",
+    name: "Curated bilingual agent",
+    languageVoiceRouting: true,
+    languageProfiles: [
+      {
+        language: "en-US",
+        languageHint: "en-US",
+        privatePolicy: "must-not-serialize",
+        voice: {
+          provider: "cartesia",
+          voiceId: "voice-en",
+          model: "sonic-3.5",
+          apiKey: "must-not-serialize",
+        },
+      },
+      { language: "es-MX", voice: { provider: "cartesia", voiceId: "voice-es" } },
+    ],
+  });
+
+  assert.deepEqual(log[0].body.language_profiles[0], {
+    language: "en-US",
+    language_hint: "en-US",
+    voice: { provider: "cartesia", voice_id: "voice-en", model: "sonic-3.5" },
+  });
+  assert.equal("privatePolicy" in log[0].body.language_profiles[0], false);
+});
+
+test("languageProfiles are not silently truncated before backend validation", async (t) => {
+  const log = [];
+  t.mock.method(globalThis, "fetch", mockFetch([agentResponse], log));
+  const sf = new Supafone({ apiKey: "sf_test" });
+
+  await sf.labs.agents.createInbound({
+    agentKey: "too-many-profiles",
+    name: "Too many profiles",
+    languageVoiceRouting: true,
+    languageProfiles: ["en-US", "es-MX", "fr-FR", "de-DE", "vi-VN"].map((language) => ({
+      language,
+    })),
+  });
+
+  assert.equal(log[0].body.language_profiles.length, 5);
+});

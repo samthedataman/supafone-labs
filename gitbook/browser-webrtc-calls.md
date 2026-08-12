@@ -115,6 +115,14 @@ adapters are introduced.
   voice widgets should use their provisioned widget/session endpoint rather
   than treating the test-call endpoint as an unlimited public relay.
 
+## Multilingual browser sessions
+
+A WebRTC session inherits an Agent Factory agent's optional language/voice
+routing profiles. It starts with the translated primary greeting and can
+continue in another configured language and voice without changing the browser
+session or losing call-stage context. WebRTC does not need Twilio for this
+behavior. See [Live Language and Voice Routing](live-language-voice-routing.md).
+
 ## Call flow
 
 ```text

@@ -171,6 +171,12 @@ default language filter for `voicePreference`. It does not enable live
 language or voice switching. Existing agents that specify a voice directly
 keep their current behavior; preference resolution is additive.
 
+To use multiple catalog voices during the same Agent Factory call, opt into
+`languageVoiceRouting` and provide an ordered language list or explicit
+profiles. The server validates every selection against this live catalog before
+creating the agent. See
+[Live Language and Voice Routing](live-language-voice-routing.md).
+
 ## Normalized Voice Shape
 
 Every row includes:

@@ -166,6 +166,18 @@ not equivalent to a completed signature.
 - Pause a campaign before materially changing its agent, script, cadence, or
   signing document.
 
+## Multilingual campaign calls
+
+Campaigns that use an Agent Factory outbound agent inherit that agent's
+optional language/voice profiles. The recipient speaks first, the agent uses
+the primary language and voice with the campaign's reviewed outbound
+introduction, and a later accepted route keeps the current campaign stage,
+recipient context, tools, and captured facts. Automatic inbound-greeting
+translation does not rewrite campaign-specific opening copy.
+The routing configuration belongs to the agent, so one reviewed agent contract
+can be reused across campaigns. See
+[Live Language and Voice Routing](live-language-voice-routing.md).
+
 ## Lifecycle
 
 ```text

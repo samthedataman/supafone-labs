@@ -4,6 +4,20 @@ All notable changes to this project are documented here. The format is based on
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project adheres to
 [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.4.14] - 2026-08-12
+
+### Added
+- Public Agent Factory preferences for optional same-call language and matching-
+  voice routing across REST, Python, TypeScript, and MCP.
+- Complete public guidance for primary-language greeting translation, live
+  voice selection, inbound/outbound campaigns, browser WebRTC, compatibility,
+  and troubleshooting.
+
+### Security
+- Public packages serialize only the opt-in flag, ordered languages, and
+  documented per-language voice preferences. Hosted routing policy, call-state
+  transitions, control authorization, and provider internals remain private.
+
 ## [0.4.13] - 2026-08-10
 
 ### Added

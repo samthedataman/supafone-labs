@@ -45,6 +45,10 @@ Python, TypeScript, and MCP wrap this same REST contract. The sections below
 cover the request shapes, role rules, safe retries, and error behavior for
 developers using REST directly.
 
+Agent creation can opt into two to four same-call language/voice profiles with
+an automatically translated primary greeting. See
+[Live language and voice routing](live-language-voice-routing.md).
+
 The recommended TypeScript package is `supafone-labs`:
 
 ```ts
