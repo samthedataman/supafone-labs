@@ -1,4 +1,4 @@
-# 💳 Admin Credit Provisioning
+# Admin Credit Provisioning
 
 Admin credit provisioning is an internal Labs Cloud operation. It is protected
 by `X-Admin-Secret` and should never be exposed to public clients.

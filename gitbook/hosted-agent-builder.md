@@ -1,4 +1,4 @@
-# 🏗️ Hosted Agent Builder
+# Hosted Agent Builder
 
 The hosted agent builder creates complete Supafone agents with managed voices,
 stages, tools, artifacts, widget sync, and Supafone Pro watcher attached.
@@ -23,11 +23,11 @@ The builder should preserve the product hierarchy:
 | Primary: model supervisor | Voice Watcher supervises and improves the live agent; `voiceWatcher` is on by default. |
 | Secondary: Agent Factory | Create a complete hosted agent with managed defaults and no required vendor keys. |
 
-When users open BYOK, split it into three drawers:
+When users open BYOK, split hosted-delivery settings into three drawers:
 
 | BYOK drawer | Examples |
 | --- | --- |
-| Agent/provider stack | Ultravox, Retell, Vapi, Bland, LiveKit, Pipecat, GPT Realtime, Grok |
+| Agent/provider stack | [Fourteen audited runtime adapters](framework-support.md) |
 | Telephony | Twilio, Telnyx, Plivo, SignalWire, SIP/custom trunks |
 | TTS | Cartesia, ElevenLabs, Inworld, Deepgram, custom TTS |
 

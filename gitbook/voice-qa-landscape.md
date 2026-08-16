@@ -1,4 +1,4 @@
-# ✅ Testing Voice Agents (and the 2026 QA Landscape)
+# Testing Voice Agents and the QA Landscape
 
 🐍 [Python — `pip install "supafone-labs[all]"`](https://pypi.org/project/supafone-labs/) ·
 🟦 [TypeScript — `npm i supafone-labs`](https://www.npmjs.com/package/supafone-labs) ·

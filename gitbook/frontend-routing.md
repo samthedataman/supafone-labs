@@ -1,4 +1,4 @@
-# 🧭 Frontend Routing
+# Frontend Routing
 
 This page is for the Labs frontend docs and builder navigation. It explains how
 the static frontend should route users through the developer experience.
@@ -35,11 +35,11 @@ Required above-the-fold controls:
 8. Export TypeScript/Python.
 9. Log stream.
 
-Advanced credentials should be split into three drawers:
+Advanced hosted-delivery credentials should be split into three drawers:
 
 | Drawer | Examples |
 | --- | --- |
-| Agent/provider stack | Ultravox, Retell, Vapi, Bland, LiveKit, Pipecat, GPT Realtime, Grok |
+| Agent/provider stack | [Fourteen audited runtime adapters](framework-support.md) |
 | Telephony | Twilio, Telnyx, Plivo, SignalWire, SIP/custom trunks |
 | TTS | Cartesia, ElevenLabs, Inworld, Deepgram, custom TTS |
 

@@ -1,4 +1,4 @@
-# 🚢 Deployment and Render
+# Deployment on Render
 
 The live Labs deployment is split between the Python API and static web/docs
 surface.

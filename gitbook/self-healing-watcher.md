@@ -1,4 +1,4 @@
-# 🎧 Voice Watcher Framework
+# Voice Watcher and SecondMind
 
 The Voice Watcher framework is the Supafone Pro supervision layer — the
 self-healing watcher that runs beside every agent. It observes the call off the
@@ -194,10 +194,11 @@ modes, picked by what the framework exposes:
   LLM and splices a `system`/`developer` message into the prompt (Retell and
   LiveKit custom-LLM loops; Vapi and Deepgram support both modes).
 
-Ten frameworks have a real injection door; **Bland does not** (closed live-call
-API — no mid-call channel, no custom-LLM), and Cartesia/Pipecat are n/a. The
-exact per-framework primitive, the honesty caveats, and which vendors need a
-paid key live in [Framework Support (Silent Injection)](framework-support.md).
+The release gate covers fourteen runtimes. Twelve use native control or
+developer-owned context, Bland remains observation-only, and Cartesia Line
+requires an explicit host hook. Pipecat is a first-class developer-owned
+context integration. The exact primitive and acceptance criterion live in
+[Framework coverage](framework-support.md).
 
 ## Outcome Loop
 

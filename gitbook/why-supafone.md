@@ -1,58 +1,61 @@
-# 💡 Why Supafone — the pain points, and the fixes
+# Why Supafone
 
-Building a production voice agent today means fighting six problems at once.
-Supafone's stack exists to remove them. **One API key** (`sl_…`) drives all of
-it — planning, provisioning, supervision, QA, grading, and the builder copilot.
+Supafone Labs exists because production voice agents fail at system boundaries,
+not because developers need another prompt wrapper.
 
-## The six pain points
+## Problems we repeatedly encountered
 
-| Pain | What it looks like | The Supafone fix |
+| Problem | Failure in production | Innovation in the package |
 | --- | --- | --- |
-| **Every new agent starts as a blank prompt** | A developer spends days turning a business brief into prompts, stages, transitions, tools, and fallbacks, then repeats the work for the next customer. | **Hosted call planner**: one description becomes a complete, editable 3–8 stage program. The private service keeps the model key; validation and a safe deterministic fallback keep creation reliable. |
-| **You can't see failures until a customer hits one** | Agents pass the demo, then hallucinate a refund policy on call #400. | **Self-healing watcher**: every live call is tapped, a supervisor oracle watches the transcript off the latency path and *whispers* corrections into the agent's native control channel — silently, mid-call. |
-| **No objective function** | "Did the agent do well?" is a vibe, so prompts drift and regressions ship. | **The objective function is explicit**: every agent carries an operator objective; every call is graded against it — not against generic "helpfulness". |
-| **LLM judges give noisy scores** | The same call scores 0.62 then 0.81; dashboards are judge noise. | **SSR grading**: the judge picks one of five *nominal* levels — "the agent did *{poorly, ok, good, great, perfectly}* at achieving the objective". The score AND a full bucket distribution are derived deterministically from the label. Reliable labels in; a real score distribution out. |
-| **Testing is manual role-play** | Someone calls the agent, tries three things, ships. | **Auto QA suites** (`POST /v1/qa/suite`): one call reads your agent's own objective, invents adversarial test callers targeted at *its* specific rules, plays each as a real mock call against your configured agent, then reports pass/fail per assertion + an SSR grade per call. |
-| **You can't measure whether supervision helps** | "The watcher seems better?" | **A/B by construction** (`POST /v1/qa/run`): every scenario plays twice — bare agent vs. supervised agent — and the report is the measured lift. |
+| Self-supervision | The speaking model misses cross-turn intent, emotion, workflow drift, and unsupported claims | **Voice Watcher and SecondMind** maintain a separate belief and directive loop off the audio hot path |
+| Provider fragmentation | Every platform emits different transcript, tool, lifecycle, and control events | **Canonical event algebra and 14 audited adapters** create one runtime contract |
+| Weak intervention controls | A generic prompt cannot safely alter an active call | **Capability-aware compilation** chooses native control, developer-owned context, host hook, observation, or no action |
+| Tool hallucination | The agent says a booking, transfer, or delivery happened before the tool confirms it | **Truth state** separates verified outcomes from conversational language |
+| Repeated agent engineering | Every customer brief becomes another prompt, router, stage graph, and webhook project | **Agent Factory** creates an inspectable plan plus managed delivery primitives |
+| Manual testing | A few employee test calls miss the scenarios real callers produce | **Objective-driven adversarial QA** generates cases from the actual agent contract |
+| No stable quality score | Generic LLM scores fluctuate without an operational target | **SSR grading** converts nominal verdicts into inspectable score distributions |
+| Scattered operations | Calls, recordings, transcripts, and decisions live in separate vendor consoles | **Durable activity APIs and telemetry** expose one history to SDKs and product UIs |
+| Multilingual discontinuity | Language changes duplicate transcripts, lose state, or use the wrong voice | **Transcript-authority rules and opt-in language/voice profiles** preserve one canonical call |
+| Rebuilt customer infrastructure | Phone, WebRTC, SMS, campaigns, numbers, signing, and writebacks are implemented repeatedly | **Unified SDK, REST, and MCP surfaces** expose the surrounding operating system |
 
-## The loop, end to end
+## The design response
 
+```mermaid
+flowchart TD
+    problem[Production call problem] --> event[Canonical event]
+    event --> state[Deterministic call state]
+    state --> watcher[Watcher belief and directive]
+    watcher --> gate[Confidence, truth, and policy gate]
+    gate --> compile[Provider-aware compiler]
+    compile --> action[Native action or safe no-op]
+    state --> evidence[Replay, QA, telemetry, and optimization]
 ```
-objective  →  live calls  →  watcher whispers (self-healing)
-    ↑                                        ↓
-optimizer  ←  SSR grades  ←  auto QA suite (adversarial mock calls)
-```
 
-1. **Define** the objective once (builder, SDK, or the copilot chat).
-2. **Run** live calls — the watcher supervises in real time.
-3. **Test** with `qa/suite`: adversarial callers generated from the objective
-   attack your real agent config in mock calls.
-4. **Grade** every call (live or mock) with SSR nominal levels against the
-   objective.
-5. **Improve**: the optimizer (OPRO-style) rewrites the standing directive
-   from graded calls; A/B runs prove the lift before you trust it.
+The architecture follows four rules:
 
-## One key
+1. **The live call remains primary.** Supervision never blocks the speaking
+   agent.
+2. **Facts and warmth remain separate.** Empathy cannot override tool truth,
+   consent, or policy.
+3. **Capability is explicit.** Supafone never pretends a provider supports a
+   control it does not expose.
+4. **Evidence drives improvement.** Calls can be replayed, graded, compared,
+   and used to improve standing directives.
 
-Your `sl_` key is the single credential for **everything** — literally. It
-authenticates the Labs gateway (oracle whispers, TTS/STT, QA generation and
-runs, SSR grading, the builder wizard, usage and logs) *and* the main product
-API (campaigns, dialing, agents, calls): the product API introspects the key
-against the Labs cloud and maps it to your app.supafone.ai account by owner
-email. Set one env var — `SUPAFONE_TOKEN=sl_live_...` — and the MCP server and
-both SDKs work end to end; in the SDKs a lone `sl_` credential fills both the
-labs and account lanes automatically. Account login (email/password or JWT)
-still works everywhere it did before.
+## What developers stop rebuilding
 
-## What this changes for developers and customers
+- Agent and stage planning
+- Provider event normalization
+- Mid-call supervision
+- Truth and consent state
+- TTS, STT, and telephony selection
+- Phone and WebRTC delivery
+- Recordings and transcripts
+- Post-call classification
+- Adversarial QA and grading
+- Campaign, messaging, and artifact workflows
+- Operational logs and activity APIs
 
-Developers can use raw REST, Python, TypeScript, or MCP against the same
-versioned plan and agent contract. They can preview, edit, approve, diff, and
-store the plain JSON rather than trusting an invisible prompt. Their frontend
-never needs a model credential or carrier secret to generate the plan.
-
-Customers receive a consistent working flow—greeting, discovery,
-qualification or routing, confirmed action, and close—plus the recordings,
-transcripts, summaries, and supervision needed to operate it. They are not
-locked into generated copy: every stage remains editable before creation and
-observable afterward.
+Continue with [Framework coverage](framework-support.md) to see exactly how the
+runtime maps onto each supported platform, then use the
+[SDK quickstart](quickstart.md) to create or supervise an agent.

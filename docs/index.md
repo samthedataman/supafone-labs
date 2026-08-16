@@ -1,6 +1,28 @@
+<p align="center">
+  <img src="assets/supafone-logo.png" alt="Supafone" width="104" height="104" />
+</p>
+
 # Supafone Labs
 
-**Build complete voice agents with managed numbers, voices, stages, tools, and a second mind built in.**
+**Production infrastructure for voice agents that need to work after the demo.**
+
+## The problems we built it to solve
+
+Voice agents are distributed systems: a realtime model, telephony, TTS, STT,
+tools, retrieval, state, recordings, compliance, and post-call workflows must
+behave like one product. The failure usually occurs between those layers.
+
+| Problem | Innovation in the package |
+| --- | --- |
+| The speaking model must supervise itself | Voice Watcher and SecondMind run a separate, bounded supervision loop |
+| Provider events and controls are incompatible | Fourteen audited adapters normalize one canonical runtime |
+| Tool claims outrun tool results | Deterministic truth and consent state preserve verified outcomes |
+| Every customer requires another architecture | Agent Factory creates editable stages, tools, voices, numbers, and artifacts |
+| Testing is manual and subjective | Adversarial QA and SSR grading produce repeatable evidence |
+| Call data is scattered across vendors | Durable activity APIs expose calls, plans, recordings, transcripts, and Watcher events |
+
+See the complete [framework coverage matrix](providers.md) for the exact
+support boundary of every runtime.
 
 ```python
 import supafone_labs
@@ -14,12 +36,9 @@ voices, built-in stages, tools, transcripts, recordings, web widgets, and
 Supafone Pro call coaching. Or you can attach the same Labs layer to the voice
 stack you already run.
 
-Voice agents are brittle because they have *one brain on a stopwatch* -- every
-thought competes with the latency budget of speech, so deliberation always
-loses. Supafone Labs adds a **second, slower mind** that runs off the latency
-path: it perceives the caller, remembers, retrieves, deduces intent and emotion,
-catches mistakes, and silently coaches the live agent. And it **improves every
-call** via gradient descent on its own prompts.
+The speaking agent stays on the realtime path. Supafone's second mind observes
+off that path, issues guidance only when evidence clears the configured gate,
+and becomes a no-op when unavailable or uncertain.
 
 ## One package, two main features
 
@@ -31,15 +50,16 @@ Supafone Labs gives you two product pillars:
   number, agent/provider stack, TTS/STT/LLM defaults, multistage state machine,
   tools, recordings, transcripts, widget, usage, and Supafone Pro watcher. No
   developer vendor account is required in the default path.
-- **Self-healing Labs watcher** -- keep Vapi, Retell, ElevenLabs, OpenAI
-  Realtime, Grok, Ultravox, Gemini Live, Inworld, Deepgram, LiveKit, or another
-  stack, then let Supafone Labs supervise and coach the live call. Ten frameworks
-  accept a live silent directive; **Bland** can be supervised and scored but not
-  coached live (closed live-call API). See
-  [providers.md](providers.md) and `gitbook/framework-support.md`.
+- **Self-healing Labs watcher** -- keep the voice stack you already run, then
+  let Supafone Labs supervise and coach the live call. Fourteen audited runtime
+  adapters normalize events; twelve expose native or developer-owned guidance
+  paths, while Bland is observation-only and Cartesia Line requires an explicit
+  host hook. See [providers.md](providers.md) and the
+  [GitBook framework matrix](https://github.com/samthedataman/supafone-labs/blob/main/gitbook/framework-support.md).
 
-BYOK is optional and split into three lanes: agent/provider stack, telephony,
-and TTS. Those lanes can be mixed with Supafone-managed defaults.
+BYOK is optional. Hosted delivery keeps agent-runtime, telephony, and TTS
+credentials independent; the Watcher also supports separate STT and supervisor
+LLM credentials. Every domain can be mixed with Supafone-managed defaults.
 
 You can also run the deterministic open-source runtime and adapters locally
 with your own keys.

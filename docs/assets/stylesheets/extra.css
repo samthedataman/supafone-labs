@@ -1,0 +1,36 @@
+.md-content,
+.md-content__inner,
+.md-typeset {
+  min-width: 0;
+}
+
+.md-typeset__scrollwrap {
+  max-width: 100%;
+}
+
+.md-typeset__table {
+  display: block;
+  max-width: 100%;
+  overflow-x: auto;
+  overscroll-behavior-inline: contain;
+  -webkit-overflow-scrolling: touch;
+}
+
+.md-typeset__table table {
+  width: max-content;
+  min-width: 100%;
+}
+
+@media screen and (max-width: 44.984375em) {
+  .md-typeset h1 {
+    font-size: 2rem;
+  }
+
+  .md-typeset h2 {
+    font-size: 1.45rem;
+  }
+
+  .md-typeset__table {
+    border: 1px solid var(--md-typeset-table-color);
+  }
+}

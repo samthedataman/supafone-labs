@@ -1,4 +1,4 @@
-# 🔀 Provider-Agnostic Framework
+# Provider-Agnostic Framework
 
 The provider-agnostic framework is the self-healing Supafone Labs watcher. It
 is the "supercharge" path: it upgrades an agent the developer already runs
@@ -27,10 +27,11 @@ The caller never hears the directive directly. The live agent reads it as
 context or receives it through the provider's native control channel. That
 channel is one of two silent-injection modes — **Mode A**, a native silent
 event on a speech-to-speech model, or **Mode B**, splicing a `system`/`developer`
-message into the prompt when Supafone owns the pipeline LLM. Ten frameworks
-expose one; Bland exposes neither. The exact primitive per framework, and the
-honest "possible vs turnkey today" caveats, are in
-[Framework Support (Silent Injection)](framework-support.md).
+message into the prompt when Supafone owns the pipeline LLM. The audited matrix
+contains fourteen runtimes: twelve have native or developer-owned guidance
+paths, Bland is observation-only, and Cartesia Line requires an explicit host
+hook. The exact primitive and managed-delivery boundary are in
+[Framework coverage](framework-support.md).
 
 ## Labs Must Be Explicit
 
@@ -91,13 +92,16 @@ Connect it at agent create under `byok.ultravox`, or later via
 LiveKit, Pipecat) are still coming soon. See
 [BYOK Providers](byok-providers.md) and [Hosted Agents API](hosted-agents-api.md).
 
-BYOK is not one thing. It is three independent lanes:
+BYOK is not one thing. Hosted delivery separates three provisioning lanes, and
+the Watcher adds independent STT and supervisor-LLM credentials:
 
 | Lane | Examples | Notes |
 | --- | --- | --- |
-| Agent/provider stack | Ultravox, Retell, Vapi, LiveKit, Pipecat, GPT Realtime, Grok, Gemini Live, Bland | The agent receives Supafone silent directives on every framework here **except Bland** — Bland's live-call API is closed (no mid-call inject, no custom-LLM), so it can be observed and scored but not whispered to live. See [Framework Support](framework-support.md). |
+| Agent/provider stack | [Fourteen audited runtime adapters](framework-support.md) | Support ranges from managed native control to observation or an explicit host hook; the canonical matrix records the exact depth. |
 | Telephony | Twilio, Telnyx, Plivo, SignalWire, SIP/custom trunks | Carrier credentials and call routing stay in the customer's account. |
 | TTS | Cartesia, ElevenLabs, Inworld, Deepgram, custom TTS | Voice rendering can be managed or customer-owned. |
+| STT | Deepgram or provider-native transcript streams | Exactly one transcript authority is selected per call. |
+| Supervisor LLM | Supafone hosted, Anthropic, OpenAI, xAI, custom LLM | The directive model can change without replacing the speaking agent. |
 
 The framework should accept mixed deployments. A customer might use BYOK
 Telnyx, managed Labs watcher, and BYOK ElevenLabs. Another might bring

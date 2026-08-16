@@ -1,4 +1,4 @@
-# 🏭 Agent Factory
+# Agent Factory
 
 Agent Factory is the shortest path from “this business needs an AI caller” to
 a working, observable agent. Describe the job in the language you would use to
@@ -191,11 +191,11 @@ The frontend builder should fit the core controls above the fold:
 Advanced panels can expand for provider keys, Twilio/Telnyx credentials, custom
 Ultravox runtime fields, and custom tools.
 
-BYOK must be grouped into three separate advanced lanes:
+BYOK must keep hosted-delivery credentials in separate advanced lanes:
 
 | Lane | Builder controls |
 | --- | --- |
-| Agent/provider stack | Ultravox, Retell, Vapi, Bland, LiveKit, Pipecat, GPT Realtime, Grok, custom runtime |
+| Agent/provider stack | [Fourteen audited runtime adapters](framework-support.md) plus custom runtime |
 | Telephony | Twilio, Telnyx, Plivo, SignalWire, SIP/custom trunks |
 | TTS | Cartesia, ElevenLabs, Inworld, Deepgram, custom TTS |
 

@@ -1,4 +1,4 @@
-# ☎️ Phone Numbers
+# Phone Numbers
 
 Supafone-hosted agents support three Supafone-managed number strategies plus a
 BYOK carrier path.

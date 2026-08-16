@@ -1,4 +1,4 @@
-# 🔧 Troubleshooting
+# Troubleshooting
 
 ## 401 or Invalid Key
 

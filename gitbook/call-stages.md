@@ -1,4 +1,4 @@
-# 🪜 Describe the Call. Supafone Builds the Plan.
+# Describe the Call. Supafone Builds the Plan.
 
 Most voice agents begin as one enormous prompt. That works in a demo, then
 falls apart when a real caller interrupts, changes topics, or asks the agent to
