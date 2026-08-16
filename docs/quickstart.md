@@ -102,7 +102,8 @@ const salesAgent = await supafone.labs.agents.createOutboundWithNumber({
 ```
 
 Teams that already own provider accounts can configure BYOK later. Keep the
-three lanes separate: agent/provider stack, telephony, and TTS.
+hosted-delivery lanes separate: agent/provider stack, telephony, and TTS.
+Watcher STT and supervisor-LLM credentials remain independent.
 
 For an Agent Factory agent that can continue one call across approved
 languages and matching voices, see

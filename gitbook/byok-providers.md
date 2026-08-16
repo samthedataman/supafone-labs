@@ -1,4 +1,4 @@
-# 🎛️ BYOK Providers
+# BYOK Providers
 
 BYOK means "bring your own keys." It is powerful, but it should not be the
 default path. The default path is Supafone-managed infrastructure with one
@@ -24,18 +24,21 @@ Supafone key.
 Use this when the developer wants to launch quickly and bill usage through
 Supafone.
 
-## Three BYOK Lanes
+## Independent provider domains
 
-Do not collapse BYOK into one generic "provider keys" bucket in the UI. There
-are three independent choices:
+Do not collapse BYOK into one generic "provider keys" bucket. Hosted delivery
+has three independent provisioning lanes; Watcher deployments add independent
+STT and supervisor-LLM credentials:
 
 | Lane | What it means | Common providers |
 | --- | --- | --- |
-| Agent/provider stack | The realtime agent, orchestration, or model runtime the customer already runs | Ultravox, Retell, Vapi, Bland, LiveKit, Pipecat, GPT Realtime, Grok |
+| Agent/provider stack | The realtime agent, orchestration, or model runtime the customer already runs | Any of the [14 audited runtime adapters](framework-support.md) |
 | Telephony | The carrier, trunk, SIP, and phone-network layer | Twilio, Telnyx, Plivo, SignalWire, SIP/custom trunks |
 | TTS | The voice-rendering provider | Cartesia, ElevenLabs, Inworld, Deepgram, custom TTS |
+| STT | The transcript and language-authority provider | Deepgram or provider-native streams |
+| Supervisor LLM | The model that forms Watcher directives | Supafone hosted, Anthropic, OpenAI, xAI, custom LLM |
 
-Each lane can be managed by Supafone or brought by the customer. For example,
+Each domain can be managed by Supafone or brought by the customer. For example,
 a customer can bring Telnyx telephony and Cartesia TTS while still using
 Supafone's managed watcher, or bring an entire Ultravox stack and use Supafone
 only for self-healing directives and logs.

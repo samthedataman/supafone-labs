@@ -131,13 +131,15 @@ with either SDK without translating the contract.
 
 ## BYOK Parity
 
-The SDKs support three distinct BYOK lanes:
+The SDKs preserve independent provider domains:
 
 | Lane | Examples |
 | --- | --- |
-| Agent/provider stack | Ultravox, Retell, Vapi, Bland, LiveKit, Pipecat, GPT Realtime, Grok |
+| Agent/provider stack | [Fourteen audited runtime adapters](framework-support.md) |
 | Telephony | Twilio, Telnyx, Plivo, SignalWire, SIP/custom trunks |
 | TTS | Cartesia, ElevenLabs, Inworld, Deepgram, custom TTS |
+| STT | Deepgram or provider-native transcript streams |
+| Supervisor LLM | Supafone hosted, Anthropic, OpenAI, xAI, custom LLM |
 
 TypeScript:
 

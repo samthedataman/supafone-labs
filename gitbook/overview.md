@@ -1,4 +1,4 @@
-# 🗺️ Product Overview
+# Product Overview
 
 Supafone Labs is built around a simple architecture: the live voice agent keeps
 talking inside the realtime latency budget, while Supafone Labs runs a second
@@ -67,11 +67,9 @@ not create the agent.
 ## Production Defaults
 
 - Hosted agents default to Supafone-managed provider accounts.
-- BYOK is optional and split into three lanes:
-  agent/provider stack, telephony, and TTS. Teams can bring Ultravox, Retell,
-  Vapi, Bland, LiveKit, Pipecat, GPT Realtime, Grok, Twilio, Telnyx, Plivo,
-  SignalWire, SIP/custom trunks, Cartesia, ElevenLabs, Inworld, Deepgram, or a
-  custom provider only when they need that control.
+- BYOK is optional and split into independent agent-runtime, telephony, TTS,
+  STT, and supervisor-model lanes. The audited providers and exact support
+  depth are maintained in the [framework coverage matrix](framework-support.md).
 - Labs Cloud requests are billed against a minute balance.
 - The watcher is timeout-bounded and degrade-safe: if it cannot produce a useful
   directive quickly, it stays silent.

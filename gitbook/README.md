@@ -1,202 +1,128 @@
 <p align="center">
-  <img src=".gitbook/assets/supafone-logo.png" alt="Supafone" width="88" height="88" />
+  <img src=".gitbook/assets/supafone-logo.png" alt="Supafone" width="104" height="104" />
 </p>
 
-# 📞 Supafone Labs
+# Supafone Labs
 
-🐍 [Python — `pip install "supafone-labs[all]"`](https://pypi.org/project/supafone-labs/) ·
-🟦 [TypeScript — `npm i supafone-labs`](https://www.npmjs.com/package/supafone-labs) ·
-⭐ [GitHub — samthedataman/supafone-labs](https://github.com/samthedataman/supafone-labs) ·
-🌐 [labs.supafone.ai](https://labs.supafone.ai) ·
-📄 [Research papers](https://labs.supafone.ai/research.html)
+**Production infrastructure for voice agents that need to work after the demo.**
 
-## Start with the Voice Watcher
+[Python SDK](https://pypi.org/project/supafone-labs/) ·
+[TypeScript SDK](https://www.npmjs.com/package/supafone-labs) ·
+[GitHub](https://github.com/samthedataman/supafone-labs) ·
+[Developer console](https://labs.supafone.ai) ·
+[API reference](https://api.labs.supafone.ai/docs)
 
-Supafone Voice Watcher is the product's defining layer: a second AI observes
-the live call off the audio hot path and sends silent, provider-native
-corrections only when the speaking agent needs help. It watches intent,
-urgency, language, tool truth, workflow state, and compliance. It is
-timeout-bounded and degrade-safe, so an unavailable Watcher does not interrupt
-the customer call.
+## Why we built it
 
-```python
-from supafone_labs import Supafone
+A voice demo can be assembled quickly. A dependable voice product cannot. The
+production agent is split across a realtime model, telephony, TTS, STT, tools,
+retrieval, state, recordings, compliance, monitoring, and post-call workflows.
+Every vendor exposes a different event format, and the speaking model is still
+expected to notice and correct its own mistakes while talking.
 
-supafone = Supafone(api_key="sl_live_...", voice_watcher=True)  # default on
+Supafone Labs was built around the failures that appear at those boundaries:
+
+| Production problem | Supafone innovation | What changes for the developer |
+| --- | --- | --- |
+| The speaking agent must supervise itself | **Voice Watcher and SecondMind** run beside the call and issue one bounded directive only when evidence is strong | Add supervision without replacing the agent or extending the audio hot path |
+| Every voice platform has different events and controls | **Canonical runtime plus 14 audited adapters** normalize call events and compile guidance into the control each platform actually supports | Keep the current provider and reuse the same supervision, QA, and telemetry |
+| Prompts make operational claims that tools never confirmed | **Truth state and guardrail policies** track verified bookings, transfers, deliveries, consent, and failures separately from model language | Prevent the agent from claiming an action succeeded before a tool proves it |
+| Every new agent starts as another prompt-engineering project | **Agent Factory** turns a job description into editable stages, tools, routing, numbers, voices, and artifacts | Provision complete inbound, outbound, browser, and campaign agents through one API |
+| Testing is manual role-play | **Adversarial QA and SSR grading** generate scenarios from the agent objective and compare supervised with unsupervised behavior | Measure regressions and supervision lift before deployment |
+| Calls disappear into provider dashboards | **Durable activity APIs** retain agents, plans, calls, recordings, transcripts, watcher events, and post-call outcomes | Build one operational console instead of reconciling vendor logs |
+| Multilingual calls lose context or use the wrong voice | **Language-aware transcription and opt-in language/voice profiles** preserve the active workflow while the language changes | Configure multilingual behavior without rewriting the agent graph |
+| Phone, WebRTC, SMS, campaigns, and signing become separate systems | **One SDK and one account model** connect managed delivery, messaging, campaigns, artifacts, and writebacks | Stop rebuilding the surrounding product for every customer |
+
+## The architecture
+
+```mermaid
+flowchart LR
+    caller[Caller] --> agent[Speaking agent]
+    agent --> tools[Tools and business systems]
+    agent -. events .-> runtime[Canonical call state]
+    tools -. verified outcomes .-> runtime
+    runtime --> watcher[Voice Watcher / SecondMind]
+    watcher --> gate[Confidence and policy gate]
+    gate --> adapter[Provider adapter]
+    adapter -. silent guidance .-> agent
+    runtime --> artifacts[Transcripts, recordings, QA, analytics]
 ```
 
-Go directly to [Voice Watcher Framework](self-healing-watcher.md), then review
-[the production problems it solves](production-voice-ai-challenges.md),
-[Oracle Models and Controls](oracle-models-and-controls.md),
-[Framework Support](framework-support.md),
-[Testing Voice Agents](voice-qa-landscape.md), and the [MCP Server](mcp-server.md).
+The call never waits for the Watcher. If supervision is unavailable, late, or
+uncertain, the gate emits no directive and the original agent continues.
 
-## Build paths at a glance
+## Two ways to use the package
 
-| What you want to do | Start here | Main SDK/MCP surface |
-| --- | --- | --- |
-| Add a second mind to an existing agent | [Voice Watcher](self-healing-watcher.md) | `supercharge()`, `observe()`, silent provider adapter |
-| Choose or tune the supervisor model | [Oracle Models and Controls](oracle-models-and-controls.md) | hosted aliases, BYOK LLM, confidence and timeout gates |
-| See whether your framework can accept live guidance | [Framework Support](framework-support.md) | canonical event/directive adapters |
-| Test the supervised agent against the raw agent | [Testing Voice Agents](voice-qa-landscape.md) | `qa.suite()`, `run_watcher_qa` |
-| Let Claude start a real call and return the live dashboard | [MCP Server](mcp-server.md) | `start_call_and_watch` |
-| Embed a browser voice session | [Browser WebRTC Calls](browser-webrtc-calls.md) | `startWebRtcCall()` / `start_webrtc_call()` |
-| Route one call across approved languages and voices | [Live Language and Voice Routing](live-language-voice-routing.md) | Agent Factory create fields across REST, Python, TypeScript, and MCP |
-| Build consented outbound sequences | [Outbound Call Campaigns](outbound-call-campaigns.md) | campaign SDK, YAML config, monitoring |
-| Bring your own agent, carrier, voice, STT, or LLM | [BYOK Providers](byok-providers.md) | independent provider/telephony/TTS/Oracle lanes |
-| Buy a dedicated number or add credits | [Pricing, Credits, and Checkout](pricing-and-credits.md) | Stripe-hosted SDK/MCP checkout link |
-| Provision the whole managed agent stack | [Agent Factory](agent-factory.md) | secondary hosted-delivery path with Watcher attached |
-
-## The developer pain we solve
-
-Shipping a production voice agent today means gluing together seven different
-vendors before you write a line of product logic. **Nobody wants to do this
-themselves:**
-
-| Pain point | What it takes alone | With Supafone Labs |
-| --- | --- | --- |
-| **The speaking model must also supervise itself** | A larger prompt that adds latency but still misses cross-turn patterns | A second model watches off the hot path and either whispers one bounded directive or does nothing |
-| **Empathy stays a vague prompt instruction** | No durable state for intent, urgency, emotion, language, trust, or workflow progress | The Watcher turns those signals into an evidence-backed belief state across turns |
-| **Tool calls** | Per-platform schemas plus no reliable check that the action succeeded | The supervisor compares spoken claims with tool ground truth before the agent confirms success |
-| **Provider fragmentation** | Rewrite supervision whenever the voice stack or carrier changes | One canonical event/directive contract with provider-native adapters |
-| **Worker and language handoffs** | Lost stage, voice, facts, or routing state | Redis-backed call state and continuity-preserving language/voice routing |
-| **Call classification** | Post-call pipeline, judge prompts, label storage | `post_call_analysis=True` — every call auto-labeled against your objective |
-| **Testing / QA** | A separate QA vendor and integration project | `qa.suite()` — adversarial suite generated from your agent's own prompt, SSR-graded |
-| **Complete hosted delivery** | Numbers, webhooks, TTS/STT, RAG, tools, and recordings assembled manually | The secondary Agent Factory path provisions the full stack with the supervisor attached |
-
-Attach the defining capability—the model supervisor—in **three lines**:
+### Supervise an agent you already run
 
 ```python
 import supafone_labs
 
 supervisor = supafone_labs.supercharge(my_agent)
-result = await supervisor.observe(raw_event)
+result = await supervisor.observe(provider_event)
 ```
 
-When a team also wants Supafone to create the entire hosted agent, the
-secondary Agent Factory path remains available:
+The package auto-detects supported agents when possible, normalizes their
+events, and returns the provider-appropriate action. Start with
+[Voice Watcher](self-healing-watcher.md), then check the
+[framework coverage matrix](framework-support.md).
+
+### Provision the complete agent
 
 ```ts
 import { Supafone } from "supafone-labs";
-const supafone = new Supafone({ apiKey: process.env.SUPAFONE_LABS_API_KEY!, postCallAnalysis: true });
+
+const supafone = new Supafone({
+  apiKey: process.env.SUPAFONE_TOKEN!,
+  voiceWatcher: true,
+});
+
 const agent = await supafone.labs.agents.createInboundWithNumber({
-  agentKey: "northline-intake", name: "Northline intake",
-  number: { search: { areaCode: "415" } }, labs: { enabled: true },
+  agentKey: "northline-intake",
+  name: "Northline intake",
+  description: "Understand the request and book the right next step.",
+  number: { search: { areaCode: "415" } },
 });
 ```
 
-That convenience path adds a live phone number, a staged multi-turn agent, managed voice, tools,
-recordings, transcripts, a self-healing watcher on the line, automatic
-post-call classification — and an adversarial QA suite one call away
-(`await supafone.qa.suite()`), graded with
-[SSR nominal scoring](voice-qa-landscape.md) and all that fancy jazz.
+Agent Factory adds the plan, number, voice, stages, tools, call artifacts, and
+Watcher. Developers can inspect and edit the generated plan before creation.
 
-## Every framework, one framework
+## Framework coverage
 
-The voice-AI substrate is fragmented on purpose: speech-to-speech models
-(GPT Realtime, Grok, Ultravox), STT→LLM→TTS pipelines, agent platforms
-(**Vapi, Retell, Bland, LiveKit, Pipecat**), raw speech components (Deepgram,
-Cartesia, ElevenLabs, Inworld), and telephony carriers (Twilio, Telnyx, Plivo,
-SignalWire, SIP) each expose different event vocabularies and different —
-sometimes no — control channels. Every one of those vendors solves *their*
-layer; none of them solves *your* stack.
+The release gate covers fourteen runtime integrations, not a marketing-only
+logo list:
 
-We believe the only durable answer is a **provider-agnostic framework**: a
-canonical event algebra with per-provider adapters, one abstract decision
-compiled into each platform's native controls, and degrade-safe semantics so
-a supervisor failure composes with the live call as a no-op. Keep the stack
-you have — or let Supafone manage all of it — and every capability here
-(watcher, classification, QA, optimizer) works the same way. The formal
-argument is in our paper,
-[*The Sidecar Oracle*](https://labs.supafone.ai/research.html), and the
-testing methodology in
-[*Grading the Call*](https://labs.supafone.ai/research.html).
+- **Native control:** Supafone Agent Factory, Ultravox, Vapi, OpenAI Realtime,
+  Grok Voice Agent, Gemini Live, ElevenLabs Agents, Deepgram Voice Agent, and
+  Inworld Realtime.
+- **Context owned by the developer:** Retell custom LLM, LiveKit Agents, and
+  Pipecat.
+- **Observation or explicit hook:** Bland and Cartesia Line.
+- **Extension path:** `GenericWebhookAdapter` for proprietary systems.
 
-## Where this goes: self-healing agent swarms
+Integration depth is different for each provider. The
+[complete framework matrix](framework-support.md) shows the exact control,
+acceptance criterion, and managed-delivery status for every runtime.
 
-The endgame isn't one agent on one number. It's **self-healing call centers**:
-fleets of voice agents that test themselves before deploy (adversarial
-auto-suites), watch themselves in production (the sidecar watcher), label
-every finished call (post-call classification), and rewrite their own
-standing directives from the evidence (the OPRO-style optimizer) — with
-humans supervising distributions, not transcripts. Supafone Labs is built to
-be the infrastructure layer for that: the event algebra, the supervision
-channel, the grading system, and the improvement loop are the same primitives
-a thousand-agent swarm needs. That's the product we are building toward, and
-everything in these docs is a piece of it.
+## Package surfaces
 
-## One supervisor, two ways to ship
-
-Supafone Labs is the developer framework behind Supafone. The model supervisor
-is the product; teams can attach it to an existing agent or receive it inside a
-complete hosted environment:
-
-- **Primary — model-agnostic Voice Watcher**: keep Vapi, Retell, OpenAI Realtime, Grok,
-  Ultravox, Gemini Live, ElevenLabs, Inworld, Deepgram, LiveKit, or another
-  stack, then add the Supafone Labs second mind that listens off the hot path and
-  sends silent corrective directives back to the live agent. Ten frameworks
-  accept a live directive; **Bland does not** (closed live-call API — observe and
-  score only), and Cartesia/Pipecat are n/a. See
-  [Framework Support](framework-support.md).
-- **Secondary — hosted Agent Factory**: describe the job once and create complete
-  phone, web, and campaign agents with generated executable stages, voices,
-  numbers, tools, transcripts, recordings, widgets, usage, and the same Watcher attached. This path removes
-  provisioning work; it does not define or limit the supervisor framework.
-
-There are two API surfaces:
-
-| Surface | Base URL | Key | Primary use |
-| --- | --- | --- | --- |
-| Labs Cloud | `https://api.labs.supafone.ai` | `sl_live_...` | Oracle, TTS, STT, logs, builder, QA, optimizer |
-| Hosted Agents REST API | `https://api.supafone.ai/api/v1/labs` | `sl_live_...` (or scoped `sf_live_...`) | Generated executable plans plus hosted agent, number, voice, tool, call-artifact, and telephony provisioning |
-
-**How many keys? One.** Since 0.4.4, your `sl_` Labs key authenticates on
-**both** APIs ([one-key auth](api-keys-and-auth.md)): the Labs gateway
-natively, and the product API — campaigns, dialing, agents, calls — via
-`/v1/keys/introspect`, mapped to your app.supafone.ai account by owner email.
-Both SDK constructors cross-fill every credential lane from a lone `sl_`
-credential, and `SUPAFONE_TOKEN=sl_live_...` alone powers the MCP server end
-to end. Everything data-plane — the oracle, TTS/STT, post-call analysis
-(`postCallAnalysis` / `classify_call`), `qa.generate()`, QA history, logs,
-telemetry — rides the same key. Scoped `sf_live_...` keys remain available
-for hosted-agent-only deployments, and account login (email/password or JWT)
-still works everywhere it did before.
-
-Use the unscoped npm package:
-
-```bash
-npm i supafone-labs
-```
-
-Use the Python package:
-
-```bash
-pip install "supafone-labs[all]"
-```
-
-The default hosted-agent path is Supafone-managed. Developers do not need to
-bring Twilio, Ultravox, Cartesia, Inworld, ElevenLabs, or Deepgram accounts just
-to launch an agent. Real dedicated or premium phone-number purchases should be
-explicit product choices, not implicit defaults.
-
-BYOK is split into three separate lanes:
-
-| BYOK lane | Examples |
+| Surface | Use it for |
 | --- | --- |
-| Agent/provider stack | Ultravox, Retell, Vapi, Bland, LiveKit, Pipecat, GPT Realtime, Grok |
-| Telephony | Twilio, Telnyx, Plivo, SignalWire, SIP/custom trunks |
-| TTS | Cartesia, ElevenLabs, Inworld, Deepgram, custom TTS |
+| Python | Local runtime, adapters, replay, supervision, STT/TTS components, and backend automation |
+| TypeScript | Node, React, browser, Agent Factory, campaigns, activity, and product integrations |
+| REST and WebSocket | Hosted agents, realtime services, events, recordings, transcripts, and custom clients |
+| MCP | Agent creation, calls, QA, logs, and operational workflows from AI development tools |
 
-Teams can use any combination of managed and BYOK. For example, they can keep
-Supafone-managed telephony but bring their own ElevenLabs key, or bring Telnyx
-and Cartesia while still using the managed self-healing watcher.
+## Start here
 
-Start with [Developer Workflows](developer-workflows.md) and
-[Quickstart](quickstart.md), then read [API Keys and Auth](api-keys-and-auth.md).
-For the full builder surface, read [Agent Factory](agent-factory.md),
-[Call Stages](call-stages.md), [Voices and Previews](voices-and-previews.md),
-[Dynamic Voice Catalog and Selection](voice-catalog-and-selection.md),
-[Programmable SecondMind Directives](secondmind-directive-contract.md), and
-[Log Streaming](log-streaming.md). For how our QA stacks up against the
-2026 field — and the enterprise roadmap it drives — read
-[Testing Voice Agents (QA)](voice-qa-landscape.md).
+1. Read [the production problems](production-voice-ai-challenges.md).
+2. Understand [Voice Watcher and SecondMind](self-healing-watcher.md).
+3. Review [all supported frameworks](framework-support.md).
+4. Install the [Python or TypeScript SDK](sdk-installation.md).
+5. Follow the [quickstart](quickstart.md).
+6. Choose [managed delivery or BYOK](byok-providers.md).
+7. Run the [voice-agent QA workflow](voice-qa-landscape.md).
+
+Supafone Labs exists so developers can define the caller experience, tools,
+and safety policy while one framework handles the infrastructure around them.

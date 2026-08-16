@@ -1,4 +1,4 @@
-# Live Language And Voice Routing
+# Live Language and Voice Routing
 
 Agent Factory can keep one call active while a caller moves between two to
 four approved languages. Each language can use its own compatible voice. The

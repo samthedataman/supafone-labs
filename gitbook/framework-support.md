@@ -1,89 +1,103 @@
-# 🧩 Framework Support (Silent Injection)
+# Framework Coverage
 
-This is the definitive answer to one question: **which voice frameworks can the
-Supafone watcher whisper into mid-call, and how?**
+Supafone Labs exposes **fourteen audited runtime integrations**. Every adapter
+converts provider-specific events into one canonical call state. When a runtime
+has a supported control channel, the same abstract Watcher directive is
+compiled back into that runtime's native message or developer-owned context.
 
-Silent injection means feeding the live agent hidden guidance it *acts on but
-never speaks* — the supervisor's note slid across the desk. It is the mechanism
-behind every watcher directive. Whether a framework can receive one depends
-entirely on the door that vendor exposes, so the honest answer is per-framework,
-not a blanket "works with everything."
+This page distinguishes five different claims that should never be conflated:
 
-## The two injection modes
+| Support class | Meaning |
+| --- | --- |
+| Managed native control | Supafone owns the delivery path and sends the control through the managed call runtime |
+| Native control | The provider exposes a documented live control accepted by its active session |
+| Developer-owned context | The application owns the LLM or framework context and applies the compiled directive locally |
+| Observation only | Supafone can normalize events, supervise, score, and report, but the provider exposes no universal live prompt-control channel |
+| Explicit host hook | The component exposes an event transport, but the developer's agent must decide how to apply it |
 
-Every supported framework uses one of two mechanisms:
+## Runtime matrix
 
-- **Mode A — native silent event.** Integrated speech-to-speech models accept a
-  vendor event that adds context to the running session **without triggering
-  speech**. You send the event; the model reads it on its next turn and never
-  reads it aloud.
-- **Mode B — own the LLM.** For STT→LLM→TTS pipelines, Supafone plugs in as the
-  LLM (custom-LLM / think stage) and **splices a `system`/`developer` message
-  into the prompt before generation**. The pipeline never knows the difference;
-  the agent simply behaves as guided.
+| Runtime | Support class | Watcher delivery | Acceptance criterion |
+| --- | --- | --- | --- |
+| <a id="provider-supafone"></a>Supafone Agent Factory | Managed native control | Ultravox `user_text_message` with `urgency=later` | Managed call accepts the data message |
+| <a id="provider-ultravox"></a>Ultravox | Native control | Deferred `user_text_message` | Send Data Message returns HTTP 204 |
+| <a id="provider-vapi"></a>Vapi | Native control | System `add-message` through the live call `controlUrl` | Control request succeeds and the message enters live context |
+| <a id="provider-retell"></a>Retell | Developer-owned context | System entry in the custom-LLM WebSocket context | Entry exists before the next response is emitted |
+| <a id="provider-bland"></a>Bland | Observation only | No universal prompt-injection action | Events normalize without emitting an unsupported action |
+| <a id="provider-gpt_realtime"></a>OpenAI Realtime | Native control | System `conversation.item.create` | Item-created or item-done event arrives without provider error |
+| <a id="provider-grok"></a>Grok Voice Agent | Native control | `response.create.instructions` | Provider emits `response.created` followed by completion or an error |
+| <a id="provider-gemini_live"></a>Gemini Live | Native control | `clientContent` user turn; system role is invalid mid-session | Subsequent server content reflects the accepted update |
+| <a id="provider-elevenlabs"></a>ElevenLabs Agents | Native control | `contextual_update` | Socket remains healthy and the next turn completes |
+| <a id="provider-deepgram"></a>Deepgram Voice Agent | Native control | `UpdatePrompt` | Provider emits `PromptUpdated` |
+| <a id="provider-livekit"></a>LiveKit Agents | Developer-owned context | `ChatContext.add_message` followed by `update_chat_ctx` | Persisted context contains the system entry |
+| <a id="provider-pipecat"></a>Pipecat | Developer-owned context | `LLMMessagesAppendFrame` with `run_llm=false` | Context aggregator retains the developer message |
+| <a id="provider-cartesia"></a>Cartesia Line | Explicit host hook | Custom metadata event; no default prompt action | Host agent explicitly handles the event |
+| <a id="provider-inworld"></a>Inworld Realtime | Native control | System `conversation.item.create` | Item-added or item-done event arrives without provider error |
 
-Some frameworks expose both doors (marked **A+B**) — use whichever fits the
-deployment.
+`GenericWebhookAdapter` is the configurable extension path for proprietary
+systems. It is deliberately not counted as one of the fourteen audited
+runtimes.
 
-## Possible — 10 frameworks
+## What the package covers around the runtime
 
-Each of these has a real injection door. The exact primitive is the vendor call
-Supafone compiles the abstract directive into.
+The voice runtime is one layer. Supafone Labs also normalizes the infrastructure
+developers otherwise assemble around it.
 
-| Framework | Mode | Exact primitive |
-| --- | :--: | --- |
-| ![](https://www.google.com/s2/favicons?domain=ultravox.ai&sz=64) **Ultravox** | A | REST `POST /calls/{id}/send_data_message` with `urgency:"later"` — silent, no barge-in. **Live and proven in production today.** |
-| ![](https://www.google.com/s2/favicons?domain=openai.com&sz=64) **OpenAI Realtime** | A | `conversation.item.create`, role `system`, `input_text` — and **no** `response.create` (so it lands as context, not a reply). |
-| ![](https://www.google.com/s2/favicons?domain=x.ai&sz=64) **Grok (xAI)** | A | OpenAI-Realtime-compatible — the same item-inject primitive, base `wss://api.x.ai/v1/realtime`. |
-| ![](https://www.google.com/s2/favicons?domain=ai.google.dev&sz=64) **Gemini Live** | A | `clientContent` with `turns:[{role:"user",...}]` and `turnComplete:false`. The role **must** be `user` (not `system`). |
-| ![](https://www.google.com/s2/favicons?domain=elevenlabs.io&sz=64) **ElevenLabs** | A | `{"type":"contextual_update","text":...}` — silent, non-turn-taking. |
-| ![](https://www.google.com/s2/favicons?domain=inworld.ai&sz=64) **Inworld** | A | OpenAI-Realtime-compatible — the same item-inject door. (Inworld also ships TTS voices; used purely as a voice it is tap-only like any TTS, but its conversational runtime is injectable.) |
-| ![](https://www.google.com/s2/favicons?domain=vapi.ai&sz=64) **Vapi** | A+B | Live `add-message` with `triggerResponseEnabled:false`, **or** splice into the prompt when Supafone owns the custom LLM. |
-| ![](https://www.google.com/s2/favicons?domain=retellai.com&sz=64) **Retell** | B | Custom-LLM websocket — splice a `system` message into `messages[]` on the turn you serve. |
-| ![](https://www.google.com/s2/favicons?domain=deepgram.com&sz=64) **Deepgram** | A+B | `UpdatePrompt` event, **or** own the `think` LLM and splice the prompt. |
-| ![](https://www.google.com/s2/favicons?domain=livekit.io&sz=64) **LiveKit** | B | You own the agent loop — inject into `chat_ctx` (`role:"assistant"`) in-process. |
+| Layer | Supported surfaces | Pain removed |
+| --- | --- | --- |
+| Agent runtimes | The fourteen integrations above plus generic webhooks | Rewriting supervision and state for every provider |
+| Telephony | Supafone-managed, Twilio, Telnyx, Plivo, SignalWire, SIP/custom trunks | Separate number, carrier, webhook, and media-stream implementations |
+| TTS | Supafone hosted, Cartesia, Inworld, ElevenLabs, Deepgram Aura, custom `TTSProvider`, deterministic fake | Provider-specific synthesis APIs and incompatible voice metadata |
+| STT | Deepgram Nova-3 live multilingual tap, provider-native transcripts, Twilio/raw audio taps | Duplicate transcripts, missing language authority, and provider-specific event parsing |
+| Supervisor LLM | Supafone hosted, Anthropic, OpenAI, xAI, custom `LLMProvider`, deterministic fake | Hard-coding the supervisor to one model vendor |
+| Prompt programs | DSPy, LangChain, raw templates, provider-native message arrays, `PromptProgram` | Rebuilding optimization and prompt conversion per framework |
+| Developer access | Python, TypeScript, Node, React/browser, REST, WebSocket, MCP | Maintaining separate product APIs for every application surface |
 
-## Impossible — 1 framework
+## Managed delivery versus adapter support
 
-- ![](https://www.google.com/s2/favicons?domain=bland.ai&sz=64) **Bland** — a closed box. The live-call API is **stop / listen / transfer
-  only**: there is no channel to inject text mid-call, and no custom-LLM to own.
-  The only Bland pattern is a **pull webhook configured before the call** —
-  scripted checkpoints where Bland calls out to you at predefined moments. That
-  is not live silent mid-turn injection. This is a **permanent vendor
-  limitation**, not a Supafone gap: no amount of adapter work opens a door the
-  vendor doesn't expose. You can still run a Bland agent under the watcher for
-  post-call scoring and QA — it simply cannot receive live directives.
+The fourteen-row matrix describes audited event parsing and action compilation.
+It does **not** mean Supafone hosts every provider account automatically.
 
-## Not conversational agents (n/a)
+- Supafone's default managed Agent Factory path currently uses its managed
+  Ultravox transport and managed provider accounts.
+- BYOK deployments can use the provider-native or developer-owned controls
+  listed above.
+- Bland remains useful for observation, post-call grading, QA, and telemetry,
+  but its documented live API does not expose a universal hidden-instruction
+  channel.
+- Cartesia Line requires an explicit handler in the host agent. A custom event
+  is transport, not proof that the agent applied the instruction.
+- Unsupported or uncertain capability always degrades to no action. Supafone
+  does not invent a provider control.
 
-These aren't voice *agents*, so there is nothing to inject into:
+## Transcript and language authority
 
-- ![](https://www.google.com/s2/favicons?domain=cartesia.ai&sz=64) **Cartesia** — a **voice (TTS)**, not an agent. There is no reasoning loop to
-  guide; Cartesia is used as the voice *on* another agent (e.g. Ultravox), and
-  that host agent is where injection happens.
-- ![](https://www.google.com/s2/favicons?domain=pipecat.ai&sz=64) **Pipecat** — a **DIY framework you assemble yourself**. Injection is trivial
-  precisely because you own every step of the pipeline; there is no vendor door
-  to document because you *are* the door. Splice guidance wherever you build the
-  context.
+Supafone selects exactly one transcript authority per call:
 
-## Honesty: possible ≠ turnkey today
+- Provider transcript for a supported monolingual stream.
+- Deepgram live tap when multilingual language authority is required and raw
+  audio is available.
+- Oracle heuristics only where a provider supplies transcript text but no
+  language tags and no raw-audio tap is available.
 
-Read this before quoting the matrix to a customer:
+This prevents duplicate ingestion and conflicting language decisions. See
+[Live language and voice routing](live-language-voice-routing.md) for the
+opt-in hosted-agent behavior.
 
-- **Injection is *possible* for all 10** frameworks above — each has a real,
-  verified primitive. But **managed delivery is wired end-to-end only for
-  Ultravox today.** The other nine are **supported via their native primitive**,
-  with managed delivery rolling out and BYO (bring-your-own delivery) available
-  now — you send the compiled action to the vendor yourself using the primitive
-  in the table. Do not imply all ten are one-flag turnkey; only Ultravox is.
-- **Running a real live test against any vendor needs that vendor's API key.**
-  Free or trial tiers exist for every framework here **except OpenAI Realtime**,
-  which is **paid with no free tier** — budget for it before you plan a live
-  OpenAI Realtime test.
+## Release gates
 
-This matrix was verified against live vendor documentation and the Supafone
-adapter code. See [Provider-Agnostic Framework](provider-agnostic-framework.md)
-for the runtime that compiles one abstract decision into these primitives,
-[Voice Watcher Framework](self-healing-watcher.md) for how directives are
-produced, and [BYOK Providers](byok-providers.md) for bringing your own vendor
-keys.
+The public release verifies framework support at three levels:
+
+1. `tests/test_provider_injection_e2e.py` runs all fourteen adapters from a
+   provider event through canonical state, Watcher decision, and exact action.
+2. `tests/test_live_injection_contracts.py` performs credentialed acceptance
+   probes where the vendor exposes a live test path. Missing credentials are
+   skips, never passes.
+3. `tests/test_documentation_framework_matrix.py` requires this page to contain
+   every runtime from `provider_contracts.py` and rejects duplicate or stale
+   matrix entries.
+
+The provider contract registry includes the primary vendor documentation,
+acceptance behavior, verification date, and probe type for every row. The
+technical reference is also available in
+[Providers and frameworks](https://github.com/samthedataman/supafone-labs/blob/main/docs/providers.md).

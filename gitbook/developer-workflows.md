@@ -1,4 +1,4 @@
-# 🧑‍💻 Developer Workflows
+# Developer Workflows
 
 Supafone Labs has one defining framework and one secondary delivery path. Lead
 with the model-agnostic supervisor; use Agent Factory when the user also wants
@@ -225,13 +225,17 @@ Plivo, SignalWire, SIP, Ultravox, Retell, Vapi, Bland, LiveKit, Pipecat,
 Cartesia, Inworld, ElevenLabs, Deepgram, OpenAI, Anthropic, or xAI keys to
 launch the default agent.
 
-When BYOK is selected, group it into three lanes:
+When BYOK is selected, keep hosted-delivery credentials separate and link the
+agent-runtime control to the canonical matrix:
 
 | Lane | Examples |
 | --- | --- |
-| Agent/provider stack | Ultravox, Retell, Vapi, Bland, LiveKit, Pipecat, GPT Realtime, Grok |
+| Agent/provider stack | [Fourteen audited runtime adapters](framework-support.md) |
 | Telephony | Twilio, Telnyx, Plivo, SignalWire, SIP/custom trunks |
 | TTS | Cartesia, ElevenLabs, Inworld, Deepgram, custom TTS |
+
+Watcher STT and supervisor-LLM credentials remain independent from these
+hosted-delivery controls. See [BYOK providers](byok-providers.md).
 
 ## Key Routing
 

@@ -420,14 +420,17 @@ PUT /api/v1/labs/telephony
 ```
 
 BYOK is the advanced path for developers who already own provider accounts. It
-is not required for the default Supafone-managed flow. Keep BYOK split into
-three lanes:
+is not required for the default Supafone-managed flow. Hosted delivery keeps
+three provisioning lanes separate:
 
 | Lane | Examples |
 | --- | --- |
-| Agent/provider stack | Ultravox, Retell, Vapi, Bland, LiveKit, Pipecat, GPT Realtime, Grok |
+| Agent/provider stack | [Fourteen audited runtime adapters](https://github.com/samthedataman/supafone-labs/blob/main/gitbook/framework-support.md) |
 | Telephony | Twilio, Telnyx, Plivo, SignalWire, SIP/custom trunks |
 | TTS | Cartesia, ElevenLabs, Inworld, Deepgram, custom TTS |
+
+Watcher deployments can separately configure STT and supervisor-LLM
+credentials without changing these hosted-delivery lanes.
 
 BYOK telephony example:
 

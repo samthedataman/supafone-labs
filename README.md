@@ -1,10 +1,12 @@
 <div align="center">
 
+<img src="gitbook/.gitbook/assets/supafone-logo.png" alt="Supafone" width="112" height="112" />
+
 # Supafone Labs
 
-**The voice-agent framework behind Supafone.** Create complete inbound and
-outbound agents with managed numbers, voices, stages, tools, artifacts, and
-Supafone Pro watcher built in — or attach the same second mind to any platform.
+**Production infrastructure for voice agents that need to work after the
+demo.** Supervise an existing agent or provision the complete calling stack
+through Python, TypeScript, REST, WebSocket, or MCP.
 
 [![CI](https://github.com/samthedataman/supafone-labs/actions/workflows/ci.yml/badge.svg)](https://github.com/samthedataman/supafone-labs/actions/workflows/ci.yml)
 [![PyPI](https://img.shields.io/pypi/v/supafone-labs)](https://pypi.org/project/supafone-labs/)
@@ -21,6 +23,30 @@ Supafone Pro watcher built in — or attach the same second mind to any platform
 </div>
 
 ---
+
+## Why we built it
+
+A voice demo can be assembled in an afternoon. Production requires a realtime
+agent, telephony, TTS, STT, tools, retrieval, state, recordings, compliance,
+monitoring, and post-call workflows to behave like one system. Each provider
+uses different events and controls, while the speaking model is still expected
+to supervise itself during the conversation.
+
+Supafone Labs turns those failures into reusable package primitives:
+
+| Production problem | Package innovation |
+| --- | --- |
+| The agent cannot reliably notice its own mistakes | Voice Watcher and SecondMind supervise the call off the audio hot path |
+| Every provider exposes different live events | Fourteen audited runtime adapters normalize one canonical call state |
+| Provider controls are incompatible | One abstract directive compiles into native control, developer-owned context, observation, or a safe no-op |
+| Prompts claim actions that tools never completed | Truth state and guardrail policies require verified outcomes |
+| Every customer requires another agent architecture | Agent Factory generates editable stages, tools, voices, numbers, and artifacts |
+| Testing is manual role-play | Adversarial QA and SSR grading measure regressions and Watcher lift |
+| Calls and decisions disappear across dashboards | Durable activity APIs retain calls, recordings, transcripts, plans, and Watcher events |
+| Phone, WebRTC, campaigns, and messaging become separate products | One SDK and account model expose the operational stack |
+
+Read the [problem-first product overview](gitbook/README.md) or inspect the
+[complete framework coverage matrix](gitbook/framework-support.md).
 
 ## Start here: Supafone Voice Watcher
 
@@ -156,9 +182,11 @@ separate:
 
 | BYOK lane | What it covers | Examples |
 | --- | --- | --- |
-| Agent/provider stack | The realtime agent or model runtime | Ultravox, Retell, Vapi, Bland, LiveKit, Pipecat, GPT Realtime, Grok |
+| Agent/provider stack | The realtime agent or model runtime | Use any of the [14 audited runtime adapters](gitbook/framework-support.md) |
 | Telephony | Carrier, trunk, and phone-network credentials | Twilio, Telnyx, Plivo, SignalWire, SIP/custom trunks |
 | TTS | Voice rendering and voice-clone/provider credentials | Cartesia, ElevenLabs, Inworld, Deepgram, custom TTS |
+| STT | Live transcription and language authority | Deepgram or provider-native transcripts |
+| Supervisor LLM | The model that produces Watcher directives | Supafone hosted, Anthropic, OpenAI, xAI, custom LLM |
 
 Those lanes can be mixed. A team can use Supafone-managed telephony with BYOK
 TTS, or BYOK Twilio/Telnyx with the managed Labs watcher, or bring the full
@@ -517,7 +545,7 @@ and rendered at [labs.supafone.ai/pricing.html](https://labs.supafone.ai/pricing
 BYO vendor keys always win when present — leaving the cloud is deleting one
 environment variable.
 
-## Works with every voice platform
+## Audited framework coverage
 
 Speech-to-speech models, STT→LLM→TTS pipelines, frameworks, and raw speech
 engines each get the injection channel they actually have:
@@ -541,7 +569,9 @@ The release gate covers **fourteen public runtimes** from provider event through
 Watcher decision to exact delivery payload. Credentialed probes separately send
 real controls and wait for provider acceptance; missing credentials skip rather
 than pass. [docs/providers.md](docs/providers.md) has the current contract and
-test matrix. Telephony is
+test matrix, while the
+[GitBook framework matrix](gitbook/framework-support.md) explains support depth
+and adjacent TTS, STT, telephony, LLM, prompt, and SDK layers. Telephony is
 transport-agnostic: Twilio, Telnyx, SignalWire, Vonage, Plivo, LiveKit SIP,
 Jambonz, FreeSWITCH/Asterisk, and SIPREC forks all feed the same tap
 ([SIP matrix](https://labs.supafone.ai/docs.html#sip)).

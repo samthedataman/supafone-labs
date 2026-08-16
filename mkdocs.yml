@@ -1,29 +1,40 @@
 site_name: Supafone Labs
-site_description: Build hosted Supafone agents with managed numbers, stages, tools, and Supafone Pro watcher built in.
+site_description: Production infrastructure for building, supervising, testing, and operating voice agents across providers.
 site_url: https://labs.supafone.ai/
 repo_url: https://github.com/samthedataman/supafone-labs
 repo_name: supafone/labs
 
 theme:
   name: material
+  logo: assets/supafone-logo.png
+  favicon: assets/supafone-logo.png
   palette:
     - scheme: default
-      primary: deep purple
+      primary: indigo
+      accent: cyan
       toggle: { icon: material/weather-night, name: Dark mode }
     - scheme: slate
-      primary: deep purple
+      primary: indigo
+      accent: cyan
       toggle: { icon: material/weather-sunny, name: Light mode }
   features:
     - content.code.copy
+    - navigation.instant
     - navigation.sections
+    - navigation.tabs
     - navigation.top
+    - search.highlight
+    - search.suggest
 
 nav:
-  - Home: index.md
+  - Why Supafone: index.md
   - Quickstart: quickstart.md
+  - Framework Coverage: providers.md
   - Hosted Agents API: hosted-agents-api.md
-  - Live language and voice routing: live-language-voice-routing.md
-  - Providers & frameworks: providers.md
+  - Language and Voice Routing: live-language-voice-routing.md
+
+extra_css:
+  - assets/stylesheets/extra.css
 
 markdown_extensions:
   - admonition

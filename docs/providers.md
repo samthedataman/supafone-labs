@@ -1,9 +1,13 @@
-# Providers & frameworks
+# Providers and Frameworks
 
 Supafone Labs exposes fourteen audited runtime integrations. Every integration
 normalizes provider events into one canonical vocabulary. When a platform has a
 supported control channel, the same abstract `inject_hidden_instruction`
 decision compiles into its current native message.
+
+For the problem-first product narrative and adjacent telephony, TTS, STT, LLM,
+prompt, and SDK layers, see the
+[GitBook framework coverage page](https://github.com/samthedataman/supafone-labs/blob/main/gitbook/framework-support.md).
 
 The distinction matters:
 
@@ -20,20 +24,20 @@ best injection path automatically.
 
 | Runtime | Integration mode | Compiled action | Acceptance criterion |
 |---|---|---|---|
-| Supafone Agent Factory | managed native control | Ultravox `user_text_message`, `urgency=later` | managed call accepts the data message |
-| Ultravox | native control | `user_text_message`, `urgency=later` | Send Data Message returns HTTP 204 |
-| Vapi | native call control | `add-message` with a system message | POST to the live call `controlUrl` succeeds |
-| Retell | custom LLM context | system context entry | entry is present before the next response |
-| Bland | observation only | no action | event parses and no unsupported action is emitted |
-| OpenAI Realtime | native control | system `conversation.item.create` | item-created/done event, or no provider error |
-| Grok Voice Agent | native control | `response.create.instructions` | `response.created` is received |
-| Gemini Live | native control | `clientContent` user turn (system is invalid mid-session) | next turn follows the updated instruction |
-| ElevenLabs Agents | native control | `contextual_update` | socket remains healthy and next turn completes |
-| Deepgram Voice Agent | native control | `UpdatePrompt` | `PromptUpdated` is received |
-| LiveKit Agents | framework context | `ChatContext.add_message` | `update_chat_ctx` persists the system entry |
-| Pipecat | framework context | `LLMMessagesAppendFrame` | context aggregator retains the developer entry |
-| Cartesia Line | explicit agent hook required | no default action | event parses and no universal injection is claimed |
-| Inworld Realtime | native control | system `conversation.item.create` | item-added/done event, or no provider error |
+| <a id="provider-supafone"></a>Supafone Agent Factory | managed native control | Ultravox `user_text_message`, `urgency=later` | managed call accepts the data message |
+| <a id="provider-ultravox"></a>Ultravox | native control | `user_text_message`, `urgency=later` | Send Data Message returns HTTP 204 |
+| <a id="provider-vapi"></a>Vapi | native call control | `add-message` with a system message | POST to the live call `controlUrl` succeeds |
+| <a id="provider-retell"></a>Retell | custom LLM context | system context entry | entry is present before the next response |
+| <a id="provider-bland"></a>Bland | observation only | no action | event parses and no unsupported action is emitted |
+| <a id="provider-gpt_realtime"></a>OpenAI Realtime | native control | system `conversation.item.create` | item-created/done event, or no provider error |
+| <a id="provider-grok"></a>Grok Voice Agent | native control | `response.create.instructions` | `response.created` is received |
+| <a id="provider-gemini_live"></a>Gemini Live | native control | `clientContent` user turn (system is invalid mid-session) | next turn follows the updated instruction |
+| <a id="provider-elevenlabs"></a>ElevenLabs Agents | native control | `contextual_update` | socket remains healthy and next turn completes |
+| <a id="provider-deepgram"></a>Deepgram Voice Agent | native control | `UpdatePrompt` | `PromptUpdated` is received |
+| <a id="provider-livekit"></a>LiveKit Agents | framework context | `ChatContext.add_message` | `update_chat_ctx` persists the system entry |
+| <a id="provider-pipecat"></a>Pipecat | framework context | `LLMMessagesAppendFrame` | context aggregator retains the developer entry |
+| <a id="provider-cartesia"></a>Cartesia Line | explicit agent hook required | no default action | event parses and no universal injection is claimed |
+| <a id="provider-inworld"></a>Inworld Realtime | native control | system `conversation.item.create` | item-added/done event, or no provider error |
 
 `GenericWebhookAdapter` remains available as a configurable fallback, but it is
 not counted as one of the fourteen audited runtimes.

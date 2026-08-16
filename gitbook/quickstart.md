@@ -1,4 +1,4 @@
-# 🚀 Quickstart
+# Quickstart
 
 This page shows both Supafone Labs paths: hosted complete agents and
 bring-your-stack supervision.

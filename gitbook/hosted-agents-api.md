@@ -1,4 +1,4 @@
-# 📡 Hosted Agents REST API
+# Hosted Agents REST API
 
 The hosted-agent REST API creates and manages complete Supafone agents. Use it
 directly from any language or let the Python SDK, TypeScript SDK, and MCP server

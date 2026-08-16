@@ -1,4 +1,4 @@
-# 🛠️ Admin Developer Portal
+# Admin Developer Portal
 
 The admin portal is for Supafone operators, not ordinary SDK users. It requires
 the private `ADMIN_SECRET` and should never expose raw API keys or provider

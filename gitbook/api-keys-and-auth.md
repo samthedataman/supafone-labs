@@ -1,4 +1,4 @@
-# 🔑 API Keys and Auth
+# API Keys and Authentication
 
 **One key does everything.** A single `sl_live_...` Labs key authenticates Labs
 Cloud, the whole Supafone product API, the MCP server, and both SDKs — as long
