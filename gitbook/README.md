@@ -117,10 +117,10 @@ acceptance criterion, and managed-delivery status for every runtime.
 ## Start here
 
 1. Read [the production problems](production-voice-ai-challenges.md).
-2. Understand [Voice Watcher and SecondMind](self-healing-watcher.md).
-3. Review [all supported frameworks](framework-support.md).
-4. Install the [Python or TypeScript SDK](sdk-installation.md).
-5. Follow the [quickstart](quickstart.md).
+2. Follow the [quickstart](quickstart.md).
+3. Understand [Voice Watcher and SecondMind](self-healing-watcher.md).
+4. Review [all supported frameworks](framework-support.md).
+5. Install the [Python or TypeScript SDK](sdk-installation.md).
 6. Choose [managed delivery or BYOK](byok-providers.md).
 7. Run the [voice-agent QA workflow](voice-qa-landscape.md).
 

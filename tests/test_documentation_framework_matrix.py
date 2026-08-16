@@ -73,8 +73,23 @@ def test_gitbook_summary_links_resolve():
     summary = (REPO_ROOT / "gitbook" / "SUMMARY.md").read_text(encoding="utf-8")
     links = re.findall(r"\[[^\]]+\]\(([^)]+\.md)\)", summary)
     assert links
+    assert len(links) == len(set(links)), "GitBook navigation contains duplicate pages"
     for link in links:
         assert (REPO_ROOT / "gitbook" / link).is_file(), link
+
+
+def test_gitbook_navigation_follows_the_developer_journey():
+    summary = (REPO_ROOT / "gitbook" / "SUMMARY.md").read_text(encoding="utf-8")
+    sections = re.findall(r"^## (.+)$", summary, flags=re.MULTILINE)
+    assert sections == [
+        "Understand Supafone",
+        "Start Building",
+        "Supervise Existing Agents",
+        "Build Complete Agents",
+        "Run Calls and Campaigns",
+        "Test and Improve",
+        "Operate and Administer",
+    ]
 
 
 def test_gitbook_configuration_points_at_the_documentation_root():
