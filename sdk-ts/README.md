@@ -132,6 +132,26 @@ The first configured language owns the opening, and a non-English primary
 greeting is translated during provisioning. See
 [Live Language and Voice Routing](../gitbook/live-language-voice-routing.md).
 
+Outbound agents can opt into temporary, bounded phone-tree navigation without
+changing their normal campaign objective:
+
+```ts
+await supafone.labs.agents.createOutbound({
+  name: "Benefits verification",
+  outboundCallMode: {
+    enabled: true,
+    maxDurationSeconds: 180,
+    maxKeypresses: 12,
+  },
+});
+```
+
+The SDK stores this provider-neutral contract and exposes fail-closed adapter
+readiness checks. Supafone-managed, Twilio, Telnyx, Plivo, SignalWire, and
+SIP/BYOC use the same public shape; private detection and DTMF execution stay in
+the managed runtime. See
+[Outbound IVR Call Mode](../docs/outbound-ivr-call-mode.md).
+
 BYOK is advanced and split into three independent lanes:
 
 | Lane | Examples |

@@ -42,6 +42,7 @@
 
 * [Browser WebRTC Calls](browser-webrtc-calls.md)
 * [Outbound Call Campaigns](outbound-call-campaigns.md)
+* [Outbound IVR Call Mode](outbound-ivr-call-mode.md)
 * [Phone Numbers](phone-numbers.md)
 * [Call Recordings and Artifacts](call-recording-artifacts.md)
 * [Log Streaming](log-streaming.md)

@@ -662,6 +662,192 @@ export interface LabsUltravoxRuntime {
   [extra: string]: unknown;
 }
 
+export interface OutboundCallModeObservability {
+  enabled?: boolean;
+  includeTrigger?: boolean;
+  includeTransitions?: boolean;
+  includeTerminationReason?: boolean;
+  metadata?: Record<string, unknown>;
+}
+
+/** Public, provider-neutral controls for temporary outbound IVR navigation. */
+export interface OutboundCallModeConfig {
+  enabled?: boolean;
+  autoDetect?: boolean;
+  dtmfToolEnabled?: boolean;
+  maxDurationSeconds?: number;
+  maxKeypresses?: number;
+  repeatedMenuLimit?: number;
+  noProgressTimeoutSeconds?: number;
+  humanDetectionEnabled?: boolean;
+  resumeOnHuman?: boolean;
+  observability?: OutboundCallModeObservability;
+}
+
+/** Capabilities positively reported by the active telephony/runtime adapter. */
+export interface OutboundCallModeCapabilities {
+  provider?: string;
+  dtmf?: boolean;
+  statePersistence?: boolean;
+  humanDetection?: boolean;
+  observability?: boolean;
+  metadata?: Record<string, unknown>;
+}
+
+export interface OutboundCallModeReadiness {
+  ready: boolean;
+  status: "disabled" | "ready" | "unknown" | "unsupported";
+  provider: string;
+  transportFamily: string;
+  requiredCapabilities: string[];
+  missingCapabilities: string[];
+  unsupportedCapabilities: string[];
+  reasons: string[];
+}
+
+export const OUTBOUND_CALL_MODE_BOUNDS = {
+  maxDurationSeconds: { default: 180, min: 30, max: 900 },
+  maxKeypresses: { default: 12, min: 1, max: 64 },
+  repeatedMenuLimit: { default: 3, min: 1, max: 10 },
+  noProgressTimeoutSeconds: { default: 30, min: 5, max: 120 },
+} as const;
+
+export const OUTBOUND_CALL_MODE_DEFAULTS = {
+  enabled: false,
+  autoDetect: true,
+  dtmfToolEnabled: true,
+  maxDurationSeconds: 180,
+  maxKeypresses: 12,
+  repeatedMenuLimit: 3,
+  noProgressTimeoutSeconds: 30,
+  humanDetectionEnabled: true,
+  resumeOnHuman: true,
+  observability: {
+    enabled: true,
+    includeTrigger: true,
+    includeTransitions: true,
+    includeTerminationReason: true,
+  },
+} as const;
+
+export interface OutboundCallModeProviderProfile {
+  contractSupported: boolean;
+  execution: "adapter_runtime_dependent";
+  capabilityPolicy: "fail_closed";
+  transportFamily: string;
+  providers: readonly string[];
+  requiredCapabilities: readonly string[];
+}
+
+const OUTBOUND_PROVIDER_PROFILE_BASE = {
+  contractSupported: true,
+  execution: "adapter_runtime_dependent",
+  capabilityPolicy: "fail_closed",
+  requiredCapabilities: ["dtmf", "state_persistence", "human_detection"],
+} as const;
+
+export const OUTBOUND_CALL_MODE_PROVIDER_MATRIX: Record<
+  string,
+  OutboundCallModeProviderProfile
+> = {
+  supafoneManaged: {
+    ...OUTBOUND_PROVIDER_PROFILE_BASE,
+    transportFamily: "supafone_managed",
+    providers: ["supafone", "supafone_managed", "managed"],
+  },
+  twilio: {
+    ...OUTBOUND_PROVIDER_PROFILE_BASE,
+    transportFamily: "twilio",
+    providers: ["twilio", "byo_twilio"],
+  },
+  telnyx: {
+    ...OUTBOUND_PROVIDER_PROFILE_BASE,
+    transportFamily: "telnyx",
+    providers: ["telnyx", "byo_telnyx"],
+  },
+  plivo: {
+    ...OUTBOUND_PROVIDER_PROFILE_BASE,
+    transportFamily: "plivo",
+    providers: ["plivo", "byo_plivo"],
+  },
+  signalWire: {
+    ...OUTBOUND_PROVIDER_PROFILE_BASE,
+    transportFamily: "signalwire",
+    providers: ["signalwire", "signal_wire", "byo_signalwire"],
+  },
+  sipByoc: {
+    ...OUTBOUND_PROVIDER_PROFILE_BASE,
+    transportFamily: "sip_byoc",
+    providers: ["sip", "custom_sip", "byo_sip", "byoc", "sip_byoc"],
+  },
+};
+
+export function outboundCallModeProviderProfile(provider: string): OutboundCallModeProviderProfile {
+  const normalized = String(provider ?? "").trim().toLowerCase();
+  for (const profile of Object.values(OUTBOUND_CALL_MODE_PROVIDER_MATRIX)) {
+    if (profile.providers.includes(normalized)) {
+      return { ...profile, providers: [...profile.providers] };
+    }
+  }
+  return {
+    contractSupported: false,
+    execution: "adapter_runtime_dependent",
+    capabilityPolicy: "fail_closed",
+    transportFamily: "unknown",
+    providers: normalized ? [normalized] : [],
+    requiredCapabilities: ["dtmf", "state_persistence", "human_detection"],
+  };
+}
+
+export function outboundCallModeReadiness(
+  config?: OutboundCallModeConfig,
+  capabilities?: OutboundCallModeCapabilities,
+): OutboundCallModeReadiness {
+  const provider = String(capabilities?.provider ?? "");
+  const profile = outboundCallModeProviderProfile(provider);
+  const normalized = outboundCallModePayload(config ?? {});
+  if (normalized.enabled !== true) {
+    return {
+      ready: true,
+      status: "disabled",
+      provider,
+      transportFamily: profile.transportFamily,
+      requiredCapabilities: [],
+      missingCapabilities: [],
+      unsupportedCapabilities: [],
+      reasons: [],
+    };
+  }
+
+  const requiredCapabilities = [...(normalized.required_capabilities as string[])];
+  const reported: Record<string, boolean | undefined> = {
+    dtmf: capabilities?.dtmf,
+    state_persistence: capabilities?.statePersistence,
+    human_detection: capabilities?.humanDetection,
+    observability: capabilities?.observability,
+  };
+  const missingCapabilities = requiredCapabilities.filter((key) => reported[key] === undefined);
+  const unsupportedCapabilities = requiredCapabilities.filter((key) => reported[key] === false);
+  const status = unsupportedCapabilities.length
+    ? "unsupported"
+    : missingCapabilities.length
+      ? "unknown"
+      : "ready";
+  const reasons = unsupportedCapabilities.length
+    ? unsupportedCapabilities.map((key) => `Adapter reports ${key} is unsupported.`)
+    : missingCapabilities.map((key) => `Adapter did not report ${key} support.`);
+  return {
+    ready: status === "ready",
+    status,
+    provider,
+    transportFamily: profile.transportFamily,
+    requiredCapabilities,
+    missingCapabilities,
+    unsupportedCapabilities,
+    reasons,
+  };
+}
+
 export interface CreateLabsAgentRequest {
   agencyId?: string;
   agency_id?: string;
@@ -746,6 +932,9 @@ export interface CreateLabsAgentRequest {
   voice_watcher?: boolean;
   voiceWatcherModel?: string;
   voice_watcher_model?: string;
+  /** Opt-in outbound IVR mode. Execution depends on adapter-reported readiness. */
+  outboundCallMode?: OutboundCallModeConfig;
+  outbound_call_mode?: OutboundCallModeConfig;
   metadata?: Record<string, unknown>;
 }
 
@@ -769,6 +958,25 @@ export interface DeleteLabsAgentResponse {
   deleted?: boolean;
   agent_key?: string;
   released_numbers?: unknown[];
+  [extra: string]: unknown;
+}
+
+export type LabsAgentLifecycle = "draft" | "active" | "paused" | "archived" | string;
+
+export interface LabsAgentReadiness {
+  ready: boolean;
+  status?: string;
+  checks?: Array<Record<string, unknown>>;
+  [extra: string]: unknown;
+}
+
+export type UpdateLabsAgentRequest = Partial<CreateLabsAgentRequest>;
+
+export interface LabsAgentLifecycleResponse {
+  success?: boolean;
+  agent?: LabsAgentResponse;
+  lifecycle?: LabsAgentLifecycle;
+  readiness?: LabsAgentReadiness;
   [extra: string]: unknown;
 }
 
@@ -1151,6 +1359,8 @@ export interface LabsAgentResponse {
   display_name?: string;
   runtime_mode?: string;
   preset_key?: string;
+  status?: string;
+  lifecycle?: LabsAgentLifecycle;
   profile?: Record<string, unknown>;
   runtime?: Record<string, unknown>;
   [extra: string]: unknown;
@@ -1186,6 +1396,9 @@ export interface ListLabsAgentsResponse {
 
 export interface GetLabsAgentResponse {
   agent: LabsAgentResponse;
+  runtime?: Record<string, unknown>;
+  widget?: Record<string, unknown>;
+  readiness?: LabsAgentReadiness;
 }
 
 export interface STTResult {
@@ -2371,6 +2584,15 @@ export interface CampaignLiveView {
   stats?: Record<string, unknown> | null;
 }
 
+export interface CampaignCreateInput {
+  name?: string;
+  goal?: string;
+  agentId?: string;
+  accountId?: string;
+  settings?: Record<string, unknown>;
+  outboundCallMode?: OutboundCallModeConfig;
+}
+
 export interface CampaignUpdateInput {
   name?: string;
   goal?: string;
@@ -2379,6 +2601,7 @@ export interface CampaignUpdateInput {
   emailBody?: string;
   cadence?: { channel: "voice" | "email"; delay_hours: number }[];
   settings?: Record<string, unknown>;
+  outboundCallMode?: OutboundCallModeConfig;
 }
 
 export interface BrandScanResult {
@@ -2443,13 +2666,21 @@ class CampaignsNamespace {
     return this.sm.requestAccountApi("GET", `/api/v1/campaigns${query}`);
   }
 
-  create(opts: { name?: string; goal?: string; agentId?: string; accountId?: string } = {}): Promise<{ campaign: CampaignSummary }> {
-    return this.sm.requestAccountApi("POST", "/api/v1/campaigns", compact({
+  async create(opts: CampaignCreateInput = {}): Promise<{ campaign: CampaignSummary }> {
+    const created = await this.sm.requestAccountApi<{ campaign: CampaignSummary }>("POST", "/api/v1/campaigns", compact({
       name: opts.name ?? "New campaign",
       goal: opts.goal ?? "book",
       agent_id: opts.agentId,
       account_id: opts.accountId,
     }));
+    const settings = campaignSettingsPayload(opts.settings, opts.outboundCallMode);
+    if (!Object.keys(settings).length) return created;
+    if (!created.campaign?.id) {
+      throw new SupafoneLabsError(
+        "Campaign was created but no campaign id was returned; outbound call mode was not saved.",
+      );
+    }
+    return this.update(created.campaign.id, { settings });
   }
 
   get(campaignId: string): Promise<{ campaign: CampaignSummary }> {
@@ -2457,6 +2688,7 @@ class CampaignsNamespace {
   }
 
   update(campaignId: string, input: CampaignUpdateInput): Promise<{ campaign: CampaignSummary }> {
+    const settings = campaignSettingsPayload(input.settings, input.outboundCallMode);
     const payload = compact({
       name: input.name,
       goal: input.goal,
@@ -2464,10 +2696,12 @@ class CampaignsNamespace {
       email_subject: input.emailSubject,
       email_body: input.emailBody,
       cadence: input.cadence,
-      settings: input.settings,
+      settings: Object.keys(settings).length ? settings : undefined,
     });
     if (!Object.keys(payload as Record<string, unknown>).length) {
-      throw new SupafoneLabsError("Nothing to update — pass name, goal, agentId, emailSubject, emailBody, cadence, or settings");
+      throw new SupafoneLabsError(
+        "Nothing to update — pass name, goal, agentId, emailSubject, emailBody, cadence, settings, or outboundCallMode",
+      );
     }
     return this.sm.requestAccountApi("PUT", `/api/v1/campaigns/${encodeURIComponent(campaignId)}`, payload);
   }
@@ -2900,6 +3134,61 @@ class LabsAgentsNamespace {
     return this.sm.requestSupafoneApi<GetLabsAgentResponse>(
       "GET",
       `/api/v1/labs/agents/${encodeURIComponent(agentKey)}${suffix}`,
+    );
+  }
+
+  /** Update an existing durable agent without changing omitted fields. */
+  update(
+    agentKey: string,
+    input: UpdateLabsAgentRequest,
+    opts: GetLabsAgentOptions = {},
+  ): Promise<LabsAgentLifecycleResponse> {
+    const q = new URLSearchParams();
+    if (opts.agencyId) q.set("agency_id", opts.agencyId);
+    const suffix = q.toString() ? `?${q}` : "";
+    return this.sm.requestSupafoneApi<LabsAgentLifecycleResponse>(
+      "PATCH",
+      `/api/v1/labs/agents/${encodeURIComponent(agentKey)}${suffix}`,
+      labsAgentUpdatePayload(input),
+    );
+  }
+
+  /** Ask the managed server whether this agent is ready to activate. */
+  readiness(agentKey: string, opts: GetLabsAgentOptions = {}): Promise<LabsAgentReadiness> {
+    const q = new URLSearchParams();
+    if (opts.agencyId) q.set("agency_id", opts.agencyId);
+    const suffix = q.toString() ? `?${q}` : "";
+    return this.sm.requestSupafoneApi<LabsAgentReadiness>(
+      "GET",
+      `/api/v1/labs/agents/${encodeURIComponent(agentKey)}/readiness${suffix}`,
+    );
+  }
+
+  /** Activate a ready hosted agent. */
+  activate(
+    agentKey: string,
+    opts: GetLabsAgentOptions = {},
+  ): Promise<LabsAgentLifecycleResponse> {
+    const q = new URLSearchParams();
+    if (opts.agencyId) q.set("agency_id", opts.agencyId);
+    const suffix = q.toString() ? `?${q}` : "";
+    return this.sm.requestSupafoneApi<LabsAgentLifecycleResponse>(
+      "POST",
+      `/api/v1/labs/agents/${encodeURIComponent(agentKey)}/activate${suffix}`,
+    );
+  }
+
+  /** Pause a hosted agent without deleting it. */
+  pause(
+    agentKey: string,
+    opts: GetLabsAgentOptions = {},
+  ): Promise<LabsAgentLifecycleResponse> {
+    const q = new URLSearchParams();
+    if (opts.agencyId) q.set("agency_id", opts.agencyId);
+    const suffix = q.toString() ? `?${q}` : "";
+    return this.sm.requestSupafoneApi<LabsAgentLifecycleResponse>(
+      "POST",
+      `/api/v1/labs/agents/${encodeURIComponent(agentKey)}/pause${suffix}`,
     );
   }
 
@@ -3493,6 +3782,128 @@ class OptimizerNamespace {
   }
 }
 
+function outboundCallModePayload(config: OutboundCallModeConfig): Record<string, unknown> {
+  const enabled = outboundModeBoolean(config.enabled, false, "enabled");
+  if (!enabled) return { version: 1, enabled: false };
+
+  const observabilityInput = config.observability ?? {};
+  if (typeof observabilityInput !== "object" || Array.isArray(observabilityInput)) {
+    throw new SupafoneLabsError("outboundCallMode.observability must be an object");
+  }
+  if (
+    observabilityInput.metadata !== undefined
+    && (typeof observabilityInput.metadata !== "object"
+      || observabilityInput.metadata === null
+      || Array.isArray(observabilityInput.metadata))
+  ) {
+    throw new SupafoneLabsError("outboundCallMode.observability.metadata must be an object");
+  }
+  const observability = compact({
+    enabled: outboundModeBoolean(observabilityInput.enabled, true, "observability.enabled"),
+    include_trigger: outboundModeBoolean(
+      observabilityInput.includeTrigger,
+      true,
+      "observability.includeTrigger",
+    ),
+    include_transitions: outboundModeBoolean(
+      observabilityInput.includeTransitions,
+      true,
+      "observability.includeTransitions",
+    ),
+    include_termination_reason: outboundModeBoolean(
+      observabilityInput.includeTerminationReason,
+      true,
+      "observability.includeTerminationReason",
+    ),
+    metadata: observabilityInput.metadata,
+  });
+  const payload: Record<string, unknown> = {
+    version: 1,
+    enabled: true,
+    initial_mode: "mission",
+    ivr_mode: "dynamic",
+    transport_scope: "provider_agnostic",
+    capability_policy: "fail_closed",
+    auto_detect: outboundModeBoolean(config.autoDetect, true, "autoDetect"),
+    dtmf_tool_enabled: outboundModeBoolean(config.dtmfToolEnabled, true, "dtmfToolEnabled"),
+    max_duration_seconds: outboundModeInteger(
+      config.maxDurationSeconds,
+      "maxDurationSeconds",
+    ),
+    max_keypresses: outboundModeInteger(config.maxKeypresses, "maxKeypresses"),
+    repeated_menu_limit: outboundModeInteger(config.repeatedMenuLimit, "repeatedMenuLimit"),
+    no_progress_timeout_seconds: outboundModeInteger(
+      config.noProgressTimeoutSeconds,
+      "noProgressTimeoutSeconds",
+    ),
+    human_detection_enabled: outboundModeBoolean(
+      config.humanDetectionEnabled,
+      true,
+      "humanDetectionEnabled",
+    ),
+    resume_on_human: outboundModeBoolean(config.resumeOnHuman, true, "resumeOnHuman"),
+    observability,
+  };
+  payload.required_capabilities = outboundCallModeRequiredCapabilities(payload);
+  return payload;
+}
+
+function outboundModeBoolean(value: boolean | undefined, fallback: boolean, key: string): boolean {
+  if (value === undefined) return fallback;
+  if (typeof value !== "boolean") {
+    throw new SupafoneLabsError(`outboundCallMode.${key} must be a boolean`);
+  }
+  return value;
+}
+
+function outboundModeInteger(
+  value: number | undefined,
+  key: keyof typeof OUTBOUND_CALL_MODE_BOUNDS,
+): number {
+  const bounds = OUTBOUND_CALL_MODE_BOUNDS[key];
+  const normalized = value ?? bounds.default;
+  if (!Number.isInteger(normalized)) {
+    throw new SupafoneLabsError(`outboundCallMode.${key} must be an integer`);
+  }
+  if (normalized < bounds.min || normalized > bounds.max) {
+    throw new SupafoneLabsError(
+      `outboundCallMode.${key} must be between ${bounds.min} and ${bounds.max}`,
+    );
+  }
+  return normalized;
+}
+
+function outboundCallModeRequiredCapabilities(payload: Record<string, unknown>): string[] {
+  const required = ["state_persistence"];
+  if (payload.dtmf_tool_enabled !== false) required.unshift("dtmf");
+  if (payload.human_detection_enabled !== false || payload.resume_on_human !== false) {
+    required.push("human_detection");
+  }
+  const observability = payload.observability as Record<string, unknown> | undefined;
+  if (observability?.enabled === true) required.push("observability");
+  return required;
+}
+
+function labsAgentMetadataPayload(input: CreateLabsAgentRequest): Record<string, unknown> | undefined {
+  const metadata = { ...(input.metadata ?? {}) };
+  const mode = input.outboundCallMode ?? input.outbound_call_mode;
+  if (mode !== undefined) metadata.outbound_call_mode = outboundCallModePayload(mode);
+  return Object.keys(metadata).length ? metadata : undefined;
+}
+
+function labsAgentUpdatePayload(input: UpdateLabsAgentRequest): Record<string, unknown> {
+  return labsAgentPayload(input as CreateLabsAgentRequest);
+}
+
+function campaignSettingsPayload(
+  settings?: Record<string, unknown>,
+  mode?: OutboundCallModeConfig,
+): Record<string, unknown> {
+  const payload = { ...(settings ?? {}) };
+  if (mode !== undefined) payload.outbound_call_mode = outboundCallModePayload(mode);
+  return payload;
+}
+
 function labsAgentPayload(input: CreateLabsAgentRequest): Record<string, unknown> {
   const fixedLanguage = input.preferred_language ?? input.preferredLanguage ?? input.language;
   return compact({
@@ -3542,7 +3953,7 @@ function labsAgentPayload(input: CreateLabsAgentRequest): Record<string, unknown
     ultravox: input.ultravox ? ultravoxPayload(input.ultravox) : undefined,
     voice_watcher: input.voice_watcher ?? input.voiceWatcher,
     voice_watcher_model: input.voice_watcher_model ?? input.voiceWatcherModel,
-    metadata: input.metadata,
+    metadata: labsAgentMetadataPayload(input),
   });
 }
 

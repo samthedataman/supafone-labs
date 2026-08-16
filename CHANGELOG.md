@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.5.0 - 2026-08-16
+
+- Added an opt-in, provider-neutral outbound IVR call-mode contract for Python and TypeScript.
+- Added fail-closed adapter readiness checks and public transport metadata for Supafone-managed, Twilio, Telnyx, Plivo, SignalWire, and SIP/BYOC.
+- Added hosted-agent update/readiness/activate/pause methods while preserving list/get/delete behavior.
+- Added hosted-agent and campaign persistence, safe bounds, examples, and documentation.
+
 All notable changes to this project are documented here. The format is based on
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project adheres to
 [Semantic Versioning](https://semver.org/spec/v2.0.0.html).

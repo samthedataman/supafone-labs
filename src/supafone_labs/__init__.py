@@ -7,7 +7,21 @@ from supafone_labs import (
     runtime,  # noqa: F401  (re-export the vendored runtime subpackage)
     stt,  # noqa: F401  (live multilingual transcription subpackage)
 )
-from supafone_labs.client import Supafone, SupafoneError, VoicePreview, generate_call_stages
+from supafone_labs.client import (
+    OUTBOUND_CALL_MODE_BOUNDS,
+    OUTBOUND_CALL_MODE_DEFAULTS,
+    OUTBOUND_CALL_MODE_PROVIDER_MATRIX,
+    OutboundCallModeCapabilities,
+    OutboundCallModeConfig,
+    OutboundCallModeObservability,
+    OutboundCallModeReadiness,
+    Supafone,
+    SupafoneError,
+    VoicePreview,
+    generate_call_stages,
+    outbound_call_mode_provider_profile,
+    outbound_call_mode_readiness,
+)
 from supafone_labs.config import ORACLE_MODELS, Settings, get_settings, provider_for_model
 from supafone_labs.facade import (
     CRM,
@@ -57,7 +71,7 @@ from supafone_labs.types import (
     directive_to_decision,
 )
 
-__version__ = "0.4.14"
+__version__ = "0.5.0"
 
 __all__ = [
     # facade
@@ -74,6 +88,15 @@ __all__ = [
     "SupafoneError",
     "VoicePreview",
     "generate_call_stages",
+    "OutboundCallModeObservability",
+    "OutboundCallModeConfig",
+    "OutboundCallModeCapabilities",
+    "OutboundCallModeReadiness",
+    "OUTBOUND_CALL_MODE_BOUNDS",
+    "OUTBOUND_CALL_MODE_DEFAULTS",
+    "OUTBOUND_CALL_MODE_PROVIDER_MATRIX",
+    "outbound_call_mode_provider_profile",
+    "outbound_call_mode_readiness",
     # oracle
     "OracleSession",
     "OracleWorkflow",
