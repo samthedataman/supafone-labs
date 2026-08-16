@@ -12,13 +12,273 @@ import os
 import re
 import time
 from dataclasses import dataclass
-from typing import Any, Callable, Iterator, Mapping, Optional
+from typing import Any, Callable, Iterator, Literal, Mapping, Optional, TypedDict
 from urllib import error, parse, request
 
 DEFAULT_SUPAFONE_API_BASE = "https://api.supafone.ai"
 DEFAULT_LABS_API_BASE = "https://api.labs.supafone.ai"
 
 Transport = Callable[[str, str, Optional[dict[str, Any]]], Any]
+
+
+class OutboundCallModeObservability(TypedDict, total=False):
+    """Public event controls for outbound IVR mode transitions."""
+
+    enabled: bool
+    include_trigger: bool
+    include_transitions: bool
+    include_termination_reason: bool
+    metadata: Mapping[str, Any]
+
+
+class OutboundCallModeConfig(TypedDict, total=False):
+    """Opt-in, provider-neutral outbound IVR navigation contract."""
+
+    enabled: bool
+    auto_detect: bool
+    dtmf_tool_enabled: bool
+    max_duration_seconds: int
+    max_keypresses: int
+    repeated_menu_limit: int
+    no_progress_timeout_seconds: int
+    human_detection_enabled: bool
+    resume_on_human: bool
+    observability: OutboundCallModeObservability
+
+
+class OutboundCallModeCapabilities(TypedDict, total=False):
+    """Capabilities positively reported by a telephony/runtime adapter."""
+
+    provider: str
+    dtmf: bool
+    state_persistence: bool
+    human_detection: bool
+    observability: bool
+    metadata: Mapping[str, Any]
+
+
+class OutboundCallModeReadiness(TypedDict):
+    """Fail-closed result for one mode configuration and adapter."""
+
+    ready: bool
+    status: Literal["disabled", "ready", "unknown", "unsupported"]
+    provider: str
+    transport_family: str
+    required_capabilities: list[str]
+    missing_capabilities: list[str]
+    unsupported_capabilities: list[str]
+    reasons: list[str]
+
+
+OUTBOUND_CALL_MODE_BOUNDS: dict[str, dict[str, int]] = {
+    "max_duration_seconds": {"default": 180, "min": 30, "max": 900},
+    "max_keypresses": {"default": 12, "min": 1, "max": 64},
+    "repeated_menu_limit": {"default": 3, "min": 1, "max": 10},
+    "no_progress_timeout_seconds": {"default": 30, "min": 5, "max": 120},
+}
+
+OUTBOUND_CALL_MODE_DEFAULTS: dict[str, Any] = {
+    "enabled": False,
+    "auto_detect": True,
+    "dtmf_tool_enabled": True,
+    "max_duration_seconds": 180,
+    "max_keypresses": 12,
+    "repeated_menu_limit": 3,
+    "no_progress_timeout_seconds": 30,
+    "human_detection_enabled": True,
+    "resume_on_human": True,
+    "observability": {
+        "enabled": True,
+        "include_trigger": True,
+        "include_transitions": True,
+        "include_termination_reason": True,
+    },
+}
+
+_PROVIDER_PROFILE_BASE: dict[str, Any] = {
+    "contract_supported": True,
+    "execution": "adapter_runtime_dependent",
+    "capability_policy": "fail_closed",
+    "required_capabilities": ["dtmf", "state_persistence", "human_detection"],
+}
+
+OUTBOUND_CALL_MODE_PROVIDER_MATRIX: dict[str, dict[str, Any]] = {
+    "supafone_managed": {
+        **_PROVIDER_PROFILE_BASE,
+        "transport_family": "supafone_managed",
+        "providers": ["supafone", "supafone_managed", "managed"],
+    },
+    "twilio": {
+        **_PROVIDER_PROFILE_BASE,
+        "transport_family": "twilio",
+        "providers": ["twilio", "byo_twilio"],
+    },
+    "telnyx": {
+        **_PROVIDER_PROFILE_BASE,
+        "transport_family": "telnyx",
+        "providers": ["telnyx", "byo_telnyx"],
+    },
+    "plivo": {
+        **_PROVIDER_PROFILE_BASE,
+        "transport_family": "plivo",
+        "providers": ["plivo", "byo_plivo"],
+    },
+    "signalwire": {
+        **_PROVIDER_PROFILE_BASE,
+        "transport_family": "signalwire",
+        "providers": ["signalwire", "signal_wire", "byo_signalwire"],
+    },
+    "sip_byoc": {
+        **_PROVIDER_PROFILE_BASE,
+        "transport_family": "sip_byoc",
+        "providers": ["sip", "custom_sip", "byo_sip", "byoc", "sip_byoc"],
+    },
+}
+
+
+def outbound_call_mode_provider_profile(provider: str) -> dict[str, Any]:
+    """Return public transport metadata without assuming runtime capabilities."""
+
+    normalized = str(provider or "").strip().lower()
+    for profile in OUTBOUND_CALL_MODE_PROVIDER_MATRIX.values():
+        if normalized in profile["providers"]:
+            return {**profile, "providers": list(profile["providers"])}
+    return {
+        "contract_supported": False,
+        "execution": "adapter_runtime_dependent",
+        "capability_policy": "fail_closed",
+        "transport_family": "unknown",
+        "providers": [normalized] if normalized else [],
+        "required_capabilities": ["dtmf", "state_persistence", "human_detection"],
+    }
+
+
+def outbound_call_mode_readiness(
+    config: Optional[Mapping[str, Any]],
+    capabilities: Optional[Mapping[str, Any]] = None,
+) -> OutboundCallModeReadiness:
+    """Evaluate readiness without inferring support from a carrier name."""
+
+    provider = str((capabilities or {}).get("provider") or "")
+    profile = outbound_call_mode_provider_profile(provider)
+    normalized = _normalize_outbound_call_mode(config or {})
+    if normalized.get("enabled") is not True:
+        return {
+            "ready": True,
+            "status": "disabled",
+            "provider": provider,
+            "transport_family": str(profile["transport_family"]),
+            "required_capabilities": [],
+            "missing_capabilities": [],
+            "unsupported_capabilities": [],
+            "reasons": [],
+        }
+
+    required = list(normalized["required_capabilities"])
+    reported = capabilities or {}
+    missing = [key for key in required if reported.get(key) is None]
+    unsupported = [key for key in required if reported.get(key) is False]
+    if unsupported:
+        status: Literal["disabled", "ready", "unknown", "unsupported"] = "unsupported"
+        reasons = [f"Adapter reports {key} is unsupported." for key in unsupported]
+    elif missing:
+        status = "unknown"
+        reasons = [f"Adapter did not report {key} support." for key in missing]
+    else:
+        status = "ready"
+        reasons = []
+    return {
+        "ready": status == "ready",
+        "status": status,
+        "provider": provider,
+        "transport_family": str(profile["transport_family"]),
+        "required_capabilities": required,
+        "missing_capabilities": missing,
+        "unsupported_capabilities": unsupported,
+        "reasons": reasons,
+    }
+
+
+def _normalize_outbound_call_mode(data: Mapping[str, Any]) -> dict[str, Any]:
+    if not isinstance(data, Mapping):
+        raise ValueError("outbound_call_mode must be a mapping")
+    enabled = _bounded_bool(data, "enabled", False)
+    if not enabled:
+        return {"version": 1, "enabled": False}
+
+    observability_raw = data.get("observability")
+    if observability_raw is None:
+        observability_raw = {}
+    if not isinstance(observability_raw, Mapping):
+        raise ValueError("outbound_call_mode.observability must be a mapping")
+    observability = {
+        "enabled": _bounded_bool(observability_raw, "enabled", True),
+        "include_trigger": _bounded_bool(observability_raw, "include_trigger", True),
+        "include_transitions": _bounded_bool(
+            observability_raw, "include_transitions", True
+        ),
+        "include_termination_reason": _bounded_bool(
+            observability_raw, "include_termination_reason", True
+        ),
+    }
+    if observability_raw.get("metadata") is not None:
+        if not isinstance(observability_raw["metadata"], Mapping):
+            raise ValueError("outbound_call_mode.observability.metadata must be a mapping")
+        observability["metadata"] = dict(observability_raw["metadata"])
+
+    normalized: dict[str, Any] = {
+        "version": 1,
+        "enabled": True,
+        "initial_mode": "mission",
+        "ivr_mode": "dynamic",
+        "transport_scope": "provider_agnostic",
+        "capability_policy": "fail_closed",
+        "auto_detect": _bounded_bool(data, "auto_detect", True),
+        "dtmf_tool_enabled": _bounded_bool(data, "dtmf_tool_enabled", True),
+        "max_duration_seconds": _bounded_int(data, "max_duration_seconds"),
+        "max_keypresses": _bounded_int(data, "max_keypresses"),
+        "repeated_menu_limit": _bounded_int(data, "repeated_menu_limit"),
+        "no_progress_timeout_seconds": _bounded_int(data, "no_progress_timeout_seconds"),
+        "human_detection_enabled": _bounded_bool(data, "human_detection_enabled", True),
+        "resume_on_human": _bounded_bool(data, "resume_on_human", True),
+        "observability": observability,
+    }
+    normalized["required_capabilities"] = _outbound_call_mode_required_capabilities(normalized)
+    return normalized
+
+
+def _bounded_bool(data: Mapping[str, Any], key: str, default: bool) -> bool:
+    value = data.get(key, default)
+    if not isinstance(value, bool):
+        raise ValueError(f"outbound_call_mode.{key} must be a boolean")
+    return value
+
+
+def _bounded_int(data: Mapping[str, Any], key: str) -> int:
+    bounds = OUTBOUND_CALL_MODE_BOUNDS[key]
+    value = data.get(key, bounds["default"])
+    if isinstance(value, bool) or not isinstance(value, int):
+        raise ValueError(f"outbound_call_mode.{key} must be an integer")
+    if value < bounds["min"] or value > bounds["max"]:
+        raise ValueError(
+            f"outbound_call_mode.{key} must be between {bounds['min']} and {bounds['max']}"
+        )
+    return value
+
+
+def _outbound_call_mode_required_capabilities(data: Mapping[str, Any]) -> list[str]:
+    required = ["state_persistence"]
+    if data.get("dtmf_tool_enabled") is not False:
+        required.insert(0, "dtmf")
+    if (
+        data.get("human_detection_enabled") is not False
+        or data.get("resume_on_human") is not False
+    ):
+        required.append("human_detection")
+    observability = data.get("observability")
+    if isinstance(observability, Mapping) and observability.get("enabled") is True:
+        required.append("observability")
+    return required
 
 
 class SupafoneError(RuntimeError):
@@ -838,13 +1098,27 @@ class CampaignsNamespace:
         agentId: Optional[str] = None,
         account_id: Optional[str] = None,
         accountId: Optional[str] = None,
+        settings: Optional[Mapping[str, Any]] = None,
+        outbound_call_mode: Optional[OutboundCallModeConfig] = None,
     ) -> Any:
         payload: dict[str, Any] = {"name": name, "goal": goal}
         if agent_id or agentId:
             payload["agent_id"] = agent_id or agentId
         if account_id or accountId:
             payload["account_id"] = account_id or accountId
-        return self._client._request_account_api("POST", "/api/v1/campaigns", payload)
+        created = self._client._request_account_api("POST", "/api/v1/campaigns", payload)
+        campaign_settings = _campaign_settings_payload(settings, outbound_call_mode)
+        if not campaign_settings:
+            return created
+        campaign = created.get("campaign") if isinstance(created, Mapping) else None
+        campaign_id = campaign.get("id") if isinstance(campaign, Mapping) else None
+        if not campaign_id:
+            raise SupafoneError(
+                "Campaign was created but no campaign id was returned; "
+                "outbound call mode was not saved.",
+                body=created,
+            )
+        return self.update(str(campaign_id), settings=campaign_settings)
 
     def get(self, campaign_id: str) -> Any:
         return self._client._request_account_api("GET", f"/api/v1/campaigns/{parse.quote(campaign_id)}")
@@ -865,9 +1139,15 @@ class CampaignsNamespace:
             value = _pick(fields, *keys)
             if value is not None:
                 payload[api_key] = value
+        outbound_call_mode = _pick(fields, "outbound_call_mode", "outboundCallMode")
+        if outbound_call_mode is not None:
+            payload["settings"] = _campaign_settings_payload(
+                payload.get("settings"), outbound_call_mode
+            )
         if not payload:
             raise SupafoneError(
-                "Nothing to update — pass name, goal, agent_id, email_subject, email_body, cadence, or settings"
+                "Nothing to update — pass name, goal, agent_id, email_subject, email_body, "
+                "cadence, settings, or outbound_call_mode"
             )
         return self._client._request_account_api(
             "PUT", f"/api/v1/campaigns/{parse.quote(campaign_id)}", payload
@@ -1235,6 +1515,50 @@ class LabsAgentsNamespace:
         suffix = f"?{parse.urlencode(query)}" if query else ""
         return self._client._request_supafone_api(
             "GET", f"/api/v1/labs/agents/{parse.quote(agent_key)}{suffix}"
+        )
+
+    def update(
+        self,
+        agent_key: str,
+        config: Optional[Mapping[str, Any]] = None,
+        *,
+        agency_id: Optional[str] = None,
+        agencyId: Optional[str] = None,
+        **kwargs: Any,
+    ) -> Any:
+        agency = agency_id or agencyId
+        suffix = f"?{parse.urlencode({'agency_id': agency})}" if agency else ""
+        return self._client._request_supafone_api(
+            "PATCH",
+            f"/api/v1/labs/agents/{parse.quote(agent_key)}{suffix}",
+            _labs_agent_update_payload(_merge(config, kwargs)),
+        )
+
+    def readiness(
+        self, agent_key: str, *, agency_id: Optional[str] = None, agencyId: Optional[str] = None
+    ) -> Any:
+        agency = agency_id or agencyId
+        suffix = f"?{parse.urlencode({'agency_id': agency})}" if agency else ""
+        return self._client._request_supafone_api(
+            "GET", f"/api/v1/labs/agents/{parse.quote(agent_key)}/readiness{suffix}"
+        )
+
+    def activate(
+        self, agent_key: str, *, agency_id: Optional[str] = None, agencyId: Optional[str] = None
+    ) -> Any:
+        agency = agency_id or agencyId
+        suffix = f"?{parse.urlencode({'agency_id': agency})}" if agency else ""
+        return self._client._request_supafone_api(
+            "POST", f"/api/v1/labs/agents/{parse.quote(agent_key)}/activate{suffix}"
+        )
+
+    def pause(
+        self, agent_key: str, *, agency_id: Optional[str] = None, agencyId: Optional[str] = None
+    ) -> Any:
+        agency = agency_id or agencyId
+        suffix = f"?{parse.urlencode({'agency_id': agency})}" if agency else ""
+        return self._client._request_supafone_api(
+            "POST", f"/api/v1/labs/agents/{parse.quote(agent_key)}/pause{suffix}"
         )
 
     def delete(
@@ -1930,9 +2254,39 @@ def _labs_agent_payload(data: Mapping[str, Any]) -> dict[str, Any]:
             "custom_sip": _custom_sip_payload(_pick(data, "custom_sip", "customSip", "sip") or {}),
             "voice_watcher": _pick(data, "voice_watcher", "voiceWatcher"),
             "voice_watcher_model": _pick(data, "voice_watcher_model", "voiceWatcherModel"),
-            "metadata": data.get("metadata"),
+            "metadata": _agent_metadata_payload(data),
         }
     )
+
+
+def _agent_metadata_payload(data: Mapping[str, Any]) -> dict[str, Any] | None:
+    metadata = dict(data.get("metadata") or {})
+    call_mode = _pick(data, "outbound_call_mode", "outboundCallMode")
+    if call_mode is not None:
+        metadata["outbound_call_mode"] = _normalize_outbound_call_mode(call_mode)
+    return metadata or None
+
+
+def _labs_agent_update_payload(data: Mapping[str, Any]) -> dict[str, Any]:
+    payload = dict(data)
+    call_mode = _pick(payload, "outbound_call_mode", "outboundCallMode")
+    payload.pop("outbound_call_mode", None)
+    payload.pop("outboundCallMode", None)
+    if call_mode is not None:
+        metadata = dict(payload.get("metadata") or {})
+        metadata["outbound_call_mode"] = _normalize_outbound_call_mode(call_mode)
+        payload["metadata"] = metadata
+    return payload
+
+
+def _campaign_settings_payload(
+    settings: Optional[Mapping[str, Any]],
+    outbound_call_mode: Optional[Mapping[str, Any]],
+) -> dict[str, Any]:
+    payload = dict(settings or {})
+    if outbound_call_mode is not None:
+        payload["outbound_call_mode"] = _normalize_outbound_call_mode(outbound_call_mode)
+    return payload
 
 
 def _voice_payload(data: Mapping[str, Any]) -> dict[str, Any]:

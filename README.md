@@ -126,6 +126,24 @@ The first configured language owns the greeting. A non-English primary
 greeting is translated during provisioning; see the
 [complete public guide](gitbook/live-language-voice-routing.md).
 
+Outbound agents can also opt into bounded phone-tree navigation:
+
+```python
+agent = supafone.labs.agents.create_outbound({
+    "name": "Benefits verification",
+    "outbound_call_mode": {
+        "enabled": True,
+        "max_duration_seconds": 180,
+        "max_keypresses": 12,
+    },
+})
+```
+
+The same contract covers Supafone-managed, Twilio, Telnyx, Plivo,
+SignalWire, and SIP/BYOC transports. Adapter capabilities are checked
+fail-closed; a carrier name alone never implies that DTMF navigation is ready.
+See [Outbound IVR Call Mode](docs/outbound-ivr-call-mode.md).
+
 The TypeScript package is also the canonical client for the Supafone hosted
 agent API at `https://api.supafone.ai/api/v1/labs`. The default path buys and
 routes Supafone-managed numbers, so developers do not need to create Twilio,

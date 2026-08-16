@@ -31,6 +31,7 @@ nav:
   - Quickstart: quickstart.md
   - Framework Coverage: providers.md
   - Hosted Agents API: hosted-agents-api.md
+  - Outbound IVR Call Mode: outbound-ivr-call-mode.md
   - Language and Voice Routing: live-language-voice-routing.md
 
 extra_css:
