@@ -25,7 +25,7 @@ test("voice catalog exposes live paging, capabilities, matching, preview, and ag
         runtime_spoken_languages: [],
         providers: [{ provider: "cartesia_sonic", models: [] }],
         selection_rule: {},
-        normalization_schema_version: 1,
+        normalization_schema_version: 2,
       });
     }
     if (parsed.pathname.endsWith("/voices/recommend")) {
@@ -44,11 +44,20 @@ test("voice catalog exposes live paging, capabilities, matching, preview, and ag
     if (parsed.pathname.endsWith("/voices")) {
       const cursor = Number(parsed.searchParams.get("cursor") || 0);
       return jsonResponse({
-        voices: [{ id: `cartesia-sonic:voice-${cursor}`, provider_key: "cartesia_sonic", model: "sonic-3.5" }],
+        voices: [{
+          id: `cartesia-sonic:voice-${cursor}`,
+          provider_key: "cartesia_sonic",
+          provider_label: "Cartesia",
+          provider_logo_url: "https://app.supafone.ai/logos/providers/cartesia.svg",
+          provider_brand: { key: "cartesia_sonic", name: "Cartesia" },
+          runtime_provider_brand: { key: "cartesia_sonic", name: "Cartesia" },
+          model: "sonic-3.5",
+        }],
         total: 2,
         cursor,
         next_cursor: cursor === 0 ? 1 : null,
         providers: [],
+        provider_brands: [{ key: "cartesia_sonic", name: "Cartesia" }],
       });
     }
     if (parsed.pathname.endsWith("/agents")) {
@@ -71,6 +80,9 @@ test("voice catalog exposes live paging, capabilities, matching, preview, and ag
     pageSize: 1,
   });
   assert.equal(catalog.voices.length, 2);
+  assert.equal(catalog.voices[0].provider_label, "Cartesia");
+  assert.match(catalog.voices[0].provider_logo_url, /cartesia\.svg$/);
+  assert.equal(catalog.provider_brands[0].name, "Cartesia");
   assert.match(calls[0].search, /provider=cartesia_sonic/);
   assert.match(calls[0].search, /language=es-MX/);
   assert.match(calls[0].search, /compatible_language=es/);

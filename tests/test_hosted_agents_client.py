@@ -293,6 +293,9 @@ def test_python_voice_catalog_sdk_parity():
                     {
                         "id": f"cartesia-sonic:voice-{cursor}",
                         "provider_key": "cartesia_sonic",
+                        "provider_label": "Cartesia",
+                        "provider_logo_url": "https://app.supafone.ai/logos/providers/cartesia.svg",
+                        "provider_brand": {"key": "cartesia_sonic", "name": "Cartesia"},
                         "model": "sonic-3.5",
                     }
                 ],
@@ -300,6 +303,7 @@ def test_python_voice_catalog_sdk_parity():
                 "cursor": cursor,
                 "next_cursor": 1 if cursor == 0 else None,
                 "providers": [],
+                "provider_brands": [{"key": "cartesia_sonic", "name": "Cartesia"}],
             }
         if path == "/api/v1/labs/agents":
             return {"agent": {"id": "agent-1"}}
@@ -322,6 +326,9 @@ def test_python_voice_catalog_sdk_parity():
         page_size=1,
     )
     assert len(catalog["voices"]) == 2
+    assert catalog["voices"][0]["provider_label"] == "Cartesia"
+    assert catalog["voices"][0]["provider_logo_url"].endswith("cartesia.svg")
+    assert catalog["provider_brands"][0]["name"] == "Cartesia"
     assert "provider=cartesia_sonic" in calls[0][1]
     assert "language=es-MX" in calls[0][1]
     assert "compatible_language=es" in calls[0][1]

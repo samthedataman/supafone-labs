@@ -287,16 +287,38 @@ export interface LabsVoiceProviderTraits {
   is_owner?: boolean | null;
 }
 
+/** Stable provider presentation metadata returned by the hosted catalog. */
+export interface LabsVoiceProviderBrand {
+  /** Canonical provider key used for filtering and grouping. */
+  key: string;
+  /** Human-readable provider/company name. */
+  name: string;
+  /** Stable local asset slug when Supafone has an official provider mark. */
+  logo_slug?: string | null;
+  /** Absolute, browser-ready provider logo URL. */
+  logo_url?: string | null;
+  /** Provider's official product or company website. */
+  website_url?: string | null;
+}
+
 export interface LabsVoiceCatalogItem {
   /** Stable runtime reference, including provider prefix when required. */
   id: string;
   voice_id: string;
   /** Human-readable provider display name. */
   provider: string;
+  /** Canonical brand display name for the synthesis provider. */
+  provider_label?: string;
+  /** Browser-ready official provider mark, or null for an unknown provider. */
+  provider_logo_url?: string | null;
+  /** Branding for the provider that renders the voice. */
+  provider_brand?: LabsVoiceProviderBrand;
   /** Canonical SDK/runtime provider key. */
   provider_key: string;
   /** Runtime adapter used to place the voice on an Ultravox call. */
   runtime_provider_key: string;
+  /** Branding for the realtime runtime, which can differ from synthesis. */
+  runtime_provider_brand?: LabsVoiceProviderBrand;
   /** Actual TTS engine behind the voice (can differ for Ultravox built-ins). */
   synthesis_provider_key: string;
   /** Raw identifier used by the provider API. */
@@ -1034,7 +1056,10 @@ export interface LabsVoiceListResponse {
     configured: boolean;
     voice_count: number;
     error?: string | null;
+    brand?: LabsVoiceProviderBrand;
   }>;
+  /** Distinct synthesis-provider brands represented in the complete result. */
+  provider_brands?: LabsVoiceProviderBrand[];
   provider_accounts?: Record<string, unknown>;
   errors?: Record<string, string>;
   catalog?: {

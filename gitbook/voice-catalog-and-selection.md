@@ -9,6 +9,39 @@ The catalog is live. Supafone pages each connected provider API to exhaustion,
 normalizes the results, and caches the account-scoped result for 10 minutes.
 Provider additions therefore appear without an SDK release.
 
+## Provider Brands and Logos
+
+Catalog schema version 2 includes stable presentation data for every voice:
+
+- `provider_label`: canonical synthesis-provider display name;
+- `provider_logo_url`: browser-ready provider mark when known;
+- `provider_brand`: key, name, logo slug/URL, and official website;
+- `runtime_provider_brand`: the realtime runtime's brand when it differs from
+  the TTS provider;
+- `provider_brands`: the distinct synthesis brands represented by the complete
+  catalog result.
+
+This keeps provider naming consistent in dashboards built with either SDK. Do
+not infer the TTS provider from the runtime: an Ultravox call can render an
+ElevenLabs, Cartesia, Inworld, or another provider-backed voice.
+
+```ts
+const catalog = await supafone.labs.voices.listAll();
+for (const voice of catalog.voices) {
+  console.log(voice.provider_label, voice.provider_logo_url, voice.label);
+}
+```
+
+```python
+catalog = supafone.labs.voices.list_all()
+for voice in catalog["voices"]:
+    print(voice["provider_label"], voice["provider_logo_url"], voice["label"])
+```
+
+Unknown future providers remain selectable. Their canonical name is returned
+while logo fields are null, allowing clients to render a text or monogram
+fallback without rejecting the voice.
+
 ## The Compatibility Rule
 
 A provider having a voice does not automatically mean that voice can run in
@@ -184,6 +217,8 @@ Every row includes:
 - stable IDs: `id`, `provider_voice_id`, `provider_key`;
 - runtime identity: `runtime_provider_key`, `synthesis_provider_key`, `model`;
 - names: provider display name, voice name, description, and style;
+- provider presentation: canonical brand name, logo URL/slug, official site,
+  and separate synthesis/runtime brands;
 - language: native profiles, model support, runtime intersection, and tier;
 - classification: gender, accent, age, voice types, tags, and use cases;
 - availability: configured, premium, custom, recommended, and preview flags;

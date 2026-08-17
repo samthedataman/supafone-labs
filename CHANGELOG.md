@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.5.1 - 2026-08-17
+
+- Added canonical synthesis/runtime provider branding to every normalized voice,
+  including brand name, browser-ready logo URL, asset slug, and official site.
+- Added distinct `provider_brands` metadata to paginated catalog responses so
+  developer UIs can render complete provider filters without hard-coded labels.
+- Documented schema version 2 while preserving the existing voice IDs,
+  pagination, selection, preview, and Agent Factory behavior.
+
 ## 0.5.0 - 2026-08-16
 
 - Added an opt-in, provider-neutral outbound IVR call-mode contract for Python and TypeScript.
