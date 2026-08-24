@@ -1,6 +1,8 @@
 import json
 
-from supafone_labs import Supafone, VoicePreview
+import pytest
+
+from supafone_labs import Supafone, SupafoneError, VoicePreview
 
 
 def test_create_inbound_serializes_hosted_agent_payload():
@@ -117,7 +119,7 @@ def test_language_profiles_strip_private_or_unknown_nested_fields():
     assert "privatePolicy" not in profiles[0]
 
 
-def test_language_profiles_are_not_silently_truncated_before_backend_validation():
+def test_language_profiles_reject_more_than_four_before_the_api_call():
     calls = []
 
     def transport(method, path, payload):
@@ -125,18 +127,132 @@ def test_language_profiles_are_not_silently_truncated_before_backend_validation(
         return {"success": True, "agent": {}, "runtime": {}}
 
     supafone = Supafone(api_key="sf_test", transport=transport)
-    supafone.labs.agents.create_inbound(
+    with pytest.raises(SupafoneError, match="at most four"):
+        supafone.labs.agents.create_inbound(
+            {
+                "name": "Too many profiles",
+                "languageVoiceRouting": True,
+                "languageProfiles": [
+                    {"language": language}
+                    for language in ("en-US", "es-MX", "fr-FR", "de-DE", "vi-VN")
+                ],
+            }
+        )
+
+    assert calls == []
+
+
+def test_agent_update_and_website_corpus_routes_are_normalized():
+    calls = []
+
+    def transport(method, path, payload):
+        calls.append((method, path, payload))
+        return {"success": True, "agent": {"id": "agent-1"}}
+
+    supafone = Supafone(api_key="sf_test", transport=transport)
+    supafone.labs.agents.update(
+        "agent-key",
         {
-            "name": "Too many profiles",
-            "languageVoiceRouting": True,
-            "languageProfiles": [
-                {"language": language}
-                for language in ("en-US", "es-MX", "fr-FR", "de-DE", "vi-VN")
-            ],
-        }
+            "websiteUrl": "",
+            "systemPrompt": "Use only verified facts.",
+            "tools": {"callRouting": True},
+            "recording": {"recordAudio": True, "retentionDays": 14},
+        },
+    )
+    supafone.labs.agents.syncKnowledge("agent-1", websiteUrl="https://example.com")
+    supafone.labs.agents.detachWebsiteKnowledge("agent-1")
+    supafone.labs.agents.list(
+        agency_id="agency-1", agent_type="phone", style="inbound"
+    )
+    supafone.labs.agents.get(
+        "agent-key", agency_id="agency-1", agent_type="phone"
     )
 
-    assert len(calls[0][2]["language_profiles"]) == 5
+    assert calls[0] == (
+        "PATCH",
+        "/api/v1/labs/agents/agent-key",
+        {
+            "website_url": "",
+            "system_prompt": "Use only verified facts.",
+            "recording": {"record_audio": True, "retention_days": 14},
+            "tools": {"call_routing": True},
+        },
+    )
+    assert calls[1] == (
+        "POST",
+        "/api/v1/agents/agent-1/sync-knowledge",
+        {"url": "https://example.com"},
+    )
+    assert calls[2][:2] == (
+        "DELETE",
+        "/api/v1/agents/agent-1/knowledge/website",
+    )
+    assert calls[3][1] == (
+        "/api/v1/labs/agents?agency_id=agency-1&agent_type=phone&style=inbound"
+    )
+    assert calls[4][1] == (
+        "/api/v1/labs/agents/agent-key?agency_id=agency-1&agent_type=phone"
+    )
+
+
+def test_agent_update_can_clear_website_without_other_fields():
+    calls = []
+
+    def transport(method, path, payload):
+        calls.append((method, path, payload))
+        return {"success": True, "agent": {"id": "agent-1"}}
+
+    supafone = Supafone(api_key="sf_test", transport=transport)
+    supafone.labs.agents.update("agent-key", {"websiteUrl": ""})
+
+    assert calls == [
+        ("PATCH", "/api/v1/labs/agents/agent-key", {"website_url": ""})
+    ]
+
+
+def test_agent_native_webrtc_and_knowledge_methods(tmp_path):
+    calls = []
+
+    def transport(method, path, payload):
+        calls.append((method, path, payload))
+        return {"success": True, "agent": {"id": "agent-1"}}
+
+    document = tmp_path / 'policy"\r\nX-Injected.txt'
+    document.write_text("Verified policy", encoding="utf-8")
+
+    supafone = Supafone(api_key="sf_test", transport=transport)
+    supafone.labs.agents.startWebRtcCall("agent-1")
+    supafone.labs.agents.reindexKnowledge("agent-1")
+    supafone.labs.agents.uploadKnowledgeDocument("agent-1", str(document))
+    supafone.labs.agents.deleteKnowledgeDocument("agent-1", "doc/unsafe")
+    supafone.labs.agents.chatKnowledge(
+        "agent-1",
+        "What is the policy?",
+        history=[{"role": "user", "content": "Use saved sources."}],
+    )
+
+    assert calls[0][:2] == ("POST", "/api/v1/agents/agent-1/test-call")
+    assert calls[1][:2] == (
+        "POST",
+        "/api/v1/agents/agent-1/knowledge/reindex",
+    )
+    assert calls[2] == (
+        "UPLOAD",
+        "/api/v1/agents/agent-1/knowledge/upload",
+        {"filename": "policyX-Injected.txt", "size": 15},
+    )
+    assert calls[3][:2] == (
+        "DELETE",
+        "/api/v1/agents/agent-1/knowledge/docs/doc%2Funsafe",
+    )
+    assert calls[4] == (
+        "POST",
+        "/api/v1/agents/agent-1/knowledge-chat",
+        {
+            "message": "What is the policy?",
+            "history": [{"role": "user", "content": "Use saved sources."}],
+        },
+    )
 
 
 def test_create_inbound_with_number_searches_and_assigns_number():

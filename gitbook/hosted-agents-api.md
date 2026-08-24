@@ -30,7 +30,17 @@ cross tenants merely by supplying another `agency_id`.
 | Agents | `POST /agents` | Create an agent; generates a plan when stages are omitted | `labs.agents.create()` and direction helpers |
 | Agents | `GET /agents` | List account agents; optional `agent_type` | `labs.agents.list()` |
 | Agents | `GET /agents/{agent_key}` | Fetch one agent, runtime, and widget | `labs.agents.get()` |
+| Agents | `PATCH /agents/{agent_key}` | Update only supplied agent settings | `labs.agents.update()` |
+| Agents | `GET /agents/{agent_key}/readiness` | Return activation blockers | `labs.agents.readiness()` |
+| Agents | `POST /agents/{agent_key}/activate` | Activate a ready agent | `labs.agents.activate()` |
+| Agents | `POST /agents/{agent_key}/pause` | Pause without deleting state | `labs.agents.pause()` |
 | Agents | `DELETE /agents/{agent_key}` | Delete; optional `release_numbers=true` | `labs.agents.delete()` |
+| Knowledge | `POST /api/v1/agents/{agent.id}/sync-knowledge` | Scrape and rebuild website knowledge | `labs.agents.syncKnowledge()` |
+| Knowledge | `DELETE /api/v1/agents/{agent.id}/knowledge/website` | Detach only website-derived knowledge | `labs.agents.detachWebsiteKnowledge()` |
+| Knowledge | `POST /api/v1/agents/{agent.id}/knowledge/reindex` | Rebuild the managed corpus | `labs.agents.reindexKnowledge()` |
+| Knowledge | `POST /api/v1/agents/{agent.id}/knowledge/upload` | Upload and index a document | `labs.agents.uploadKnowledgeDocument()` |
+| Knowledge | `POST /api/v1/agents/{agent.id}/knowledge-chat` | Query the same grounded corpus calls use | `labs.agents.chatKnowledge()` |
+| Browser | `POST /api/v1/agents/{agent.id}/test-call` | Start a WebRTC test session | `labs.agents.startWebRtcCall()` |
 | Voices | `GET /voices` | Paged provider-authorized catalog with filters | `labs.voices.list()` |
 | Voices | `GET /voices/preview?voice=...` | Stream an authenticated MP3 preview | REST; SDK preview helper is on Labs Cloud |
 | Runtime | `GET /runtime` | Masked managed/BYOK Ultravox status | `labs.runtime.get()` |

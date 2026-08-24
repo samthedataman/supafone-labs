@@ -417,6 +417,56 @@ class Supafone:
             detail = parsed.get("detail") if isinstance(parsed, dict) else parsed
             raise SupafoneError(str(detail or exc.reason), status=exc.code, body=parsed) from exc
 
+    def _request_supafone_upload(self, path: str, *, filename: str, data: bytes) -> Any:
+        """Upload a knowledge file with the same account-scoped Labs key."""
+        safe_name = (
+            filename.replace('"', "")
+            .replace("\\", "")
+            .replace("\r", "")
+            .replace("\n", "")[:120]
+            or "document.txt"
+        )
+        if self._transport:
+            return self._transport(
+                "UPLOAD", path, {"filename": safe_name, "size": len(data)}
+            )
+
+        boundary = f"----supafone{os.urandom(12).hex()}"
+        body = b"".join(
+            [
+                f"--{boundary}\r\n".encode(),
+                (
+                    'Content-Disposition: form-data; name="file"; '
+                    f'filename="{safe_name}"\r\n'
+                ).encode(),
+                b"Content-Type: application/octet-stream\r\n\r\n",
+                data,
+                f"\r\n--{boundary}--\r\n".encode(),
+            ]
+        )
+        req = request.Request(
+            self.supafone_api_base_url + path,
+            data=body,
+            headers={
+                "Authorization": f"Bearer {self.supafone_api_key}",
+                "Accept": "application/json",
+                "Content-Type": f"multipart/form-data; boundary={boundary}",
+            },
+            method="POST",
+        )
+        try:
+            with request.urlopen(req, timeout=max(self.timeout, 120.0)) as resp:
+                raw = resp.read().decode("utf-8")
+                return json.loads(raw) if raw else {}
+        except error.HTTPError as exc:
+            raw = exc.read().decode("utf-8", errors="replace")
+            try:
+                parsed: Any = json.loads(raw)
+            except json.JSONDecodeError:
+                parsed = raw
+            detail = parsed.get("detail") if isinstance(parsed, dict) else parsed
+            raise SupafoneError(str(detail or exc.reason), status=exc.code, body=parsed) from exc
+
     def _request_supafone_binary(self, path: str) -> VoicePreview:
         if self._transport:
             value = self._transport("GET_BINARY", path, None)
@@ -1501,17 +1551,35 @@ class LabsAgentsNamespace:
     createInboundWithNumber = create_inbound_with_number
     createOutboundWithNumber = create_outbound_with_number
 
-    def list(self, *, agency_id: Optional[str] = None, agent_type: Optional[str] = None) -> Any:
+    def list(
+        self,
+        *,
+        agency_id: Optional[str] = None,
+        agent_type: Optional[str] = None,
+        style: Optional[str] = None,
+    ) -> Any:
         query: dict[str, str] = {}
         if agency_id:
             query["agency_id"] = agency_id
         if agent_type:
             query["agent_type"] = agent_type
+        if style:
+            query["style"] = style
         suffix = f"?{parse.urlencode(query)}" if query else ""
         return self._client._request_supafone_api("GET", f"/api/v1/labs/agents{suffix}")
 
-    def get(self, agent_key: str, *, agency_id: Optional[str] = None) -> Any:
-        query = {"agency_id": agency_id} if agency_id else {}
+    def get(
+        self,
+        agent_key: str,
+        *,
+        agency_id: Optional[str] = None,
+        agent_type: Optional[str] = None,
+    ) -> Any:
+        query: dict[str, str] = {}
+        if agency_id:
+            query["agency_id"] = agency_id
+        if agent_type:
+            query["agent_type"] = agent_type
         suffix = f"?{parse.urlencode(query)}" if query else ""
         return self._client._request_supafone_api(
             "GET", f"/api/v1/labs/agents/{parse.quote(agent_key)}{suffix}"
@@ -1533,6 +1601,31 @@ class LabsAgentsNamespace:
             f"/api/v1/labs/agents/{parse.quote(agent_key)}{suffix}",
             _labs_agent_update_payload(_merge(config, kwargs)),
         )
+
+    def sync_knowledge(
+        self,
+        agent_id: str,
+        config: Optional[Mapping[str, Any]] = None,
+        **kwargs: Any,
+    ) -> Any:
+        """Scrape a website and rebuild the agent's managed knowledge corpus."""
+        data = _merge(config, kwargs)
+        return self._client._request_supafone_api(
+            "POST",
+            f"/api/v1/agents/{parse.quote(agent_id, safe='')}/sync-knowledge",
+            {"url": _pick(data, "url", "website_url", "websiteUrl") or ""},
+        )
+
+    syncKnowledge = sync_knowledge
+
+    def detach_website_knowledge(self, agent_id: str) -> Any:
+        """Remove website knowledge while preserving uploaded documents and notes."""
+        return self._client._request_supafone_api(
+            "DELETE",
+            f"/api/v1/agents/{parse.quote(agent_id, safe='')}/knowledge/website",
+        )
+
+    detachWebsiteKnowledge = detach_website_knowledge
 
     def readiness(
         self, agent_key: str, *, agency_id: Optional[str] = None, agencyId: Optional[str] = None
@@ -1560,6 +1653,63 @@ class LabsAgentsNamespace:
         return self._client._request_supafone_api(
             "POST", f"/api/v1/labs/agents/{parse.quote(agent_key)}/pause{suffix}"
         )
+
+    def start_webrtc_call(self, agent_id: str) -> Any:
+        """Start the native browser voice test for this durable agent."""
+        return self._client.start_webrtc_call(agent_id=agent_id)
+
+    startWebRtcCall = start_webrtc_call
+    start_browser_call = start_webrtc_call
+    startBrowserCall = start_webrtc_call
+
+    def reindex_knowledge(self, agent_id: str) -> Any:
+        """Rebuild retrieval data from the agent's saved knowledge sources."""
+        return self._client._request_supafone_api(
+            "POST",
+            f"/api/v1/agents/{parse.quote(agent_id, safe='')}/knowledge/reindex",
+        )
+
+    reindexKnowledge = reindex_knowledge
+
+    def upload_knowledge_document(self, agent_id: str, file_path: str) -> Any:
+        """Upload and index a txt, md, csv, or PDF knowledge document."""
+        with open(file_path, "rb") as handle:
+            data = handle.read()
+        return self._client._request_supafone_upload(
+            f"/api/v1/agents/{parse.quote(agent_id, safe='')}/knowledge/upload",
+            filename=os.path.basename(file_path),
+            data=data,
+        )
+
+    uploadKnowledgeDocument = upload_knowledge_document
+
+    def delete_knowledge_document(self, agent_id: str, document_id: str) -> Any:
+        """Delete one document and rebuild the agent's managed corpus."""
+        return self._client._request_supafone_api(
+            "DELETE",
+            (
+                f"/api/v1/agents/{parse.quote(agent_id, safe='')}/knowledge/docs/"
+                f"{parse.quote(document_id, safe='')}"
+            ),
+        )
+
+    deleteKnowledgeDocument = delete_knowledge_document
+
+    def chat_knowledge(
+        self,
+        agent_id: str,
+        message: str,
+        *,
+        history: Optional[list[dict[str, str]]] = None,
+    ) -> Any:
+        """Ask a grounded question against the same corpus used during calls."""
+        return self._client._request_supafone_api(
+            "POST",
+            f"/api/v1/agents/{parse.quote(agent_id, safe='')}/knowledge-chat",
+            {"message": message, "history": history or []},
+        )
+
+    chatKnowledge = chat_knowledge
 
     def delete(
         self,
@@ -2177,6 +2327,8 @@ def _agent_key(agent: Any, config: Mapping[str, Any]) -> str:
 def _language_profiles_payload(value: Any) -> list[dict[str, Any]] | None:
     if not isinstance(value, list):
         return None
+    if len(value) > 4:
+        raise SupafoneError("languageProfiles supports at most four profiles")
     profiles: list[dict[str, Any]] = []
     for item in value:
         if not isinstance(item, Mapping):
@@ -2268,14 +2420,9 @@ def _agent_metadata_payload(data: Mapping[str, Any]) -> dict[str, Any] | None:
 
 
 def _labs_agent_update_payload(data: Mapping[str, Any]) -> dict[str, Any]:
-    payload = dict(data)
-    call_mode = _pick(payload, "outbound_call_mode", "outboundCallMode")
-    payload.pop("outbound_call_mode", None)
-    payload.pop("outboundCallMode", None)
-    if call_mode is not None:
-        metadata = dict(payload.get("metadata") or {})
-        metadata["outbound_call_mode"] = _normalize_outbound_call_mode(call_mode)
-        payload["metadata"] = metadata
+    payload = _labs_agent_payload(data) or {}
+    if "website_url" in data or "websiteUrl" in data:
+        payload["website_url"] = _pick(data, "website_url", "websiteUrl")
     return payload
 
 

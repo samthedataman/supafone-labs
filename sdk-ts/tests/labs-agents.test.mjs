@@ -112,19 +112,22 @@ test("languageProfiles serialize only documented public fields", async (t) => {
   assert.equal("privatePolicy" in log[0].body.language_profiles[0], false);
 });
 
-test("languageProfiles are not silently truncated before backend validation", async (t) => {
+test("languageProfiles reject more than four before the API call", (t) => {
   const log = [];
   t.mock.method(globalThis, "fetch", mockFetch([agentResponse], log));
   const sf = new Supafone({ apiKey: "sf_test" });
 
-  await sf.labs.agents.createInbound({
-    agentKey: "too-many-profiles",
-    name: "Too many profiles",
-    languageVoiceRouting: true,
-    languageProfiles: ["en-US", "es-MX", "fr-FR", "de-DE", "vi-VN"].map((language) => ({
-      language,
-    })),
-  });
+  assert.throws(
+    () => sf.labs.agents.createInbound({
+      agentKey: "too-many-profiles",
+      name: "Too many profiles",
+      languageVoiceRouting: true,
+      languageProfiles: ["en-US", "es-MX", "fr-FR", "de-DE", "vi-VN"].map((language) => ({
+        language,
+      })),
+    }),
+    /at most four/,
+  );
 
-  assert.equal(log[0].body.language_profiles.length, 5);
+  assert.equal(log.length, 0);
 });

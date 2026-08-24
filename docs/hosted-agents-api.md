@@ -293,7 +293,6 @@ curl "$SUPAFONE_API_BASE_URL/api/v1/labs/agents" \
       "scheduling": true,
       "sms": true,
       "email": true,
-      "intake_forms": true,
       "firm_knowledge": true,
       "voicemail": true
     },
@@ -365,6 +364,40 @@ curl "$SUPAFONE_API_BASE_URL/api/v1/labs/agents/northline-web-intake?agent_type=
 
 The API key is scoped to one Supafone account. Passing another `agency_id`
 returns `403`.
+
+## Update, test, and manage knowledge
+
+Agent lifecycle routes use the stable `agent_key` returned by agent creation:
+
+```ts
+await supafone.labs.agents.update("northline-web-intake", {
+  greeting: "Thanks for contacting Northline. How can I help?",
+});
+const readiness = await supafone.labs.agents.readiness("northline-web-intake");
+if (readiness.ready) await supafone.labs.agents.activate("northline-web-intake");
+```
+
+WebRTC and knowledge routes use the durable `agent.id` from the same response:
+
+```ts
+await supafone.labs.agents.syncKnowledge(agent.agent.id!, {
+  websiteUrl: "https://example.com",
+});
+await supafone.labs.agents.uploadKnowledgeDocument(
+  agent.agent.id!,
+  fileBytes,
+  "policies.pdf",
+);
+const answer = await supafone.labs.agents.chatKnowledge(
+  agent.agent.id!,
+  "What is the cancellation policy?",
+);
+const browserCall = await supafone.labs.agents.startWebRtcCall(agent.agent.id!);
+```
+
+The corpus is account-isolated and managed by Supafone. Retrieval uses a safe
+fallback when semantic search is unavailable; private storage, embedding, and
+routing implementation is intentionally not part of the SDK contract.
 
 ## Phone numbers and telephony
 

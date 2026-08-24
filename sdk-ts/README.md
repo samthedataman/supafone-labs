@@ -535,6 +535,10 @@ and `const { Supafone } = require("supafone-labs")` both work, with full types.
 | `labs.capabilities()` | `GET /api/v1/labs/capabilities` on the Supafone API |
 | `labs.agents.create/createInbound/createOutbound/list/get` | `/api/v1/labs/agents*` on the Supafone API |
 | `labs.agents.createInboundWithNumber/createOutboundWithNumber` | Agent creation plus Supafone-managed number buy/assign |
+| `labs.agents.update/readiness/activate/pause/delete` | Durable agent lifecycle using `agent_key` |
+| `labs.agents.startWebRtcCall` | Browser voice test using the durable `agent.id` |
+| `labs.agents.syncKnowledge/detachWebsiteKnowledge/reindexKnowledge` | Managed website corpus lifecycle using `agent.id` |
+| `labs.agents.uploadKnowledgeDocument/deleteKnowledgeDocument/chatKnowledge` | Account-isolated document and grounded-query methods |
 | `labs.phoneNumbers.search/buy/assign/list/buyAndAssign` | `/api/v1/labs/phone-numbers*` |
 | `labs.billing.checkout/status/portal` | Stripe-hosted Checkout, payment polling, and Customer Portal |
 | `labs.telephony.get/configure/useSupafoneManaged` | `/api/v1/labs/telephony` |

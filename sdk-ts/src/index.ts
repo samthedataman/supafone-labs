@@ -1002,6 +1002,30 @@ export interface LabsAgentLifecycleResponse {
   [extra: string]: unknown;
 }
 
+export interface LabsKnowledgeSyncRequest {
+  websiteUrl?: string;
+  website_url?: string;
+  url?: string;
+}
+
+export interface LabsKnowledgeSyncResponse {
+  agent: LabsAgentResponse;
+  chunks_indexed?: number;
+  scraped_ok?: boolean;
+  last_error?: string | null;
+  website_detached?: boolean;
+}
+
+export interface LabsKnowledgeChatTurn {
+  role: "user" | "assistant";
+  content: string;
+}
+
+export interface LabsKnowledgeChatResponse {
+  reply: string;
+  sources: string[];
+}
+
 export interface LabsCapabilitiesResponse {
   product: string;
   api_namespace: string;
@@ -1960,6 +1984,37 @@ export class SupafoneLabs {
       if (!res.ok) {
         const detail = (parsed as { detail?: string })?.detail ?? text ?? `HTTP ${res.status}`;
         throw new SupafoneLabsError(`${method} ${path}: ${detail}`, res.status, parsed);
+      }
+      return parsed as T;
+    } finally {
+      clearTimeout(timer);
+    }
+  }
+
+  /** @internal Multipart upload to the Supafone product API with the Labs key. */
+  async requestSupafoneUpload<T>(
+    path: string,
+    file: Uint8Array | ArrayBuffer | Blob,
+    filename: string,
+  ): Promise<T> {
+    const ctrl = new AbortController();
+    const timer = setTimeout(() => ctrl.abort(), Math.max(this.timeoutMs, 120_000));
+    try {
+      const safeFilename = filename.replace(/["\\\r\n]/g, "").slice(0, 120) || "document.txt";
+      const blob = file instanceof Blob ? file : new Blob([file as BlobPart]);
+      const form = new FormData();
+      form.append("file", blob, safeFilename);
+      const res = await fetch(this.supafoneApiBaseUrl + path, {
+        method: "POST",
+        signal: ctrl.signal,
+        headers: { Authorization: `Bearer ${this.supafoneApiKey}` },
+        body: form,
+      });
+      const text = await res.text();
+      const parsed = text ? safeJson(text) : {};
+      if (!res.ok) {
+        const detail = (parsed as { detail?: string })?.detail ?? text ?? `HTTP ${res.status}`;
+        throw new SupafoneLabsError(`POST ${path}: ${detail}`, res.status, parsed);
       }
       return parsed as T;
     } finally {
@@ -3178,6 +3233,26 @@ class LabsAgentsNamespace {
     );
   }
 
+  /** Scrape a website and rebuild this agent's managed knowledge corpus. */
+  syncKnowledge(
+    agentId: string,
+    input: LabsKnowledgeSyncRequest = {},
+  ): Promise<LabsKnowledgeSyncResponse> {
+    return this.sm.requestSupafoneApi<LabsKnowledgeSyncResponse>(
+      "POST",
+      `/api/v1/agents/${encodeURIComponent(agentId)}/sync-knowledge`,
+      { url: input.url ?? input.website_url ?? input.websiteUrl ?? "" },
+    );
+  }
+
+  /** Remove website knowledge while preserving uploaded documents and notes. */
+  detachWebsiteKnowledge(agentId: string): Promise<LabsKnowledgeSyncResponse> {
+    return this.sm.requestSupafoneApi<LabsKnowledgeSyncResponse>(
+      "DELETE",
+      `/api/v1/agents/${encodeURIComponent(agentId)}/knowledge/website`,
+    );
+  }
+
   /** Ask the managed server whether this agent is ready to activate. */
   readiness(agentKey: string, opts: GetLabsAgentOptions = {}): Promise<LabsAgentReadiness> {
     const q = new URLSearchParams();
@@ -3214,6 +3289,56 @@ class LabsAgentsNamespace {
     return this.sm.requestSupafoneApi<LabsAgentLifecycleResponse>(
       "POST",
       `/api/v1/labs/agents/${encodeURIComponent(agentKey)}/pause${suffix}`,
+    );
+  }
+
+  /** Start the native provider-neutral browser voice session for this agent. */
+  startWebRtcCall(agentId: string): Promise<WebRtcCallResult> {
+    return this.sm.startWebRtcCall({ agentId });
+  }
+
+  /** Rebuild retrieval data from the agent's already saved knowledge sources. */
+  reindexKnowledge(agentId: string): Promise<Record<string, unknown>> {
+    return this.sm.requestSupafoneApi(
+      "POST",
+      `/api/v1/agents/${encodeURIComponent(agentId)}/knowledge/reindex`,
+    );
+  }
+
+  /** Upload and index a txt, md, csv, or PDF knowledge document. */
+  uploadKnowledgeDocument(
+    agentId: string,
+    file: Uint8Array | ArrayBuffer | Blob,
+    filename: string,
+  ): Promise<{ agent: LabsAgentResponse }> {
+    return this.sm.requestSupafoneUpload(
+      `/api/v1/agents/${encodeURIComponent(agentId)}/knowledge/upload`,
+      file,
+      filename,
+    );
+  }
+
+  /** Delete one document and rebuild the agent's managed corpus. */
+  deleteKnowledgeDocument(
+    agentId: string,
+    documentId: string,
+  ): Promise<{ agent: LabsAgentResponse }> {
+    return this.sm.requestSupafoneApi(
+      "DELETE",
+      `/api/v1/agents/${encodeURIComponent(agentId)}/knowledge/docs/${encodeURIComponent(documentId)}`,
+    );
+  }
+
+  /** Ask a grounded question against the same corpus used during calls. */
+  chatKnowledge(
+    agentId: string,
+    message: string,
+    history: LabsKnowledgeChatTurn[] = [],
+  ): Promise<LabsKnowledgeChatResponse> {
+    return this.sm.requestSupafoneApi(
+      "POST",
+      `/api/v1/agents/${encodeURIComponent(agentId)}/knowledge-chat`,
+      { message, history },
     );
   }
 
@@ -4231,6 +4356,9 @@ function languageProfilesPayload(
   input?: LabsLanguageVoiceProfile[],
 ): Record<string, unknown>[] | undefined {
   if (!Array.isArray(input)) return undefined;
+  if (input.length > 4) {
+    throw new SupafoneLabsError("languageProfiles supports at most four profiles");
+  }
   const profiles = input.map((profile) => compact({
     language: profile.language,
     language_hint: profile.language_hint ?? profile.languageHint,
