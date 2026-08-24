@@ -1,5 +1,16 @@
 # Changelog
 
+## 0.5.2 - 2026-08-24
+
+- Added complete hosted-agent lifecycle parity in Python and TypeScript:
+  partial updates, readiness, activation, pause, deletion, and browser WebRTC.
+- Added managed knowledge methods for website sync/detach, document
+  upload/delete, corpus reindexing, and grounded corpus queries.
+- Added local validation for the four-profile language-routing limit and
+  hardened multipart filenames against header injection.
+- Kept retrieval implementation, routing policy, credentials, and tenant
+  storage private; public packages expose only account-scoped API contracts.
+
 ## 0.5.1 - 2026-08-17
 
 - Added canonical synthesis/runtime provider branding to every normalized voice,

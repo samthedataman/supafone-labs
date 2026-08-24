@@ -215,3 +215,105 @@ test("paid number buy opens checkout before provisioning and reuses the paid ses
   assert.match(log[1].url, /api\.supafone\.ai\/api\/v1\/labs\/phone-numbers$/);
   assert.equal(log[1].body.billing_checkout_session_id, "cs_test_number");
 });
+
+test("agent updates and website corpus methods preserve the native API contract", async (t) => {
+  const log = [];
+  t.mock.method(globalThis, "fetch", async (url, init) => {
+    log.push({
+      url: String(url),
+      method: init?.method,
+      body: typeof init?.body === "string" ? JSON.parse(init.body) : undefined,
+    });
+    return {
+      ok: true,
+      status: 200,
+      text: async () => JSON.stringify({ agent: { id: "agent-1" } }),
+    };
+  });
+
+  const sf = new Supafone({ apiKey: "sl_test" });
+  await sf.labs.agents.update("agent-key", {
+    websiteUrl: "",
+    systemPrompt: "Use only verified facts.",
+    tools: { callRouting: true },
+    recording: { recordAudio: true, retentionDays: 14 },
+  });
+  await sf.labs.agents.syncKnowledge("agent-1", { websiteUrl: "https://example.com" });
+  await sf.labs.agents.detachWebsiteKnowledge("agent-1");
+
+  assert.deepEqual(log[0].body, {
+    website_url: "",
+    system_prompt: "Use only verified facts.",
+    recording: { record_audio: true, retention_days: 14 },
+    tools: { call_routing: true },
+  });
+  assert.equal(log[0].method, "PATCH");
+  assert.match(log[0].url, /\/api\/v1\/labs\/agents\/agent-key$/);
+  assert.deepEqual(log[1].body, { url: "https://example.com" });
+  assert.match(log[1].url, /\/api\/v1\/agents\/agent-1\/sync-knowledge$/);
+  assert.equal(log[2].method, "DELETE");
+  assert.match(log[2].url, /\/api\/v1\/agents\/agent-1\/knowledge\/website$/);
+});
+
+test("agent-scoped WebRTC and knowledge methods expose all durable artifacts", async (t) => {
+  const log = [];
+  t.mock.method(globalThis, "fetch", async (url, init) => {
+    const body = init?.body;
+    log.push({
+      url: String(url),
+      method: init?.method,
+      body: typeof body === "string" ? JSON.parse(body) : body,
+    });
+    return {
+      ok: true,
+      status: 200,
+      text: async () => JSON.stringify({
+        success: true,
+        agent: { id: "agent-1" },
+        browser_session: { provider: "ultravox", transport: "webrtc", join_url: "https://join" },
+      }),
+    };
+  });
+
+  const sf = new Supafone({ apiKey: "sl_test" });
+  await sf.labs.agents.startWebRtcCall("agent-1");
+  await sf.labs.agents.reindexKnowledge("agent-1");
+  await sf.labs.agents.uploadKnowledgeDocument(
+    "agent-1",
+    new TextEncoder().encode("Verified policy"),
+    'policy"\r\nX-Injected.txt',
+  );
+  await sf.labs.agents.deleteKnowledgeDocument("agent-1", "doc/unsafe");
+  await sf.labs.agents.chatKnowledge(
+    "agent-1",
+    "What is the policy?",
+    [{ role: "user", content: "Use saved sources." }],
+  );
+
+  assert.match(log[0].url, /\/api\/v1\/agents\/agent-1\/test-call$/);
+  assert.match(log[1].url, /\/api\/v1\/agents\/agent-1\/knowledge\/reindex$/);
+  assert.ok(log[2].body instanceof FormData);
+  assert.equal(log[2].body.get("file").name, "policyX-Injected.txt");
+  assert.match(log[3].url, /\/knowledge\/docs\/doc%2Funsafe$/);
+  assert.deepEqual(log[4].body, {
+    message: "What is the policy?",
+    history: [{ role: "user", content: "Use saved sources." }],
+  });
+});
+
+test("agent factory rejects a fifth language profile before sending a request", (t) => {
+  const log = [];
+  t.mock.method(globalThis, "fetch", mockFetch(log));
+
+  const sf = new Supafone({ apiKey: "sl_test" });
+  assert.throws(
+    () => sf.labs.agents.create({
+      name: "Too many profiles",
+      languageProfiles: ["en-US", "es-MX", "fr-FR", "de-DE", "vi-VN"].map(
+        (language) => ({ language }),
+      ),
+    }),
+    /at most four/,
+  );
+  assert.equal(log.length, 0);
+});

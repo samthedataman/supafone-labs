@@ -105,6 +105,16 @@ const agent = await supafone.labs.agents.createInboundWithNumber({
   number: { search: { areaCode: "415" } },
   labs: { enabled: true, model: "gemma" },
 });
+
+// Lifecycle methods use agent_key. Corpus and WebRTC methods use agent.id.
+await supafone.labs.agents.update(agent.agent.agent_key!, {
+  greeting: "Thanks for calling Northline. How can I help?",
+});
+await supafone.labs.agents.syncKnowledge(
+  agent.agent.id!,
+  { websiteUrl: "https://northline.example" },
+);
+const browserCall = await supafone.labs.agents.startWebRtcCall(agent.agent.id!);
 ```
 
 Multilingual Agent Factory calls are also opt-in and default off:
