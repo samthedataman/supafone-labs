@@ -2,7 +2,7 @@
 
 Supafone Labs exposes **fourteen audited runtime integrations**. Every adapter
 converts provider-specific events into one canonical call state. When a runtime
-has a supported control channel, the same abstract Watcher directive is
+has a supported control channel, the same abstract Supervisor directive is
 compiled back into that runtime's native message or developer-owned context.
 
 This page distinguishes five different claims that should never be conflated:
@@ -17,7 +17,7 @@ This page distinguishes five different claims that should never be conflated:
 
 ## Runtime matrix
 
-| Runtime | Support class | Watcher delivery | Acceptance criterion |
+| Runtime | Support class | Supervisor delivery | Acceptance criterion |
 | --- | --- | --- | --- |
 | <a id="provider-supafone"></a>Supafone Agent Factory | Managed native control | Ultravox `user_text_message` with `urgency=later` | Managed call accepts the data message |
 | <a id="provider-ultravox"></a>Ultravox | Native control | Deferred `user_text_message` | Send Data Message returns HTTP 204 |
@@ -89,7 +89,7 @@ opt-in hosted-agent behavior.
 The public release verifies framework support at three levels:
 
 1. `tests/test_provider_injection_e2e.py` runs all fourteen adapters from a
-   provider event through canonical state, Watcher decision, and exact action.
+   provider event through canonical state, Supervisor decision, and exact action.
 2. `tests/test_live_injection_contracts.py` performs credentialed acceptance
    probes where the vendor exposes a live test path. Missing credentials are
    skips, never passes.

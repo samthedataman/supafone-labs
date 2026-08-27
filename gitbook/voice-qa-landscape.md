@@ -68,9 +68,9 @@ assertion? Pass/fail, with the judge quoting the moment that decided it.
 Second: the SSR grade against your overall objective (next section).
 
 **A/B the supervisor.** `qa.run()` plays every scenario twice — once bare,
-once with the Labs watcher whispering silent corrections — and reports the
+once with Supafone Supervisor providing silent corrections — and reports the
 **lift**: how much supervision improved the score, per scenario. That tells
-you exactly which failure modes the watcher fixes before you pay for it in
+you exactly which failure modes the supervisor fixes before you pay for it in
 production.
 
 ```ts

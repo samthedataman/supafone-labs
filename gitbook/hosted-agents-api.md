@@ -57,7 +57,7 @@ cross tenants merely by supplying another `agency_id`.
 | Calls | `GET /calls` | Account call history; optional `agent_key` and `limit` | `labs.calls.list()` |
 | Calls | `GET /calls/{call_id}` | One account-isolated call and its live/completed data | `labs.calls.get()` |
 | Calls | `DELETE /calls/{call_id}` | Delete the call, Supafone-owned archive, transcript, and call-scoped activity | `labs.calls.delete()` |
-| Activity | `GET /activity` | Durable agent, call, Watcher, transcript, recording, and plan events | `labs.activity.list()` / `labs.plans.list()` |
+| Activity | `GET /activity` | Durable agent, call, Supervisor, transcript, recording, and plan events | `labs.activity.list()` / `labs.plans.list()` |
 | Recordings | `GET /recordings` | Signed recording artifacts; optional call/agent filter | `labs.recordings.list()` |
 | Recordings | `GET /recordings/{call_id}` | One signed recording artifact | `labs.recordings.get()` |
 | Recordings | `DELETE /recordings/{call_id}` | Remove Supafone's reference and audit the request | `labs.recordings.delete()` |
@@ -142,7 +142,7 @@ Expected capability themes:
     "requires_developer_provider_keys": false,
     "runtime_mode": "multi_stage",
     "default_preset_key": "general_intake_receptionist",
-    "labs_label": "Supafone Pro",
+    "labs_label": "Supafone Supervisor",
     "recording": true,
     "transcription": true,
     "web_widget": true,

@@ -10,7 +10,7 @@ from supafone_labs.runtime.core.state import RuntimeState
 from supafone_labs.types import BeliefState
 
 BELIEF_SYSTEM = (
-    "You are the perception core of a 'second mind' that rides alongside a live voice agent. "
+    "You are the perception core of a 'supervisor' that rides alongside a live voice agent. "
     "Maintain a structured BELIEF STATE about the caller from the conversation so far. "
     "Return ONLY a JSON object with keys: caller_identity, case_type, emotional_state, intent, "
     "language (short code like en, es, or unknown), urgency (0-1 float), confidence (0-1 float), "

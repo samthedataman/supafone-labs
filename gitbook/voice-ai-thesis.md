@@ -35,7 +35,7 @@ Coding-agent systems made multi-agent work practical by standardizing tools, con
 A voice-agent swarm is not several agents talking over one another. It is a set of specialized agents operating around one live conversation:
 
 1. **Live agent** speaks with the caller and executes approved tools.
-2. **Watcher** observes off the audio hot path and injects silent corrections only when needed.
+2. **Supervisor** observes off the audio hot path and injects silent corrections only when needed.
 3. **Synthetic caller** attacks the agent with repeatable scenarios before customers do.
 4. **Judge** scores the finished call against explicit assertions and an objective.
 5. **Classifier** turns the transcript, tool outcomes, and artifacts into structured post-call data.
@@ -55,7 +55,7 @@ ways to receive it.
 
 ### Bring Your Stack — primary
 
-Keep the runtime and carrier you already use. The Supafone Watcher normalizes
+Keep the runtime and carrier you already use. The Supafone Supervisor normalizes
 provider events, maintains empathy and operational state across turns, and
 compiles corrections back into provider-native control actions.
 
@@ -69,7 +69,7 @@ pretend to re-host every vendor. The stable boundary is:
 
 ### Agent Factory — secondary
 
-Use Supafone-managed defaults to create a complete hosted agent, assign or buy a phone number, configure a voice, enable tools, attach the Watcher, and return deployable artifacts.
+Use Supafone-managed defaults to create a complete hosted agent, assign or buy a phone number, configure a voice, enable tools, attach the Supervisor, and return deployable artifacts.
 
 This is the shortest path from an idea to a working voice agent.
 
@@ -88,7 +88,7 @@ A voice framework should include the operational pieces developers otherwise reb
 
 Calls should move through explicit stages such as greeting, consent, discovery, qualification, action, confirmation, and close. Stages make the live agent testable and prevent a model from skipping required steps.
 
-Deterministic policies should govern consent, claims, tool verification, transfers, and recovery even when the model or Watcher is unavailable.
+Deterministic policies should govern consent, claims, tool verification, transfers, and recovery even when the model or Supervisor is unavailable.
 
 ### Knowledge and tools
 
@@ -117,7 +117,7 @@ Every production call should produce useful artifacts:
 - a live and final transcript,
 - recording metadata and retained audio when consent permits,
 - tool calls and verified results,
-- Watcher interventions,
+- Supervisor interventions,
 - stage transitions,
 - provider and latency metadata,
 - post-call classification and objective score.
@@ -133,7 +133,7 @@ The safe loop is controlled and inspectable:
 ```text
 objective
   -> live calls
-  -> silent Watcher corrections
+  -> silent Supervisor corrections
   -> transcripts + tool outcomes + recordings
   -> post-call classification
   -> SSR grade distribution
@@ -141,7 +141,7 @@ objective
   -> versioned A/B measurement
 ```
 
-The live Watcher is timeout-bounded and off the audio hot path. If it fails or has nothing useful to add, the call continues.
+The live Supervisor is timeout-bounded and off the audio hot path. If it fails or has nothing useful to add, the call continues.
 
 The post-call optimizer works from completed evidence. It proposes a short, versioned standing directive that targets repeated failure patterns. A human or an authorized workflow can review the change before it becomes the next production version.
 
@@ -178,7 +178,7 @@ With one Supafone key, an authorized coding agent can:
 - provision phone numbers,
 - test an agent by phone,
 - inspect usage and logs,
-- tail live Watcher activity,
+- tail live Supervisor activity,
 - run QA,
 - manage campaigns,
 - place authorized calls,
@@ -201,7 +201,7 @@ A voice platform that "just works" must:
 3. require authorization before real calls,
 4. require consent before recording or outreach,
 5. preserve a deterministic state and policy layer,
-6. degrade safely when a model, provider, or Watcher fails,
+6. degrade safely when a model, provider, or Supervisor fails,
 7. retain transcripts, recordings, and tool evidence according to policy,
 8. make every automated improvement versioned and measurable,
 9. support provider-native adapters without locking the developer into one runtime,

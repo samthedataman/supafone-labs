@@ -57,7 +57,7 @@ and supervisor providers are independent.
 from supafone_labs import SupafoneLabs
 from supafone_labs.config import Settings
 
-watcher = SupafoneLabs(
+supervisor = SupafoneLabs(
     provider="ultravox",       # speaking-agent adapter
     llm="anthropic",           # supervisor provider
     oracle_model="claude-haiku-4-5-20251001",
@@ -75,7 +75,7 @@ watcher = SupafoneLabs(
 
 For raw hosted completions, both SDKs expose `model`, `max_tokens`/
 `maxTokens`, and `temperature`. `whisper()` additionally accepts operator
-`guardrails`. The full watcher also accepts custom belief/directive prompts,
+`guardrails`. The full supervisor also accepts custom belief/directive prompts,
 an injection adapter, telemetry and post-call controls, and an `agent_label`
 for optimization history.
 

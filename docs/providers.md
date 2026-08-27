@@ -49,7 +49,7 @@ through the complete SDK boundary:
 
 1. A current provider event enters the public `SupafoneLabs` facade.
 2. The adapter emits canonical events.
-3. The Watcher forms a belief, directive, and runtime decision.
+3. The Supervisor forms a belief, directive, and runtime decision.
 4. The adapter compiles the exact native control or framework-context payload.
 5. The test validates that payload byte-for-byte, or validates a safe no-action
    result for Bland and Cartesia.

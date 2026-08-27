@@ -19,7 +19,7 @@ from supafone_labs.types import (
 )
 
 DIRECTIVE_SYSTEM = (
-    "You are the coaching core of a 'second mind' for a live voice agent. Given the caller belief "
+    "You are the coaching core of a 'supervisor' for a live voice agent. Given the caller belief "
     "state, produce a single silent coaching DIRECTIVE the agent will read but never speak aloud. "
     "Return ONLY a JSON object with keys: empathy_directive (string), tactical_directive (string), "
     "surface_facts (array), guardrails (array), language (short code like en, es, or unknown), "

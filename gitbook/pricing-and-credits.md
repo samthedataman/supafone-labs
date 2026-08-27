@@ -1,7 +1,7 @@
 # Pricing and Credits
 
 Labs Cloud uses a prepaid minute ledger. One Supafone minute covers hosted
-agent runtime, self-healing watcher work, managed model/TTS/STT access, logs,
+agent runtime, Supafone Supervisor work, managed model/TTS/STT access, logs,
 QA, and optimizer reports.
 
 Pricing data is exposed publicly:
@@ -24,7 +24,7 @@ The trial signup grants 5 free minutes.
 
 Supafone does **not** add a second fee just because a call is recorded. Hosted
 calls debit the connected voice-agent runtime from the minute ledger. The
-recording artifact is included. Transcription, supervisor/SecondMind work, QA,
+recording artifact is included. Transcription, supervisor/Supafone Supervisor work, QA,
 and longer-term storage remain separate internal meters so usage and margins
 stay auditable; the customer still sees one clear Supafone balance.
 

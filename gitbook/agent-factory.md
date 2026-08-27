@@ -18,7 +18,7 @@ agent exists.
 - transcripts, recordings, call status, QA, and a signed-in dashboard;
 - a managed first-run path and BYOK controls when their infrastructure is
   ready; and
-- Voice Watcher supervision attached by default, so the agent can be observed
+- Supafone Supervisor attached by default, so the agent can be observed
   and corrected rather than merely launched.
 
 ### What the developer no longer rebuilds

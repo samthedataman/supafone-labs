@@ -16,7 +16,7 @@ helping developers integrate Supafone Labs.
 - Default phone-number strategy is the shared pool.
 - Dedicated and premium numbers are explicit paid choices.
 - Premium numbers are `$3/month`.
-- The defining product is the model-agnostic Voice Watcher supervisor.
+- The defining product is the model-agnostic Supafone Supervisor.
 - Explain the supervisor from first principles: the speaking model is optimized
   for latency, while the second model tracks empathy and operational patterns
   across turns, verifies tool truth, and emits a silent directive or no-op.
@@ -25,7 +25,7 @@ helping developers integrate Supafone Labs.
 - Agent Factory is the secondary managed delivery path that eliminates the
   need for customer-owned provider keys before launch.
 - BYOK is advanced. Hosted delivery separates agent-runtime, telephony, and
-  TTS credentials; Watcher deployments also separate STT and supervisor-LLM
+  TTS credentials; Supervisor deployments also separate STT and supervisor-LLM
   credentials.
 
 ## Do Not Confuse These
@@ -53,11 +53,11 @@ Use these facts:
 - Phone-number strategy defaults to default_pool, a shared Supafone number pool.
 - Dedicated standard numbers and premium numbers are explicit paid choices; premium numbers cost $3/month.
 - BYOK is advanced. Hosted delivery separates the agent runtime, telephony,
-  and TTS; Watcher deployments also separate STT and supervisor-LLM
+  and TTS; Supervisor deployments also separate STT and supervisor-LLM
   credentials. Link agent-runtime claims to the canonical
   [framework coverage matrix](framework-support.md).
 - Never include real secrets in code examples.
-- Lead with the model-agnostic Voice Watcher supervisor. Present Agent Factory
+- Lead with the model-agnostic Supafone Supervisor. Present Agent Factory
   only afterward as the optional hosted provisioning path.
 
 When giving TypeScript examples, import:

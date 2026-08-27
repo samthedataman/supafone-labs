@@ -157,7 +157,7 @@ One Agent Factory configuration is reused across the managed call paths:
 | Browser WebRTC | Same primary greeting and routing contract without Twilio |
 
 The current hosted routing adapter is managed Ultravox. The provider-neutral
-Voice Watcher framework supports other voice stacks, but this Agent Factory
+Supafone Supervisor framework supports other voice stacks, but this Agent Factory
 provisioning flag does not claim live voice-switch control for arbitrary BYOK
 agent runtimes.
 

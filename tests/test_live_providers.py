@@ -113,7 +113,7 @@ async def test_live_cartesia_ink_stt_round_trip():
     from supafone_labs.runtime.core.events import EventTypes
     from supafone_labs.tts import DeepgramTTSProvider
 
-    spoken = "The second mind is listening."
+    spoken = "The Supafone Supervisor is listening."
     audio = await DeepgramTTSProvider().synthesize(spoken)
     with wave.open(io.BytesIO(audio), "rb") as wav:
         rate = wav.getframerate()
@@ -146,7 +146,7 @@ async def test_live_cartesia_ink_stt_round_trip():
         EventTypes.CALLER_TRANSCRIPT_FINAL,
         EventTypes.CALLER_TRANSCRIPT_PARTIAL,
     }
-    assert "second mind" in events[0].text.lower()
+    assert "supafone supervisor" in events[0].text.lower()
 
 
 @needs("DEEPGRAM_API_KEY")
@@ -161,7 +161,7 @@ async def test_live_multilingual_stt_tap_nova3_multi():
     from supafone_labs.stt import DeepgramLiveSTT
     from supafone_labs.tts import DeepgramTTSProvider
 
-    spoken = "The second mind is listening to this call."
+    spoken = "The Supafone Supervisor is listening to this call."
     audio = await DeepgramTTSProvider().synthesize(spoken)
     with wave.open(io.BytesIO(audio), "rb") as wav:
         rate = wav.getframerate()
@@ -219,5 +219,5 @@ async def test_live_inworld_tts_returns_audio():
 
     provider = InworldTTSProvider()
     assert provider.enabled
-    audio = await provider.synthesize("Second mind live probe.")
+    audio = await provider.synthesize("Supafone Supervisor live probe.")
     assert isinstance(audio, bytes) and len(audio) > 1000

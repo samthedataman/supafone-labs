@@ -17,14 +17,14 @@ function mockFetch(log) {
   };
 }
 
-test("agent factory preserves the published Voice Watcher default", async (t) => {
+test("agent factory preserves the published Supervisor default", async (t) => {
   const log = [];
   t.mock.method(globalThis, "fetch", mockFetch(log));
 
   const sf = new Supafone({ apiKey: "sl_test" });
   await sf.labs.agents.create({ name: "Receptionist" });
 
-  assert.equal(sf.voiceWatcher, true);
+  assert.equal(sf.supervisor, true);
   assert.equal(log[0].body.voice_watcher, true);
   assert.equal("call_stages" in log[0].body, false);
 });
@@ -63,11 +63,11 @@ test("hosted planner uses the product API and never sends provider secrets", asy
   assert.equal("telephony" in log[0].body, false);
 });
 
-test("agent factory honors an explicit watcher override", async (t) => {
+test("agent factory honors an explicit Supervisor override", async (t) => {
   const log = [];
   t.mock.method(globalThis, "fetch", mockFetch(log));
 
-  const sf = new Supafone({ apiKey: "sl_test", voiceWatcher: false });
+  const sf = new Supafone({ apiKey: "sl_test", supervisor: false });
   await sf.labs.agents.create({ name: "Raw agent" });
 
   assert.equal(log[0].body.voice_watcher, false);

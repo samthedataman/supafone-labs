@@ -24,31 +24,38 @@ Supafone Labs was built around the failures that appear at those boundaries:
 
 | Production problem | Supafone innovation | What changes for the developer |
 | --- | --- | --- |
-| The speaking agent must supervise itself | **Voice Watcher and SecondMind** run beside the call and issue one bounded directive only when evidence is strong | Add supervision without replacing the agent or extending the audio hot path |
+| The speaking agent must supervise itself | **Supafone Supervisor** runs beside the call and issues one bounded directive only when evidence is strong | Add supervision without replacing the agent or extending the audio hot path |
 | Every voice platform has different events and controls | **Canonical runtime plus 14 audited adapters** normalize call events and compile guidance into the control each platform actually supports | Keep the current provider and reuse the same supervision, QA, and telemetry |
 | Prompts make operational claims that tools never confirmed | **Truth state and guardrail policies** track verified bookings, transfers, deliveries, consent, and failures separately from model language | Prevent the agent from claiming an action succeeded before a tool proves it |
 | Every new agent starts as another prompt-engineering project | **Agent Factory** turns a job description into editable stages, tools, routing, numbers, voices, and artifacts | Provision complete inbound, outbound, browser, and campaign agents through one API |
 | Testing is manual role-play | **Adversarial QA and SSR grading** generate scenarios from the agent objective and compare supervised with unsupervised behavior | Measure regressions and supervision lift before deployment |
-| Calls disappear into provider dashboards | **Durable activity APIs** retain agents, plans, calls, recordings, transcripts, watcher events, and post-call outcomes | Build one operational console instead of reconciling vendor logs |
+| Calls disappear into provider dashboards | **Durable activity APIs** retain agents, plans, calls, recordings, transcripts, supervision events, and post-call outcomes | Build one operational console instead of reconciling vendor logs |
 | Multilingual calls lose context or use the wrong voice | **Language-aware transcription and opt-in language/voice profiles** preserve the active workflow while the language changes | Configure multilingual behavior without rewriting the agent graph |
 | Phone, WebRTC, SMS, campaigns, and signing become separate systems | **One SDK and one account model** connect managed delivery, messaging, campaigns, artifacts, and writebacks | Stop rebuilding the surrounding product for every customer |
 
 ## The architecture
 
-```mermaid
-flowchart LR
-    caller[Caller] --> agent[Speaking agent]
-    agent --> tools[Tools and business systems]
-    agent -. events .-> runtime[Canonical call state]
-    tools -. verified outcomes .-> runtime
-    runtime --> watcher[Voice Watcher / SecondMind]
-    watcher --> gate[Confidence and policy gate]
-    gate --> adapter[Provider adapter]
-    adapter -. silent guidance .-> agent
-    runtime --> artifacts[Transcripts, recordings, QA, analytics]
+```text
+Caller -> speaking agent -> tools and business systems
+             |                         |
+             +---- call events --------+
+                          |
+                          v
+               canonical call state
+                    |          |
+                    v          v
+              live supervision   call artifacts
+                    |
+          confidence + policy gate
+                    |
+              provider adapter
+                    |
+          silent bounded guidance
+                    |
+                    +------> speaking agent
 ```
 
-The call never waits for the Watcher. If supervision is unavailable, late, or
+The call never waits for the Supervisor. If supervision is unavailable, late, or
 uncertain, the gate emits no directive and the original agent continues.
 
 ## Two ways to use the package
@@ -64,7 +71,7 @@ result = await supervisor.observe(provider_event)
 
 The package auto-detects supported agents when possible, normalizes their
 events, and returns the provider-appropriate action. Start with
-[Voice Watcher](self-healing-watcher.md), then check the
+[Supafone Supervisor](supafone-supervisor.md), then check the
 [framework coverage matrix](framework-support.md).
 
 ### Provision the complete agent
@@ -72,10 +79,7 @@ events, and returns the provider-appropriate action. Start with
 ```ts
 import { Supafone } from "supafone-labs";
 
-const supafone = new Supafone({
-  apiKey: process.env.SUPAFONE_TOKEN!,
-  voiceWatcher: true,
-});
+const supafone = new Supafone({ apiKey: process.env.SUPAFONE_TOKEN! });
 
 const agent = await supafone.labs.agents.createInboundWithNumber({
   agentKey: "northline-intake",
@@ -86,7 +90,7 @@ const agent = await supafone.labs.agents.createInboundWithNumber({
 ```
 
 Agent Factory adds the plan, number, voice, stages, tools, call artifacts, and
-Watcher. Developers can inspect and edit the generated plan before creation.
+live supervision. Developers can inspect and edit the generated plan before creation.
 
 ## Framework coverage
 
@@ -118,7 +122,7 @@ acceptance criterion, and managed-delivery status for every runtime.
 
 1. Read [the production problems](production-voice-ai-challenges.md).
 2. Follow the [quickstart](quickstart.md).
-3. Understand [Voice Watcher and SecondMind](self-healing-watcher.md).
+3. Understand [Supafone Supervisor](supafone-supervisor.md).
 4. Review [all supported frameworks](framework-support.md).
 5. Install the [Python or TypeScript SDK](sdk-installation.md).
 6. Choose [managed delivery or BYOK](byok-providers.md).

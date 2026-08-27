@@ -6,7 +6,7 @@ voice and workflow state, survive a worker handoff, verify tools, fail over
 safely, and remain observable across providers?
 
 Supafone treats those as control-plane problems. The realtime agent stays on
-the low-latency speaking path. Voice Watcher and the shared runtime handle
+the low-latency speaking path. Supafone Supervisor and the shared runtime handle
 supervision, continuity, policy, telemetry, and recovery beside the call.
 
 The core product is the model-agnostic supervisor, not the hosted Agent
@@ -23,9 +23,9 @@ infrastructure.
 | A caller changes language mid-call | Up to four approved language profiles, explicit-request priority, evidence-gated automatic detection, and two-way switching | The caller does not hang up, restart intake, or repeat facts |
 | One voice sounds wrong in another language | A dedicated voice and regional hint per language, with native/external voice resolution and graceful fallback | Better pronunciation without turning voice loading into a call-ending dependency |
 | Switching language resets the agent | The same call, persona, prompt, tools, workflow stage, captured facts, and runtime settings remain active | Booking, intake, transfer, signing, CRM, and campaign work continue in context |
-| Every voice vendor exposes different controls | One canonical Watcher event/directive contract compiled through provider adapters | Teams can change voice stacks without rebuilding supervision and QA |
-| Tool calls fail but the agent claims success | Voice Watcher compares spoken claims with tool results and can inject a silent correction | Fewer false booking, sending, pricing, and policy confirmations |
-| A supervisor is needed, but another agent would add latency | SecondMind reasons off the audio hot path and privately guides the speaking agent | Live coaching without making every caller wait for the slower model |
+| Every voice vendor exposes different controls | One canonical Supervisor event/directive contract compiled through provider adapters | Teams can change voice stacks without rebuilding supervision and QA |
+| Tool calls fail but the agent claims success | Supafone Supervisor compares spoken claims with tool results and can inject a silent correction | Fewer false booking, sending, pricing, and policy confirmations |
+| A supervisor is needed, but another agent would add latency | Supafone Supervisor reasons off the audio hot path and privately guides the speaking agent | Live coaching without making every caller wait for the slower model |
 | Multiple workers lose live-call state | Durable language, voice, stage, and telemetry continuity across workers | Scaling application workers does not break routing or handoffs |
 | Automatic language routing becomes unsafe guesswork | Explicit requests take priority; inference requires a clear utterance, a cooldown, configured-language enforcement, and tenant/call validation | No routing based only on accent, name, nationality, or presumed identity |
 | A provider or coaching feature fails mid-call | Timeout-bounded, degrade-safe behavior and voice fallback | The underlying customer call continues instead of crashing |
@@ -58,9 +58,9 @@ If a requested external voice cannot load, the language can still change while
 the current voice remains active. A voice-provider failure is not allowed to
 terminate the call.
 
-## One Watcher across frameworks and carriers
+## One Supervisor across frameworks and carriers
 
-Voice Watcher normalizes live events from the selected voice framework, reasons
+Supafone Supervisor normalizes live events from the selected voice framework, reasons
 over one contract, and compiles a safe directive back into that framework's
 supported control channel. See [Framework Support](framework-support.md) for
 the exact injection primitive and caveats for each stack.
@@ -92,17 +92,17 @@ invent an unconfigured language.
 
 Live state is stored outside one web worker, so a call remains coherent when a
 later runtime event reaches a different worker than the one that created it.
-Voice routing, Voice Watcher, and SecondMind are isolated from the underlying
+Voice routing and Supafone Supervisor are isolated from the underlying
 call: a timeout or provider error yields no intervention rather than a dropped
 caller.
 
 The operator UI only reports coaching as `LIVE` after the backend coach has
-actually started. It can display caller turns, Watcher reads, and delivered
+actually started. It can display caller turns, Supervisor reads, and delivered
 guidance while preserving tenant isolation.
 
 ## What developers get
 
-- One SDK flag to provision hosted agents with Voice Watcher enabled.
+- One SDK client that provisions hosted agents with Supafone Supervisor enabled by default.
 - One event/directive model for existing Vapi, Retell, Ultravox, OpenAI
   Realtime, LiveKit, Pipecat, Deepgram, ElevenLabs, and compatible stacks.
 - One MCP action that can launch an approved real call and return the exact
@@ -122,6 +122,6 @@ the audible provider voice change on both PSTN and WebRTC. Accent
 classification is not a feature, and full switching parity for specialized
 Stanley/admin sales runtimes is not advertised yet.
 
-Next: [enable Voice Watcher](self-healing-watcher.md), review
+Next: [enable Supafone Supervisor](supafone-supervisor.md), review
 [framework support](framework-support.md), or configure the
 [MCP server](mcp-server.md).

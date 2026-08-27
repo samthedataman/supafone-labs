@@ -12,7 +12,7 @@ secrets.
 - usage by endpoint,
 - top developers by activity,
 - recent logs,
-- recent watcher nudges,
+- recent supervisor guidance,
 - recent call reports,
 - account plans and active keys,
 - masked API-key inventory,
@@ -36,7 +36,7 @@ Admin belongs in `admin.html`:
 - grant credits,
 - inspect aggregate usage,
 - audit developer activity,
-- review self-healing watcher output across accounts.
+- review supervisor output across accounts.
 
 ## Private API Endpoints
 

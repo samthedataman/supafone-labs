@@ -20,8 +20,8 @@
 
 ## Supervise Existing Agents
 
-* [Voice Watcher and SecondMind](self-healing-watcher.md)
-* [Programmable SecondMind Directives](secondmind-directive-contract.md)
+* [Supafone Supervisor](supafone-supervisor.md)
+* [Programmable Supervisor Directives](programmable-supervisor-directives.md)
 * [Framework Coverage](framework-support.md)
 * [Provider-Agnostic Runtime](provider-agnostic-framework.md)
 * [BYOK Providers](byok-providers.md)

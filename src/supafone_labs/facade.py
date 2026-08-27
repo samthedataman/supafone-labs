@@ -1,7 +1,7 @@
 """The one-line developer surface: supafone_labs.supercharge(agent).
 
 Hides the runtime, adapters, oracle, and injection plumbing behind a single call so any
-voice agent gains a second mind with no knowledge of the internals.
+voice agent gains a supervisor with no knowledge of the internals.
 """
 from __future__ import annotations
 
@@ -208,7 +208,7 @@ def _resolve_injector(agent: Any) -> Optional[Callable[[Any], Any]]:
 # --- the facade ----------------------------------------------------------------
 
 class SupafoneLabs:
-    """A live second mind bound to one agent/provider. Feed it events; it whispers back."""
+    """A live supervisor bound to one agent/provider. Feed it events; it whispers back."""
 
     def __init__(
         self,
@@ -554,7 +554,7 @@ def supercharge(
     directive_contract: Optional[DirectiveContract | Mapping[str, Any]] = None,
     directive_transform: Optional[DirectiveTransform] = None,
 ) -> SupafoneLabs:
-    """Give any voice agent a second mind in one line. Provider is auto-detected from `agent`."""
+    """Give any voice agent a supervisor in one line. Provider is auto-detected from `agent`."""
     return SupafoneLabs(
         provider=provider,
         agent=agent,

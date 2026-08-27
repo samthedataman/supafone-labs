@@ -51,17 +51,17 @@ const transcripts = await supafone.labs.transcripts.list({ agentKey: "northline-
 // Signed, short-lived URLs for browser playback and downloads.
 console.log(call.call.recording_url, call.call.recording_download_url);
 
-// Removes the account-owned call, transcript, Watcher history, and archived audio.
+// Removes the account-owned call, transcript, Supervisor history, and archived audio.
 await supafone.labs.calls.delete("call_123");
 await supafone.labs.recordings.delete("rec_123", { reason: "retention request" });
 ```
 
-Every agent creation, call lifecycle, transcript, recording archive, Watcher
+Every agent creation, call lifecycle, transcript, recording archive, Supervisor
 observation, and generated Studio plan is also queryable from the durable
 activity ledger:
 
 ```ts
-const watcher = await supafone.labs.activity.list({
+const supervision = await supafone.labs.activity.list({
   eventType: "watcher.whispered",
   resourceId: "call_123",
 });

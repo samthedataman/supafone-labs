@@ -347,7 +347,7 @@ def test_byok_labs_payload_matches_typescript_contract():
     }
 
 
-def test_agent_factory_preserves_watcher_default_and_ultravox_byok():
+def test_agent_factory_preserves_supervisor_default_and_ultravox_byok():
     calls = []
 
     def transport(method, path, payload):
@@ -366,6 +366,8 @@ def test_agent_factory_preserves_watcher_default_and_ultravox_byok():
     )
 
     payload = calls[0][2]
+    assert supafone.supervisor is True
+    assert supafone.voice_watcher is True
     assert payload["voice_watcher"] is True
     assert payload["byok"]["ultravox"] == {
         "api_key": "uv_test",
@@ -373,17 +375,30 @@ def test_agent_factory_preserves_watcher_default_and_ultravox_byok():
     }
 
 
-def test_agent_factory_honors_watcher_override():
+def test_agent_factory_honors_supervisor_override():
     calls = []
 
     def transport(method, path, payload):
         calls.append((method, path, payload))
         return {"success": True, "agent": {"agent_key": "raw-agent"}, "runtime": {}}
 
-    supafone = Supafone(api_key="sf_test", voice_watcher=False, transport=transport)
+    supafone = Supafone(api_key="sf_test", supervisor=False, transport=transport)
     supafone.labs.agents.create({"agentKey": "raw-agent"})
 
+    assert supafone.supervisor is False
     assert calls[0][2]["voice_watcher"] is False
+
+
+def test_agent_factory_preserves_deprecated_supervisor_aliases():
+    def transport(method, path, payload):
+        return {"success": True, "agent": {"agent_key": "legacy-agent"}, "runtime": {}}
+
+    legacy_field = Supafone(api_key="sf_test", voice_watcher=False, transport=transport)
+    legacy_labs = Supafone(api_key="sf_test", labs=False, transport=transport)
+
+    assert legacy_field.supervisor is False
+    assert legacy_field.voice_watcher is False
+    assert legacy_labs.supervisor is False
 
 
 def test_python_voice_catalog_sdk_parity():

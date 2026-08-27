@@ -1,4 +1,4 @@
-"""SecondMind/Supafone Labs console auth contract."""
+"""Supafone Supervisor console authentication contract."""
 from __future__ import annotations
 
 import importlib.util

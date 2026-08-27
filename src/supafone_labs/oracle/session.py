@@ -1,4 +1,4 @@
-"""OracleSession — the off-hot-path second mind. Time-bounded, degrade-safe."""
+"""OracleSession — the off-hot-path supervisor. Time-bounded, degrade-safe."""
 from __future__ import annotations
 
 import asyncio

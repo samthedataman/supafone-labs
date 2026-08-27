@@ -107,7 +107,7 @@ supafone.liveTranscribe({ WebSocketImpl: WebSocket });
 Browsers cannot set WebSocket headers, so the SDK sends the Labs key as an
 `api_key` query parameter.
 
-## Watcher Is Silent
+## Supervisor Is Silent
 
 Silence is valid when no correction is needed. If silence is unexpected, check:
 
