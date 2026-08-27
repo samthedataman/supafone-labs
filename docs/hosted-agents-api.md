@@ -3,7 +3,7 @@
 Use the Supafone Labs API when you want Supafone to host the voice/web/campaign
 agent for you. This is a convenience layer over the Supafone runtime: Ultravox
 calls, multistage state, managed voice provider accounts, tools, transcripts,
-recordings, web widget sync, and Supafone Pro stay attached.
+recordings, web widget sync, and Supafone Supervisor stay attached.
 
 Give Supafone the business goal in plain English. The private control plane
 turns it into complete prompts and a validated runtime stage plan, then returns
@@ -189,7 +189,7 @@ Important response fields:
     "requires_developer_provider_keys": false,
     "runtime_mode": "multi_stage",
     "default_preset_key": "general_intake_receptionist",
-    "labs_label": "Supafone Pro",
+    "labs_label": "Supafone Supervisor",
     "default_watcher_model": "gemma",
     "recording": true,
     "transcription": true,
@@ -462,7 +462,7 @@ three provisioning lanes separate:
 | Telephony | Twilio, Telnyx, Plivo, SignalWire, SIP/custom trunks |
 | TTS | Cartesia, ElevenLabs, Inworld, Deepgram, custom TTS |
 
-Watcher deployments can separately configure STT and supervisor-LLM
+Supervisor deployments can separately configure STT and supervisor-LLM
 credentials without changing these hosted-delivery lanes.
 
 BYOK telephony example:
@@ -482,7 +482,7 @@ BYOK telephony example:
 Supported BYOK telephony provider labels include `twilio`, `telnyx`, `plivo`,
 `signalwire`, `sip`, and custom provider labels enabled for the account.
 Supafone still keeps the agent framework, stages, tools, transcripts,
-recordings, account sync, and Supafone Pro watcher attached.
+recordings, account sync, and Supafone Supervisor attached.
 
 ## Runtime (managed vs BYOK Ultravox)
 
@@ -528,9 +528,10 @@ You can also connect the key at agent create via `byok.ultravox`. Non-Ultravox
 agent runtimes (Vapi, Retell, Bland, LiveKit, Pipecat) still return
 `400 "coming soon"`.
 
-## Supafone Pro
+## Supafone Supervisor
 
-Turn on the watcher with either field:
+Hosted agents include live supervision by default. Set the model only when you
+want to override the managed default:
 
 ```json
 {
@@ -538,17 +539,8 @@ Turn on the watcher with either field:
 }
 ```
 
-or:
-
-```json
-{
-  "voice_watcher": true,
-  "voice_watcher_model": "gemma"
-}
-```
-
-The product label is **Supafone Pro**. It is the same Labs watcher/call-coach
-capability attached to the hosted agent.
+Older boolean fields remain accepted by the API for backward compatibility,
+but new integrations should use the default behavior and the `labs` block.
 
 ## Smoke test
 

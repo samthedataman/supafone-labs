@@ -161,7 +161,7 @@ class DirectiveListControl(BaseModel):
 
 
 class DirectiveContract(BaseModel):
-    """Serializable policy controlling SecondMind's structured output.
+    """Serializable policy controlling Supafone Supervisor's structured output.
 
     The contract controls generated coaching. Standing scenario/platform
     guardrails are still enforced and cannot be removed by disabling the

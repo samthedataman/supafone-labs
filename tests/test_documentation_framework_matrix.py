@@ -58,6 +58,18 @@ def test_public_docs_do_not_restore_the_stale_ten_framework_claim():
             assert phrase not in lowered, f"{path.relative_to(REPO_ROOT)}: {phrase}"
 
 
+def test_public_docs_use_one_supervisor_name():
+    paths = [REPO_ROOT / "README.md", REPO_ROOT / "sdk-ts" / "README.md"]
+    paths.extend((REPO_ROOT / "docs").glob("*.md"))
+    paths.extend((REPO_ROOT / "gitbook").glob("*.md"))
+
+    retired_labels = ("Voice Watcher", "SecondMind", "Second Mind")
+    for path in paths:
+        text = path.read_text(encoding="utf-8")
+        for label in retired_labels:
+            assert label not in text, f"{path.relative_to(REPO_ROOT)}: {label}"
+
+
 def test_gitbook_is_problem_first_and_uses_the_real_logo():
     landing = (REPO_ROOT / "gitbook" / "README.md").read_text(encoding="utf-8")
     assert landing.index("## Why we built it") < landing.index("## The architecture")
@@ -82,8 +94,8 @@ def test_gitbook_navigation_follows_the_developer_journey():
     summary = (REPO_ROOT / "gitbook" / "SUMMARY.md").read_text(encoding="utf-8")
     sections = re.findall(r"^## (.+)$", summary, flags=re.MULTILINE)
     assert sections == [
-        "Understand Supafone",
         "Start Building",
+        "Understand Supafone",
         "Supervise Existing Agents",
         "Build Complete Agents",
         "Run Calls and Campaigns",

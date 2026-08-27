@@ -4,7 +4,7 @@ Supafone Labs has one defining framework and one secondary delivery path. Lead
 with the model-agnostic supervisor; use Agent Factory when the user also wants
 Supafone to provision the complete hosted product.
 
-## Primary: Model-Agnostic Voice Watcher
+## Primary: Model-Agnostic Supafone Supervisor
 
 Use this path when the developer already has an agent running on Ultravox,
 Vapi, Retell, ElevenLabs, OpenAI Realtime, Grok, Bland, LiveKit, Pipecat,
@@ -19,13 +19,13 @@ brain = supafone_labs.supercharge(my_agent)
 The framework watches empathy and operational patterns across turns—intent,
 urgency, emotion, language, trust, workflow progress, tool outcomes, and call
 state—then emits a silent directive only when the live agent needs help. The
-caller does not hear the directive. If the Watcher is disabled, out of balance,
+caller does not hear the directive. If the Supervisor is disabled, out of balance,
 or times out, the call continues without intervention.
 
 ## Secondary: Hosted Agent Factory
 
 Use this path when the developer wants Supafone to create the agent, phone
-number, voice, stages, logs, widget, and optional watcher.
+number, voice, stages, logs, widget, and optional supervision.
 
 This path should feel like Stripe Checkout for voice agents: one Supafone API
 key first, working agent first, provider credentials only when the user chooses
@@ -34,10 +34,7 @@ advanced BYOK.
 ```ts
 import { Supafone } from "supafone-labs";
 
-const supafone = new Supafone({
-  apiKey: process.env.SUPAFONE_TOKEN!,
-  voiceWatcher: true, // default on — provisions agents under the Voice Watcher framework
-});
+const supafone = new Supafone({ apiKey: process.env.SUPAFONE_TOKEN! });
 
 const agent = await supafone.labs.agents.createInboundWithNumber({
   agentKey: "northline-intake",
@@ -55,7 +52,7 @@ Python has the matching hosted-agent helpers:
 ```python
 from supafone_labs import Supafone
 
-supafone = Supafone(api_key="sl_live_...", voice_watcher=True)  # one key; watcher on by default
+supafone = Supafone(api_key="sl_live_...")  # one key; supervision is on by default
 
 agent = supafone.labs.agents.create_inbound_with_number({
     "agentKey": "northline-intake",
@@ -151,7 +148,7 @@ unchanged. Read [Live Language and Voice Routing](live-language-voice-routing.md
 
 ### Make the supervisor output an application contract
 
-SecondMind can return a typed, inspectable decision instead of an unstructured
+Supafone Supervisor can return a typed, inspectable decision instead of an unstructured
 coaching sentence:
 
 ```ts
@@ -179,7 +176,7 @@ confidence gate, add standing guardrails, and transform or suppress the final
 directive before delivery. Facts, empathy, tactics, and policy stay separate,
 which makes the supervisor output easier to log, test, audit, and replay.
 
-See [Programmable SecondMind Directives](secondmind-directive-contract.md).
+See [Programmable Supervisor Directives](programmable-supervisor-directives.md).
 
 ### Reuse the same integration across clients
 
@@ -194,19 +191,19 @@ voice discovery, supervision, or validation for every client.
 
 - Provisioning responses contain the selected provider, voice ID, model,
   matching score, and reasons.
-- Structured SecondMind output records facts, directives, language, kind,
+- Structured Supafone Supervisor output records facts, directives, language, kind,
   confidence, and guardrails independently.
 - Invalid language/model/runtime combinations fail before dialing.
-- Watcher timeouts or suppressed low-confidence directives leave the live call
+- Supervisor timeouts or suppressed low-confidence directives leave the live call
   unchanged.
 
 These behaviors reduce provider-specific glue code while preserving explicit
 failure boundaries. See [Dynamic Voice Catalog and Selection](voice-catalog-and-selection.md),
-[Agent Factory](agent-factory.md), and [Self-Healing Watcher](self-healing-watcher.md).
+[Agent Factory](agent-factory.md), and [live supervision](supafone-supervisor.md).
 
 ## Which One Should the UI Lead With?
 
-The product story should lead with Voice Watcher. Inside the hosted builder,
+The product story should lead with Supafone Supervisor. Inside the hosted builder,
 the task flow should then lead with the one `sl_` Labs key because that is the
 lowest-friction provisioning path—it authenticates every surface:
 
@@ -234,7 +231,7 @@ agent-runtime control to the canonical matrix:
 | Telephony | Twilio, Telnyx, Plivo, SignalWire, SIP/custom trunks |
 | TTS | Cartesia, ElevenLabs, Inworld, Deepgram, custom TTS |
 
-Watcher STT and supervisor-LLM credentials remain independent from these
+Supervisor STT and supervisor-LLM credentials remain independent from these
 hosted-delivery controls. See [BYOK providers](byok-providers.md).
 
 ## Key Routing

@@ -40,7 +40,6 @@ import { Supafone } from "supafone-labs";
 
 const supafone = new Supafone({
   apiKey: process.env.SUPAFONE_TOKEN!, // sl_ key — cross-fills both surfaces
-  voiceWatcher: true, // default on — provisions agents under the Voice Watcher framework; set false for a raw agent
 });
 
 const agent = await supafone.labs.agents.createInboundWithNumber({
@@ -81,7 +80,7 @@ Python:
 ```python
 from supafone_labs import Supafone
 
-supafone = Supafone(api_key="sl_live_...", voice_watcher=True)  # one key; watcher on by default
+supafone = Supafone(api_key="sl_live_...")  # one key; supervision is on by default
 
 agent = supafone.labs.agents.create_inbound_with_number({
     "agentKey": "northline-intake",

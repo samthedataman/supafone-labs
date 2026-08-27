@@ -1,6 +1,6 @@
 # Provider-Agnostic Framework
 
-The provider-agnostic framework is the self-healing Supafone Labs watcher. It
+The provider-agnostic framework is Supafone Supervisor. It
 is the "supercharge" path: it upgrades an agent the developer already runs
 instead of forcing them into Supafone-hosted telephony or a hosted Supafone
 agent.
@@ -35,7 +35,7 @@ hook. The exact primitive and managed-delivery boundary are in
 
 ## Labs Must Be Explicit
 
-Hosted agents and builder UI should only instantiate the watcher when
+Hosted agents and builder UI should only instantiate the supervisor when
 `labs.enabled` is true.
 
 ```json
@@ -49,7 +49,7 @@ Hosted agents and builder UI should only instantiate the watcher when
 ```
 
 When `labs.enabled` is false or omitted, create the agent without the Supafone
-watcher sidecar. Do not silently turn it on because the user selected a voice
+supervisor sidecar. Do not silently turn it on because the user selected a voice
 provider or telephony provider.
 
 ## Managed vs BYOK
@@ -93,7 +93,7 @@ LiveKit, Pipecat) are still coming soon. See
 [BYOK Providers](byok-providers.md) and [Hosted Agents API](hosted-agents-api.md).
 
 BYOK is not one thing. Hosted delivery separates three provisioning lanes, and
-the Watcher adds independent STT and supervisor-LLM credentials:
+the Supervisor adds independent STT and supervisor-LLM credentials:
 
 | Lane | Examples | Notes |
 | --- | --- | --- |
@@ -104,7 +104,7 @@ the Watcher adds independent STT and supervisor-LLM credentials:
 | Supervisor LLM | Supafone hosted, Anthropic, OpenAI, xAI, custom LLM | The directive model can change without replacing the speaking agent. |
 
 The framework should accept mixed deployments. A customer might use BYOK
-Telnyx, managed Labs watcher, and BYOK ElevenLabs. Another might bring
+Telnyx, managed Supafone Supervisor, and BYOK ElevenLabs. Another might bring
 Ultravox and Twilio while using Supafone only for call-state supervision,
 directives, logs, QA, and optimizer output.
 

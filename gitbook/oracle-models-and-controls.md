@@ -1,6 +1,6 @@
 # Oracle Models and Supervisor Controls
 
-The Oracle is the reasoning model behind Voice Watcher. It is independent from
+The Oracle is the reasoning model behind Supafone Supervisor. It is independent from
 the model speaking on the call: an Ultravox, Vapi, Retell, OpenAI Realtime,
 Grok, or custom agent can be supervised by a different model without changing
 the caller-facing runtime.
@@ -55,7 +55,7 @@ key.
 from supafone_labs import SupafoneLabs
 from supafone_labs.config import Settings
 
-watcher = SupafoneLabs(
+supervisor = SupafoneLabs(
     provider="ultravox",
     llm="openai",
     oracle_model="gpt-4.1-mini",
@@ -77,7 +77,7 @@ oracle = OpenAIProvider(
     base_url="https://provider.example/v1",
     model="provider-model-id",
 )
-watcher = SupafoneLabs(provider="vapi", llm=oracle)
+supervisor = SupafoneLabs(provider="vapi", llm=oracle)
 ```
 
 Never put provider credentials in prompts, MCP tool arguments, dashboard URLs,
@@ -86,7 +86,7 @@ Supafone credential store.
 
 ## What can be tuned
 
-| Control | Hosted completion | Full watcher | Why it matters |
+| Control | Hosted completion | Full supervisor | Why it matters |
 | --- | :---: | :---: | --- |
 | Oracle model | Yes | Yes | Cost, latency, and reasoning depth |
 | `max_tokens` / `maxTokens` | Yes | Provider/config dependent | Bounds response size and spend |
@@ -119,7 +119,7 @@ const result = await supafone.oracle({
 ```
 
 The higher-level `whisper()` helper accepts `model`, `maxTokens`, `temperature`,
-and operator `guardrails`. The complete `SupafoneLabs` watcher additionally
+and operator `guardrails`. The complete `SupafoneLabs` supervisor additionally
 maintains belief state, applies confidence/timeout gates, compiles the directive
 for the selected framework, records evidence, and degrades to a no-op on error.
 
@@ -134,6 +134,6 @@ for the selected framework, records evidence, and degrades to a no-op on error.
   gates and operator guardrails.
 - Keep the speaking and supervising models independently replaceable.
 
-Next: [Voice Watcher Framework](self-healing-watcher.md),
+Next: [live supervision](supafone-supervisor.md),
 [Framework Support](framework-support.md), or
 [BYOK Providers](byok-providers.md).

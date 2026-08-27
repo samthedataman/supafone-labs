@@ -92,5 +92,5 @@ await supafone.labs.telephony.configure({
 ```
 
 BYOK skips Supafone number rent but still keeps the hosted agent framework,
-stages, tools, transcripts, recordings, account sync, and Supafone Pro watcher
+stages, tools, transcripts, recordings, account sync, and Supafone Supervisor
 attached.

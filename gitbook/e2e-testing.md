@@ -186,8 +186,8 @@ curl "https://api.supafone.ai/api/v1/labs/voices?provider=cartesia" \
 | --- | --- |
 | `createInboundWithNumber()` default pool | Agent plus assigned shared/pool number |
 | `createOutboundWithNumber()` default pool | Outbound/campaign agent plus assigned caller ID |
-| `labs.enabled: false` | Agent created without watcher sidecar |
-| `labs.enabled: true`, managed | Watcher config uses Supafone-managed infrastructure |
+| `labs.enabled: false` | Agent created without the supervisor sidecar |
+| `labs.enabled: true`, managed | Supervisor config uses Supafone-managed infrastructure |
 | BYOK agent/provider stack | Runtime keys/settings serialize separately from TTS and telephony |
 | BYOK telephony | Twilio/Telnyx/Plivo/SignalWire/SIP credentials serialize under telephony |
 | BYOK TTS | Cartesia/ElevenLabs/Inworld/Deepgram/custom TTS config serializes under TTS |

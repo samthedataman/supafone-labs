@@ -14,12 +14,12 @@ behave like one product. The failure usually occurs between those layers.
 
 | Problem | Innovation in the package |
 | --- | --- |
-| The speaking model must supervise itself | Voice Watcher and SecondMind run a separate, bounded supervision loop |
+| The speaking model must supervise itself | Supafone Supervisor runs a separate, bounded supervision loop |
 | Provider events and controls are incompatible | Fourteen audited adapters normalize one canonical runtime |
 | Tool claims outrun tool results | Deterministic truth and consent state preserve verified outcomes |
 | Every customer requires another architecture | Agent Factory creates editable stages, tools, voices, numbers, and artifacts |
 | Testing is manual and subjective | Adversarial QA and SSR grading produce repeatable evidence |
-| Call data is scattered across vendors | Durable activity APIs expose calls, plans, recordings, transcripts, and Watcher events |
+| Call data is scattered across vendors | Durable activity APIs expose calls, plans, recordings, transcripts, and Supervisor events |
 
 See the complete [framework coverage matrix](providers.md) for the exact
 support boundary of every runtime.
@@ -33,10 +33,10 @@ brain = supafone_labs.supercharge(my_agent)
 Supafone Labs is the developer framework behind Supafone. You can create a
 hosted Supafone agent from code with Supafone-managed phone numbers, managed
 voices, built-in stages, tools, transcripts, recordings, web widgets, and
-Supafone Pro call coaching. Or you can attach the same Labs layer to the voice
+Supafone Supervisor call coaching. Or you can attach the same Labs layer to the voice
 stack you already run.
 
-The speaking agent stays on the realtime path. Supafone's second mind observes
+The speaking agent stays on the realtime path. Supafone's supervisor observes
 off that path, issues guidance only when evidence clears the configured gate,
 and becomes a no-op when unavailable or uncertain.
 
@@ -48,9 +48,9 @@ Supafone Labs gives you two product pillars:
   `supafone-labs` and helpers such as
   `supafone.labs.agents.createInboundWithNumber()`. Supafone manages the phone
   number, agent/provider stack, TTS/STT/LLM defaults, multistage state machine,
-  tools, recordings, transcripts, widget, usage, and Supafone Pro watcher. No
+  tools, recordings, transcripts, widget, usage, and Supafone Supervisor. No
   developer vendor account is required in the default path.
-- **Self-healing Labs watcher** -- keep the voice stack you already run, then
+- **Supafone Supervisor** -- keep the voice stack you already run, then
   let Supafone Labs supervise and coach the live call. Fourteen audited runtime
   adapters normalize events; twelve expose native or developer-owned guidance
   paths, while Bland is observation-only and Cartesia Line requires an explicit
@@ -58,7 +58,7 @@ Supafone Labs gives you two product pillars:
   [GitBook framework matrix](https://github.com/samthedataman/supafone-labs/blob/main/gitbook/framework-support.md).
 
 BYOK is optional. Hosted delivery keeps agent-runtime, telephony, and TTS
-credentials independent; the Watcher also supports separate STT and supervisor
+credentials independent; the Supervisor also supports separate STT and supervisor
 LLM credentials. Every domain can be mixed with Supafone-managed defaults.
 
 You can also run the deterministic open-source runtime and adapters locally
@@ -81,7 +81,7 @@ with your own keys.
 - [Quickstart](quickstart.md) — supercharge an agent in 60 seconds.
 - [Hosted Agents API](hosted-agents-api.md) — create Supafone-hosted agents from
   code with managed voices, built-in stages, tools, widget snippets, and
-  Supafone Pro.
+  Supafone Supervisor.
 - [Live language and voice routing](live-language-voice-routing.md) — opt-in
   same-call language changes with a matching voice and translated primary greeting.
 - [Providers & frameworks](providers.md) — Ultravox, Vapi, Retell, Pipecat,

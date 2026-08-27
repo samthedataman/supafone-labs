@@ -104,13 +104,13 @@ Supafone Labs has two main features:
 
 - **Agent Factory**: create the complete hosted agent with managed provider
   defaults and one Supafone API key.
-- **Self-healing watcher**: enable `labs.enabled` to attach the Supafone Labs
-  second mind to a hosted or BYOK agent.
+- **Supafone Supervisor**: attach live guidance, call scoring, and QA to a
+  hosted or BYOK agent.
 
 The daily developer workflow is documented in
 [Developer Workflows](../gitbook/developer-workflows.md): one normalized live
 voice catalog, fixed BCP-47 language selection, automatic voice compatibility
-filtering, structured SecondMind directives, and the same configuration model
+filtering, structured Supervisor directives, and the same configuration model
 across TypeScript and Python. Fixed language selection does not enable
 mid-call language or voice switching.
 
@@ -166,10 +166,9 @@ import { Supafone } from "supafone-labs";
 const supafone = new Supafone({
   apiKey: process.env.SUPAFONE_LABS_API_KEY || process.env.SUPAFONE_API_KEY!,
   supafoneApiKey: process.env.SUPAFONE_API_KEY!,
-  // voiceWatcher is on by default (also accepts voice_watcher; deprecated: labs).
-  // Every provisioned agent runs under the Voice Watcher framework (live
-  // supervision + QA + call scoring). Set false for a raw agent.
-  voiceWatcher: true,
+  // Supafone Supervisor is on by default for live guidance, QA, and scoring.
+  // Set false only when you intentionally need an unsupervised agent.
+  supervisor: true,
   // Defaults to https://api.supafone.ai. Override for staging/local tests.
   // supafoneApiBaseUrl: "http://localhost:8000",
 });

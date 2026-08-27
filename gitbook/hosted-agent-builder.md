@@ -1,7 +1,7 @@
 # Hosted Agent Builder
 
 The hosted agent builder creates complete Supafone agents with managed voices,
-stages, tools, artifacts, widget sync, and Supafone Pro watcher attached.
+stages, tools, artifacts, widget sync, and Supafone Supervisor attached.
 
 There are two builder modes:
 
@@ -20,7 +20,7 @@ The builder should preserve the product hierarchy:
 
 | Role | Builder meaning |
 | --- | --- |
-| Primary: model supervisor | Voice Watcher supervises and improves the live agent; `voiceWatcher` is on by default. |
+| Primary: model supervisor | Supafone Supervisor supervises and improves the live agent by default. |
 | Secondary: Agent Factory | Create a complete hosted agent with managed defaults and no required vendor keys. |
 
 When users open BYOK, split hosted-delivery settings into three drawers:
@@ -41,7 +41,6 @@ import { Supafone } from "supafone-labs";
 
 const supafone = new Supafone({
   apiKey: process.env.SUPAFONE_TOKEN!,
-  voiceWatcher: true, // default on — provisions agents under the Voice Watcher framework
 });
 
 const inbound = await supafone.labs.agents.createInbound({

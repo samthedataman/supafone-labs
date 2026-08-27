@@ -330,9 +330,10 @@ class Supafone:
         # analyzed call; reports without a transcript fall back to the plain
         # zero-billed report.
         post_call_analysis: bool = False,
-        # Run provisioned agents under the Voice Watcher framework by default.
-        voice_watcher: bool = True,
-        # Deprecated alias retained for callers from before voice_watcher.
+        # Run provisioned agents under Supafone Supervisor by default.
+        supervisor: Optional[bool] = None,
+        # Deprecated aliases retained for existing integrations.
+        voice_watcher: Optional[bool] = None,
         labs: Optional[bool] = None,
     ) -> None:
         self.api_key = (
@@ -363,7 +364,18 @@ class Supafone:
         self.timeout = timeout
         self._transport = transport
         self.post_call_analysis = post_call_analysis
-        self.voice_watcher = bool(voice_watcher if labs is None else labs)
+        supervisor_enabled = (
+            supervisor
+            if supervisor is not None
+            else voice_watcher
+            if voice_watcher is not None
+            else labs
+            if labs is not None
+            else True
+        )
+        self.supervisor = bool(supervisor_enabled)
+        # Deprecated property retained for callers that read it directly.
+        self.voice_watcher = self.supervisor
         self._session_token: str = ""  # minted from email/password, refreshed on 401
         self._labs_session_token: str = ""  # minted by labs_login() for session-scoped QA
         self.labs = LabsNamespace(self)
@@ -1455,7 +1467,7 @@ class LabsAgentsNamespace:
 
     def create(self, config: Optional[Mapping[str, Any]] = None, **kwargs: Any) -> Any:
         data = _merge(config, kwargs)
-        self._apply_voice_watcher(data)
+        self._apply_supervisor(data)
         return self._client._request_supafone_api(
             "POST",
             "/api/v1/labs/agents",
@@ -1472,13 +1484,14 @@ class LabsAgentsNamespace:
     generate_call_stages = plan
     generateCallStages = plan
 
-    def _apply_voice_watcher(self, data: dict[str, Any]) -> None:
-        """Apply the client watcher default without overwriting agent config."""
-        if "voice_watcher" not in data and "voiceWatcher" not in data:
-            data["voice_watcher"] = self._client.voice_watcher
+    def _apply_supervisor(self, data: dict[str, Any]) -> None:
+        """Apply the Supervisor default while preserving the legacy wire field."""
+        if "supervisor" not in data and "voice_watcher" not in data and "voiceWatcher" not in data:
+            data["supervisor"] = self._client.supervisor
         labs = data.get("labs")
-        if isinstance(labs, dict) and "voice_watcher" not in labs and "voiceWatcher" not in labs:
-            labs["voice_watcher"] = self._client.voice_watcher
+        if isinstance(labs, dict):
+            if "supervisor" not in labs and "voice_watcher" not in labs and "voiceWatcher" not in labs:
+                data["labs"] = {**labs, "supervisor": self._client.supervisor}
 
     def create_inbound(self, config: Optional[Mapping[str, Any]] = None, **kwargs: Any) -> Any:
         data = _merge(config, kwargs)
@@ -2404,7 +2417,7 @@ def _labs_agent_payload(data: Mapping[str, Any]) -> dict[str, Any]:
             "labs": _labs_payload(data["labs"]) if data.get("labs") else None,
             "ultravox": _ultravox_payload(data["ultravox"]) if data.get("ultravox") else None,
             "custom_sip": _custom_sip_payload(_pick(data, "custom_sip", "customSip", "sip") or {}),
-            "voice_watcher": _pick(data, "voice_watcher", "voiceWatcher"),
+            "voice_watcher": _pick(data, "supervisor", "voice_watcher", "voiceWatcher"),
             "voice_watcher_model": _pick(data, "voice_watcher_model", "voiceWatcherModel"),
             "metadata": _agent_metadata_payload(data),
         }
@@ -2682,7 +2695,7 @@ def _labs_payload(data: Mapping[str, Any]) -> dict[str, Any]:
     return _compact(
         {
             "enabled": data.get("enabled"),
-            "voice_watcher": _pick(data, "voice_watcher", "voiceWatcher"),
+            "voice_watcher": _pick(data, "supervisor", "voice_watcher", "voiceWatcher"),
             "api_key": _pick(data, "api_key", "apiKey"),
             "model": data.get("model"),
             "mode": data.get("mode"),

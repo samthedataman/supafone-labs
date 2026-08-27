@@ -94,8 +94,8 @@ Restart Claude Desktop after saving the config.
 | `get_agent_grade` | Read carrier state, transcript, and verdict for an agent-grading session. |
 | `wait_for_agent_grade` | Poll an agent-grading session to a bounded terminal result. |
 | `generate_qa_scenarios` | Generate adversarial scenarios from an agent prompt. |
-| `list_qa_runs` | Read prior QA and Watcher benchmark results. |
-| `run_watcher_qa` | Run every scenario with and without Watcher supervision (Labs login required). |
+| `list_qa_runs` | Read prior QA and Supervisor benchmark results. |
+| `run_watcher_qa` | Run every scenario with and without live supervision (Labs login required). |
 
 The four hosted creation tools also accept `languageVoiceRouting`,
 `routingLanguages`, and `languageProfiles`. These are public provisioning

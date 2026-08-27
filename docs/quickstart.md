@@ -20,7 +20,7 @@ immediately, then swap in a real provider via `ANTHROPIC_API_KEY`.
 If you want Supafone to host the agent, use the public REST API directly or a
 matching SDK/MCP client. This creates an Ultravox-backed Supafone agent with a
 Supafone-managed phone number, managed voices, multistage state, tools,
-recordings, transcripts, and optional Supafone Pro watcher. You do not need
+recordings, transcripts, and optional Supafone Supervisor. You do not need
 Ultravox, Twilio, Cartesia, Inworld, ElevenLabs, or Deepgram keys in the default
 path.
 
@@ -29,7 +29,7 @@ There are two main features:
 - **Agent Factory** creates a complete hosted agent with managed defaults, so
   developers do not need their own agent-platform, telephony, TTS, STT, or LLM
   keys to get started.
-- **Self-healing watcher** attaches Supafone Labs to a hosted or existing agent
+- **Supafone Supervisor** attaches live supervision to a hosted or existing agent
   and sends silent corrective directives only when `labs.enabled` is on.
 
 Think of this as the full agent-building framework path: describe the job,
@@ -47,7 +47,6 @@ import { Supafone } from "supafone-labs";
 
 const supafone = new Supafone({
   apiKey: process.env.SUPAFONE_TOKEN!,
-  voiceWatcher: true, // default on — provisions agents under the Voice Watcher framework
 });
 
 const agent = await supafone.labs.agents.createInboundWithNumber({
@@ -103,7 +102,7 @@ const salesAgent = await supafone.labs.agents.createOutboundWithNumber({
 
 Teams that already own provider accounts can configure BYOK later. Keep the
 hosted-delivery lanes separate: agent/provider stack, telephony, and TTS.
-Watcher STT and supervisor-LLM credentials remain independent.
+Supervisor STT and supervisor-LLM credentials remain independent.
 
 For an Agent Factory agent that can continue one call across approved
 languages and matching voices, see

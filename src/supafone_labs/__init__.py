@@ -1,4 +1,4 @@
-"""Supafone Labs — give any voice agent a second mind in one line.
+"""Supafone Labs — give any voice agent a supervisor in one line.
 
 The deterministic, provider-agnostic runtime lives at ``supafone_labs.runtime``; the LLM
 oracle and the developer-facing facade live here.
@@ -71,7 +71,7 @@ from supafone_labs.types import (
     directive_to_decision,
 )
 
-__version__ = "0.5.2"
+__version__ = "0.5.3"
 
 __all__ = [
     # facade

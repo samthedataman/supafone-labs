@@ -2,13 +2,6 @@
 
 * [Supafone Labs](README.md)
 
-## Understand Supafone
-
-* [Why Supafone](why-supafone.md)
-* [Production Voice AI Challenges](production-voice-ai-challenges.md)
-* [Voice AI Thesis](voice-ai-thesis.md)
-* [Product Overview](overview.md)
-
 ## Start Building
 
 * [Quickstart](quickstart.md)
@@ -18,10 +11,17 @@
 * [SDK Parity](sdk-parity.md)
 * [MCP Server](mcp-server.md)
 
+## Understand Supafone
+
+* [Why Supafone](why-supafone.md)
+* [Production Voice AI Challenges](production-voice-ai-challenges.md)
+* [Voice AI Thesis](voice-ai-thesis.md)
+* [Product Overview](overview.md)
+
 ## Supervise Existing Agents
 
-* [Voice Watcher and SecondMind](self-healing-watcher.md)
-* [Programmable SecondMind Directives](secondmind-directive-contract.md)
+* [Supafone Supervisor](supafone-supervisor.md)
+* [Programmable Supervisor Directives](programmable-supervisor-directives.md)
 * [Framework Coverage](framework-support.md)
 * [Provider-Agnostic Runtime](provider-agnostic-framework.md)
 * [BYOK Providers](byok-providers.md)

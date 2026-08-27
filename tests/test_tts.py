@@ -69,7 +69,7 @@ class _BoomBackend:
 # --- offline fake ------------------------------------------------------------
 
 async def test_fake_tts_returns_valid_playable_wav():
-    audio = await FakeTTSProvider().synthesize("hello from the second mind")
+    audio = await FakeTTSProvider().synthesize("hello from the supervisor")
     with wave.open(io.BytesIO(audio), "rb") as wav:
         assert wav.getnchannels() == 1
         assert wav.getsampwidth() == 2

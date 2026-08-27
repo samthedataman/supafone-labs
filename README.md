@@ -36,24 +36,24 @@ Supafone Labs turns those failures into reusable package primitives:
 
 | Production problem | Package innovation |
 | --- | --- |
-| The agent cannot reliably notice its own mistakes | Voice Watcher and SecondMind supervise the call off the audio hot path |
+| The agent cannot reliably notice its own mistakes | Supafone Supervisor runs beside the call off the audio hot path |
 | Every provider exposes different live events | Fourteen audited runtime adapters normalize one canonical call state |
 | Provider controls are incompatible | One abstract directive compiles into native control, developer-owned context, observation, or a safe no-op |
 | Prompts claim actions that tools never completed | Truth state and guardrail policies require verified outcomes |
 | Every customer requires another agent architecture | Agent Factory generates editable stages, tools, voices, numbers, and artifacts |
-| Testing is manual role-play | Adversarial QA and SSR grading measure regressions and Watcher lift |
-| Calls and decisions disappear across dashboards | Durable activity APIs retain calls, recordings, transcripts, plans, and Watcher events |
+| Testing is manual role-play | Adversarial QA and SSR grading measure regressions and Supervisor lift |
+| Calls and decisions disappear across dashboards | Durable activity APIs retain calls, recordings, transcripts, plans, and Supervisor events |
 | Phone, WebRTC, campaigns, and messaging become separate products | One SDK and account model expose the operational stack |
 
 Read the [problem-first product overview](gitbook/README.md) or inspect the
 [complete framework coverage matrix](gitbook/framework-support.md).
 
-## Start here: Supafone Voice Watcher
+## Start here: Supafone Supervisor
 
-The Watcher is the core of Supafone Labs: a second AI runs beside the realtime
+The Supervisor is the core of Supafone Labs: a second AI runs beside the realtime
 agent, observes the live conversation off the latency-critical audio path, and
 silently corrects the agent when it detects tool failures, unsafe claims,
-language changes, missed intent, or a broken workflow. If the Watcher has
+language changes, missed intent, or a broken workflow. If the Supervisor has
 nothing useful to add—or cannot respond in time—the call continues unchanged.
 
 It is enabled by default in both SDKs:
@@ -61,26 +61,23 @@ It is enabled by default in both SDKs:
 ```python
 from supafone_labs import Supafone
 
-supafone = Supafone(api_key="sl_live_...", voice_watcher=True)
+supafone = Supafone(api_key="sl_live_...")
 ```
 
 ```ts
 import { Supafone } from "supafone-labs";
 
-const supafone = new Supafone({
-  apiKey: process.env.SUPAFONE_TOKEN!,
-  voiceWatcher: true,
-});
+const supafone = new Supafone({ apiKey: process.env.SUPAFONE_TOKEN! });
 ```
 
 Already running Vapi, Retell, Ultravox, OpenAI Realtime, LiveKit, Pipecat, or
-another stack? Keep it. Feed provider events into the Watcher and deliver its
+another stack? Keep it. Feed provider events into the Supervisor and deliver its
 canonical silent directive through the matching adapter.
 
-**Read this first:** [Voice Watcher framework](gitbook/self-healing-watcher.md) ·
+**Read this first:** [Supafone Supervisor framework](gitbook/supafone-supervisor.md) ·
 [production problems it solves](gitbook/production-voice-ai-challenges.md) ·
 [framework support](gitbook/framework-support.md) ·
-[programmable directives](gitbook/secondmind-directive-contract.md) ·
+[programmable directives](gitbook/programmable-supervisor-directives.md) ·
 [live voice catalog](gitbook/voice-catalog-and-selection.md) ·
 [adversarial QA](gitbook/voice-qa-landscape.md) ·
 [MCP setup](mcp/README.md)
@@ -188,8 +185,8 @@ is temporarily unavailable.
 
 Supafone Labs is built around one defining capability:
 
-1. **Primary — Voice Watcher model supervisor**: attach the Supafone second
-   mind to a hosted agent or an agent you already run. It watches empathy and
+1. **Primary — Supafone Supervisor**: attach live supervision to a hosted agent
+   or an agent you already run. It watches empathy and
    operational patterns across turns—intent, urgency, emotion, language,
    workflow progress, tool truth, and outcomes—then sends a silent corrective
    directive through the provider's native control channel only when it can
@@ -197,7 +194,7 @@ Supafone Labs is built around one defining capability:
 2. **Secondary — Agent Factory delivery path**: create complete inbound,
    outbound, web, and campaign agents from one Supafone API key with the same
    supervisor already attached. This managed path removes provisioning work;
-   it does not define or constrain the Watcher framework.
+   it does not define or constrain the Supervisor framework.
 
 The supervisor is model agnostic by construction. Provider adapters normalize
 each stack into one call-state contract and compile one abstract directive back
@@ -214,10 +211,10 @@ separate:
 | Telephony | Carrier, trunk, and phone-network credentials | Twilio, Telnyx, Plivo, SignalWire, SIP/custom trunks |
 | TTS | Voice rendering and voice-clone/provider credentials | Cartesia, ElevenLabs, Inworld, Deepgram, custom TTS |
 | STT | Live transcription and language authority | Deepgram or provider-native transcripts |
-| Supervisor LLM | The model that produces Watcher directives | Supafone hosted, Anthropic, OpenAI, xAI, custom LLM |
+| Supervisor LLM | The model that produces Supervisor directives | Supafone hosted, Anthropic, OpenAI, xAI, custom LLM |
 
 Those lanes can be mixed. A team can use Supafone-managed telephony with BYOK
-TTS, or BYOK Twilio/Telnyx with the managed Labs watcher, or bring the full
+TTS, or BYOK Twilio/Telnyx with the managed supervisor, or bring the full
 stack and only use Supafone for self-healing supervision and logs.
 
 ## Why this exists
@@ -238,7 +235,7 @@ talking; the note changes the call. Nobody expects the person speaking to also
 be the person supervising. Yet that's exactly what we ask of every voice agent
 shipped today.
 
-**Supafone Labs is the supervisor.** A second, slower mind that runs *beside* the
+**Supafone Labs is the supervisor.** A separate reasoning loop that runs *beside* the
 call instead of inside its latency budget: it taps every turn, maintains a
 live belief state — who's calling, what they want, how they feel, what language
 they're speaking — and slides its note across the desk through your platform's
@@ -258,7 +255,7 @@ calls must be inspectable — every directive is in the audit log, and the whole
 brain is MIT. The cloud exists for one reason: one key that runs the models,
 the voices, and the transcription is more convenient than five vendor accounts.
 
-**And when the second mind fails?** Nothing happens. It runs behind a timeout,
+**And when the supervisor fails?** Nothing happens. It runs behind a timeout,
 off the hot path; a stalled oracle yields no note and the call proceeds exactly
 as it would have without us. Degrade-safety is tested, not promised.
 
@@ -376,7 +373,7 @@ What Supafone handles in the default path:
 - Multistage inbound and outbound presets instead of one flat prompt.
 - Built-in tools for routing, scheduling, SMS, email, voicemail, knowledge,
   escalation, transcripts, recordings, and summaries.
-- Supafone Pro live watcher/call coach.
+- Supafone Supervisor live guidance and call coaching.
 
 BYOK is advanced, not required:
 
@@ -509,7 +506,7 @@ against your real configuration, and judges every call twice — pass/fail on
 the scenario's assertion **and** an SSR grade (the judge picks one of five
 nominal levels, *poorly/ok/good/great/perfectly*, mapped deterministically to
 a score + distribution). `POST /v1/qa/run` plays every scenario A/B —
-supervised vs unsupervised — and reports the watcher's measured lift. How
+supervised vs unsupervised — and reports the supervisor's measured lift. How
 this stacks up against Hamming, Coval, Roark, Cekura, and the rest of the
 2026 voice-QA field: [gitbook/voice-qa-landscape.md](gitbook/voice-qa-landscape.md).
 
@@ -578,7 +575,7 @@ environment variable.
 Speech-to-speech models, STT→LLM→TTS pipelines, frameworks, and raw speech
 engines each get the injection channel they actually have:
 
-| Platform | Kind | Watcher delivery |
+| Platform | Kind | Supervisor delivery |
 |---|---|---|
 | Supafone · Ultravox | managed / S2S | deferred `user_text_message` |
 | Vapi | agent platform | system `add-message` via live-call `controlUrl` |
@@ -594,7 +591,7 @@ engines each get the injection channel they actually have:
 | Anything else | webhook | `GenericWebhookAdapter`, configurable |
 
 The release gate covers **fourteen public runtimes** from provider event through
-Watcher decision to exact delivery payload. Credentialed probes separately send
+Supervisor decision to exact delivery payload. Credentialed probes separately send
 real controls and wait for provider acceptance; missing credentials skip rather
 than pass. [docs/providers.md](docs/providers.md) has the current contract and
 test matrix, while the
@@ -698,7 +695,7 @@ docs/               provider capability matrix + quickstart
 ```bash
 make install                  # editable install + dev tools
 make test                     # offline suite (live tests skip without keys)
-make test-provider-contracts  # 14-runtime event -> Watcher -> exact-action gate
+make test-provider-contracts  # 14-runtime event -> Supervisor -> exact-action gate
 make test-live-injection      # real controls; missing credentials are skips
 make lint                     # ruff
 cd cloud && uvicorn app:app --reload    # run the gateway locally

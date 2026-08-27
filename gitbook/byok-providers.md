@@ -27,7 +27,7 @@ Supafone.
 ## Independent provider domains
 
 Do not collapse BYOK into one generic "provider keys" bucket. Hosted delivery
-has three independent provisioning lanes; Watcher deployments add independent
+has three independent provisioning lanes; Supervisor deployments add independent
 STT and supervisor-LLM credentials:
 
 | Lane | What it means | Common providers |
@@ -36,11 +36,11 @@ STT and supervisor-LLM credentials:
 | Telephony | The carrier, trunk, SIP, and phone-network layer | Twilio, Telnyx, Plivo, SignalWire, SIP/custom trunks |
 | TTS | The voice-rendering provider | Cartesia, ElevenLabs, Inworld, Deepgram, custom TTS |
 | STT | The transcript and language-authority provider | Deepgram or provider-native streams |
-| Supervisor LLM | The model that forms Watcher directives | Supafone hosted, Anthropic, OpenAI, xAI, custom LLM |
+| Supervisor LLM | The model that forms Supervisor directives | Supafone hosted, Anthropic, OpenAI, xAI, custom LLM |
 
 Each domain can be managed by Supafone or brought by the customer. For example,
 a customer can bring Telnyx telephony and Cartesia TTS while still using
-Supafone's managed watcher, or bring an entire Ultravox stack and use Supafone
+Supafone's managed supervisor, or bring an entire Ultravox stack and use Supafone
 only for self-healing directives and logs.
 
 ## Native / BYOK Ultravox Runtime
@@ -98,12 +98,12 @@ status shape:
 }
 ```
 
-This runtime lane is distinct from the watcher provider keys below: those bring
+This runtime lane is distinct from the supervisor provider keys below: those bring
 your own STT/LLM/TTS for supervision, while this runs the agent itself on your
 Ultravox account. See [Hosted Agents API](hosted-agents-api.md) for the full
 create/runtime contract and the runtime block returned on agent create.
 
-## BYOK Watcher Providers
+## BYOK Supervisor Providers
 
 ```json
 {

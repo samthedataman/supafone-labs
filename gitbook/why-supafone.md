@@ -7,7 +7,7 @@ not because developers need another prompt wrapper.
 
 | Problem | Failure in production | Innovation in the package |
 | --- | --- | --- |
-| Self-supervision | The speaking model misses cross-turn intent, emotion, workflow drift, and unsupported claims | **Voice Watcher and SecondMind** maintain a separate belief and directive loop off the audio hot path |
+| Self-supervision | The speaking model misses cross-turn intent, emotion, workflow drift, and unsupported claims | **Supafone Supervisor** maintains a separate belief and directive loop off the audio hot path |
 | Provider fragmentation | Every platform emits different transcript, tool, lifecycle, and control events | **Canonical event algebra and 14 audited adapters** create one runtime contract |
 | Weak intervention controls | A generic prompt cannot safely alter an active call | **Capability-aware compilation** chooses native control, developer-owned context, host hook, observation, or no action |
 | Tool hallucination | The agent says a booking, transfer, or delivery happened before the tool confirms it | **Truth state** separates verified outcomes from conversational language |
@@ -20,15 +20,17 @@ not because developers need another prompt wrapper.
 
 ## The design response
 
-```mermaid
-flowchart TD
-    problem[Production call problem] --> event[Canonical event]
-    event --> state[Deterministic call state]
-    state --> watcher[Watcher belief and directive]
-    watcher --> gate[Confidence, truth, and policy gate]
-    gate --> compile[Provider-aware compiler]
-    compile --> action[Native action or safe no-op]
-    state --> evidence[Replay, QA, telemetry, and optimization]
+```text
+Production call problem
+  -> canonical event
+  -> deterministic call state
+  -> Supafone Supervisor belief and directive
+  -> confidence, truth, and policy gate
+  -> provider-aware compiler
+  -> native action or safe no-op
+
+Deterministic call state
+  -> replay, QA, telemetry, and optimization
 ```
 
 The architecture follows four rules:

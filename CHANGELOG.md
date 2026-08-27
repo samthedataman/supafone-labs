@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.5.3 - 2026-08-26
+
+- Unified the public supervision capability under one name: Supafone Supervisor.
+- Added the canonical `supervisor` option to the Python and TypeScript clients.
+- Preserved previous constructor options as deprecated aliases so existing
+  integrations keep working without a migration deadline.
+- Simplified quickstarts and architecture documentation and replaced diagrams
+  that depended on client-side Mermaid rendering.
+
 ## 0.5.2 - 2026-08-24
 
 - Added complete hosted-agent lifecycle parity in Python and TypeScript:
@@ -53,11 +62,11 @@ All notable changes to this project are documented here. The format is based on
   filtering, recommendation, and authenticated previews.
 - Fixed-language Agent Factory selection with provider/model validation. This
   is call-long configuration and does not add a mid-call language-switch tool.
-- Developer-controlled SecondMind directive contracts for empathy, tactics,
+- Developer-controlled Supervisor directive contracts for empathy, tactics,
   facts, guardrails, language, confidence gates, and final transforms.
 - Durable account-scoped activity and generated-plan listing in both SDKs,
-  including Watcher observations and whispers.
-- Paginated call history, Watcher history on call detail, signed playback and
+  including Supervisor observations and guidance.
+- Paginated call history, Supervisor history on call detail, signed playback and
   download links, and full account-owned call deletion.
 
 ### Security
@@ -144,7 +153,7 @@ All notable changes to this project are documented here. The format is based on
   injection contract matrix covering 14 voice runtimes.
 
 ### Fixed
-- Preserved the `0.4.7` Voice Watcher default and native Ultravox BYOK
+- Preserved the `0.4.7` Supervisor default and native Ultravox BYOK
   passthrough while adding the tester APIs.
 - Gemini Live control messages use a valid mid-session `user` role and retain
   availability, consent-guard, and summary-reconciliation decisions.
@@ -192,7 +201,7 @@ All notable changes to this project are documented here. The format is based on
   (closed live-call API, no mid-call inject channel, no custom-LLM); Cartesia
   and Pipecat are n/a (a TTS voice and a DIY framework, not conversational
   agents). New `gitbook/framework-support.md` page (added to `SUMMARY.md`),
-  cross-linked from the Voice Watcher and provider-agnostic pages; README and
+  cross-linked from the Supervisor and provider-agnostic pages; README and
   TS README gain a matching "Supported frameworks" section. Honest caveat added
   throughout: injection is possible for all 10, but managed delivery is wired
   end-to-end only for Ultravox today.
@@ -206,8 +215,8 @@ All notable changes to this project are documented here. The format is based on
   - `GET /api/v1/labs/runtime` reports `{managed, byok_connected, base_url}`;
     `PUT /api/v1/labs/runtime` connects/updates the key (masked; never echoed).
   - `capabilities().runtimes.byok == ["ultravox"]`.
-- **`voice_watcher` (`voiceWatcher` in TS) client flag** — one switch to run
-  agents under the Voice Watcher framework (supervision + QA + scoring); default
+- **Supervisor client flag** — one switch to run agents under Supafone
+  Supervisor (live guidance + QA + scoring); default
   on. Injected into `labs.agents.create*` payloads when the caller didn't set it
   (explicit values are preserved). The deprecated `labs=` client arg still works.
 

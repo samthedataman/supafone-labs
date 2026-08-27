@@ -1,7 +1,7 @@
 """Release gate for the fourteen provider/framework injection contracts.
 
 This suite is deterministic and credential-free: a real provider event enters
-the public facade, the Watcher forms a directive, and the resulting action is
+the public facade, the Supervisor forms a directive, and the resulting action is
 validated against the provider's current native message or framework API.
 Credentialed network acceptance lives in test_live_injection_contracts.py.
 """
@@ -157,8 +157,8 @@ async def test_provider_event_to_exact_injection_action(contract):
     )
     result = await brain.observe(case.caller)
     assert result.events, f"{contract.provider_id}: native input was not parsed"
-    assert result.belief is not None, f"{contract.provider_id}: Watcher formed no belief"
-    assert result.directive is not None, f"{contract.provider_id}: Watcher formed no directive"
+    assert result.belief is not None, f"{contract.provider_id}: Supervisor formed no belief"
+    assert result.directive is not None, f"{contract.provider_id}: Supervisor formed no directive"
 
     if not contract.injectable:
         assert result.actions == []
