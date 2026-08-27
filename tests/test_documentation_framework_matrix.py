@@ -94,8 +94,8 @@ def test_gitbook_navigation_follows_the_developer_journey():
     summary = (REPO_ROOT / "gitbook" / "SUMMARY.md").read_text(encoding="utf-8")
     sections = re.findall(r"^## (.+)$", summary, flags=re.MULTILINE)
     assert sections == [
-        "Understand Supafone",
         "Start Building",
+        "Understand Supafone",
         "Supervise Existing Agents",
         "Build Complete Agents",
         "Run Calls and Campaigns",

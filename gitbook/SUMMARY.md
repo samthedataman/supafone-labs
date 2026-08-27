@@ -2,13 +2,6 @@
 
 * [Supafone Labs](README.md)
 
-## Understand Supafone
-
-* [Why Supafone](why-supafone.md)
-* [Production Voice AI Challenges](production-voice-ai-challenges.md)
-* [Voice AI Thesis](voice-ai-thesis.md)
-* [Product Overview](overview.md)
-
 ## Start Building
 
 * [Quickstart](quickstart.md)
@@ -17,6 +10,13 @@
 * [API Keys and Authentication](api-keys-and-auth.md)
 * [SDK Parity](sdk-parity.md)
 * [MCP Server](mcp-server.md)
+
+## Understand Supafone
+
+* [Why Supafone](why-supafone.md)
+* [Production Voice AI Challenges](production-voice-ai-challenges.md)
+* [Voice AI Thesis](voice-ai-thesis.md)
+* [Product Overview](overview.md)
 
 ## Supervise Existing Agents
 
