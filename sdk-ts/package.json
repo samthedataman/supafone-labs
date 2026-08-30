@@ -1,6 +1,6 @@
 {
   "name": "supafone-labs",
-  "version": "0.5.3",
+  "version": "0.5.4",
   "description": "Build and supervise production voice, web, and campaign agents through one SDK.",
   "type": "module",
   "main": "./dist/cjs/index.js",

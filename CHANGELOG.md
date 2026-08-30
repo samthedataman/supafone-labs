@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.5.4 - 2026-08-30
+
+- Add executable, typed HTTPS custom tools across TypeScript, Python, REST, and MCP.
+- Add encrypted per-agent SMTP configuration for verified inbound and outbound email actions.
+- Document stage-scoped tools, webhook security boundaries, inbound readiness, and isolated managed-number provisioning.
+
 ## 0.5.3 - 2026-08-26
 
 - Unified the public supervision capability under one name: Supafone Supervisor.
