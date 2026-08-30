@@ -42,6 +42,55 @@ def test_create_inbound_serializes_hosted_agent_payload():
     assert "call_stages" not in payload  # private API generates + executes the plan
 
 
+def test_create_inbound_serializes_executable_custom_tools_and_smtp():
+    calls = []
+
+    def transport(method, path, payload):
+        calls.append((method, path, payload))
+        return {"success": True, "agent": {"agent_key": "support-intake"}, "runtime": {}}
+
+    supafone = Supafone(api_key="sf_test", transport=transport)
+    supafone.labs.agents.create_inbound(
+        {
+            "agentKey": "support-intake",
+            "name": "Support intake",
+            "tools": {
+                "email": True,
+                "ivrNavigation": True,
+                "customTools": [
+                    {
+                        "name": "lookup_order",
+                        "description": "Read a confirmed order status.",
+                        "url": "https://api.acme.example/orders",
+                        "header": "X-API-Key",
+                        "apiKey": "tool-secret",
+                        "params": [
+                            {"name": "order_id", "type": "string", "required": True},
+                            {"name": "include_history", "type": "boolean"},
+                        ],
+                        "stages": ["support", "confirmation"],
+                    }
+                ],
+            },
+            "email": {
+                "enabled": True,
+                "fromEmail": "support@acme.example",
+                "smtpHost": "smtp.acme.example",
+                "smtpPort": 587,
+                "smtpUser": "support@acme.example",
+                "smtpPassword": "smtp-secret",
+            },
+        }
+    )
+
+    payload = calls[0][2]
+    assert payload["tools"]["ivr_navigation"] is True
+    assert payload["tools"]["custom_tools"][0]["params"][1]["type"] == "boolean"
+    assert payload["tools"]["custom_tools"][0]["stages"] == ["support", "confirmation"]
+    assert payload["email"]["smtp_host"] == "smtp.acme.example"
+    assert payload["email"]["smtp_pass"] == "smtp-secret"
+
+
 def test_language_voice_routing_serializes_only_public_preferences():
     calls = []
 

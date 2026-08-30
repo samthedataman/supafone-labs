@@ -103,6 +103,11 @@ preferences only; the MCP server does not contain the private live-routing
 implementation. See
 [Live Language and Voice Routing](live-language-voice-routing.md).
 
+They also accept executable HTTPS actions in `tools.customTools` and per-agent
+SMTP credentials in the `email` object. The schemas are typed in MCP and match
+the TypeScript, Python, and REST contracts. See [Custom Tools](custom-tools.md)
+and [SMTP and Email](smtp-and-email.md).
+
 #### Test any voice stack
 
 `grade_existing_phone_agent` uses PSTN as the provider-neutral boundary. The target may

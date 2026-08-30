@@ -23,7 +23,7 @@ def test_initialize_and_list_tools():
         }
     )
     assert init["result"]["serverInfo"]["name"] == "supafone-labs-mcp"
-    assert init["result"]["serverInfo"]["version"] == "0.4.12"
+    assert init["result"]["serverInfo"]["version"] == "0.5.3"
 
     listed = server.handle({"jsonrpc": "2.0", "id": 2, "method": "tools/list"})
     tool_names = {tool["name"] for tool in listed["result"]["tools"]}
@@ -58,6 +58,15 @@ def test_initialize_and_list_tools():
     assert properties["languageVoiceRouting"]["type"] == "boolean"
     assert properties["languageVoiceRouting"]["default"] is False
     assert properties["routingLanguages"]["maxItems"] == 4
+    custom_tools = properties["tools"]["properties"]["customTools"]
+    assert custom_tools["maxItems"] == 10
+    assert custom_tools["items"]["properties"]["params"]["items"]["properties"]["type"]["enum"] == [
+        "string",
+        "number",
+        "integer",
+        "boolean",
+    ]
+    assert properties["email"]["properties"]["smtpPort"]["default"] == 587
 
 
 def test_create_inbound_agent_uses_python_sdk(monkeypatch):
@@ -87,6 +96,22 @@ def test_create_inbound_agent_uses_python_sdk(monkeypatch):
             "agentKey": "northline-intake",
             "name": "Northline intake",
             "labs": {"enabled": True},
+            "tools": {
+                "customTools": [
+                    {
+                        "name": "lookup_order",
+                        "url": "https://api.example.com/orders",
+                        "params": [{"name": "order_id", "type": "string", "required": True}],
+                    }
+                ]
+            },
+            "email": {
+                "enabled": True,
+                "fromEmail": "support@example.com",
+                "smtpHost": "smtp.example.com",
+                "smtpUser": "support@example.com",
+                "smtpPassword": "secret",
+            },
         },
     )
 
@@ -106,6 +131,22 @@ def test_create_inbound_agent_uses_python_sdk(monkeypatch):
             "agentKey": "northline-intake",
             "name": "Northline intake",
             "labs": {"enabled": True},
+            "tools": {
+                "customTools": [
+                    {
+                        "name": "lookup_order",
+                        "url": "https://api.example.com/orders",
+                        "params": [{"name": "order_id", "type": "string", "required": True}],
+                    }
+                ]
+            },
+            "email": {
+                "enabled": True,
+                "fromEmail": "support@example.com",
+                "smtpHost": "smtp.example.com",
+                "smtpUser": "support@example.com",
+                "smtpPassword": "secret",
+            },
         },
     )
 

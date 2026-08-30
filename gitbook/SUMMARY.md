@@ -34,6 +34,8 @@
 * [Hosted Agent Builder](hosted-agent-builder.md)
 * [Hosted Agents API](hosted-agents-api.md)
 * [Call Stages](call-stages.md)
+* [Custom Tools](custom-tools.md)
+* [SMTP and Email](smtp-and-email.md)
 * [Voices and Previews](voices-and-previews.md)
 * [Dynamic Voice Catalog](voice-catalog-and-selection.md)
 * [Live Language and Voice Routing](live-language-voice-routing.md)

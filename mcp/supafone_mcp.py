@@ -31,7 +31,7 @@ except Exception:  # pragma: no cover - exercised only when SDK import is broken
 
 
 SERVER_NAME = "supafone-labs-mcp"
-SERVER_VERSION = "0.4.12"
+SERVER_VERSION = "0.5.3"
 DEFAULT_PROTOCOL_VERSION = "2024-11-05"
 DEFAULT_HOSTED_API_BASE = "https://api.supafone.ai"
 DEFAULT_LABS_API_BASE = "https://api.labs.supafone.ai"
@@ -106,7 +106,13 @@ def _merge_config(arguments: Mapping[str, Any]) -> dict[str, Any]:
         raise ToolError("config must be an object when provided")
 
     for key, value in arguments.items():
-        if key == "config" or key in AUTH_ARG_KEYS or value is None:
+        if key == "config" or value is None:
+            continue
+        # `email` is also a legacy account-login argument. A string remains
+        # auth metadata; an object is the per-agent SMTP configuration.
+        if key in AUTH_ARG_KEYS:
+            if key == "email" and isinstance(value, Mapping):
+                merged[key] = dict(value)
             continue
         merged[key] = value
     return merged
@@ -172,6 +178,57 @@ def _log_key(log: Mapping[str, Any]) -> str:
         str(log.get(name, ""))
         for name in ("at", "endpoint", "duration_ms", "seconds_billed", "detail")
     )
+
+
+def _custom_tool_schema() -> dict[str, Any]:
+    return {
+        "type": "object",
+        "description": "Executable customer HTTPS tool proxied safely by Supafone.",
+        "properties": {
+            "id": {"type": "string"},
+            "name": {
+                "type": "string",
+                "pattern": "^[a-z][a-z0-9_]{2,30}$",
+                "description": "Unique model tool name, for example lookup_order.",
+            },
+            "description": {"type": "string", "maxLength": 400},
+            "url": {"type": "string", "format": "uri", "pattern": "^https://"},
+            "header": {
+                "type": "string",
+                "description": "Optional API-key header; defaults to Authorization.",
+            },
+            "apiKey": {
+                "type": "string",
+                "description": "Optional secret encrypted by Supafone and never returned.",
+            },
+            "params": {
+                "type": "array",
+                "maxItems": 8,
+                "items": {
+                    "type": "object",
+                    "properties": {
+                        "name": {"type": "string", "pattern": "^[a-z][a-z0-9_]{2,30}$"},
+                        "description": {"type": "string", "maxLength": 200},
+                        "type": {
+                            "type": "string",
+                            "enum": ["string", "number", "integer", "boolean"],
+                            "default": "string",
+                        },
+                        "required": {"type": "boolean"},
+                    },
+                    "required": ["name"],
+                    "additionalProperties": False,
+                },
+            },
+            "stages": {
+                "type": "array",
+                "items": {"type": "string"},
+                "description": "Optional stage keys where the tool is available.",
+            },
+        },
+        "required": ["name", "url"],
+        "additionalProperties": False,
+    }
 
 
 def _agent_schema(*, with_number: bool = False) -> dict[str, Any]:
@@ -247,7 +304,44 @@ def _agent_schema(*, with_number: bool = False) -> dict[str, Any]:
             "additionalProperties": True,
             "description": "Telephony mode/provider/credentials.",
         },
-        "tools": {"type": "object", "additionalProperties": True},
+        "tools": {
+            "type": "object",
+            "properties": {
+                "customTools": {
+                    "type": "array",
+                    "maxItems": 10,
+                    "items": _custom_tool_schema(),
+                    "description": "Executable custom tools registered with this agent.",
+                },
+                "custom_tools": {
+                    "type": "array",
+                    "maxItems": 10,
+                    "items": _custom_tool_schema(),
+                },
+            },
+            "additionalProperties": True,
+        },
+        "email": {
+            "type": "object",
+            "description": "Optional per-agent SMTP sender for the callable send_email tool.",
+            "properties": {
+                "enabled": {"type": "boolean"},
+                "fromEmail": {"type": "string", "format": "email"},
+                "smtpHost": {"type": "string"},
+                "smtpPort": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 65535,
+                    "default": 587,
+                },
+                "smtpUser": {"type": "string"},
+                "smtpPassword": {
+                    "type": "string",
+                    "description": "Encrypted by Supafone and never returned.",
+                },
+            },
+            "additionalProperties": False,
+        },
         "stageGeneration": {
             "type": "string",
             "enum": ["oracle", "template", "off"],

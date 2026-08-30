@@ -8,13 +8,15 @@ BYOK carrier path.
 | Strategy | Monthly price | Behavior |
 | --- | ---: | --- |
 | `default_pool` | `$0` | Use an idle shared Supafone number for dev, demos, and early traffic. |
-| `dedicated` | `$1.50` standard number-month | Reserve a standard number for an account or agent. |
-| `premium` | `$3.00` premium number-month | Reserve a premium or easy number. |
+| `dedicated` | `$3.00` per number-month | Reserve a standard number in the account's isolated carrier subaccount. |
+| `premium` | `$3.00` per number-month | Reserve premium inventory in the same isolated carrier subaccount. |
 | `byok` | `$0` Supafone number rent | Use customer-owned Twilio, Telnyx, Plivo, SIP, or similar credentials. |
 
-The default strategy is `default_pool`. Dedicated and premium numbers are real
-phone-number purchases or reservations and should require explicit user/admin
-confirmation in product UI and automation.
+Shared-pool numbers are explicitly designated testing routes; Supafone never
+reuses customer production lines as pool inventory. Dedicated and premium
+numbers require a paid Stripe entitlement before Supafone creates or reuses the
+developer tenant's isolated carrier subaccount, purchases the number, configures
+webhooks, and assigns it to an agent.
 
 ## Search Shared Pool or Inventory
 
@@ -40,7 +42,8 @@ curl https://api.supafone.ai/api/v1/labs/phone-numbers/search \
 
 ## Explicit Dedicated Purchase
 
-Use this only after the account has chosen a dedicated standard number.
+Use this only after the account has chosen a `$3/month` dedicated number. The SDK
+returns Stripe Checkout first and provisions only after that checkout is paid.
 
 ```ts
 await supafone.labs.phoneNumbers.buy({

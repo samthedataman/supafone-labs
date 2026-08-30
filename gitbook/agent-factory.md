@@ -30,6 +30,9 @@ agent exists.
 - number assignment, webhook wiring, transcript storage, and dashboard links;
 - separate SDK and MCP implementations for the same action.
 
+See [Custom Tools](custom-tools.md) for executable HTTPS actions and
+[SMTP and Email](smtp-and-email.md) for a verified per-agent email sender.
+
 The generated plan remains plain JSON. Your application can preview, edit,
 approve, diff, and version it before it reaches a caller.
 

@@ -118,7 +118,7 @@ Dedicated and premium numbers are paid number-month choices:
 
 ```json
 {
-  "dedicated_number_price_monthly": 1.5,
+  "dedicated_number_price_monthly": 3,
   "premium_number_price_monthly": 3
 }
 ```

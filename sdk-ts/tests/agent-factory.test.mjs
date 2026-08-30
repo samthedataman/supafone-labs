@@ -92,6 +92,46 @@ test("agent factory preserves native Ultravox BYOK configuration", async (t) => 
   });
 });
 
+test("agent factory serializes executable custom tools and per-agent SMTP", async (t) => {
+  const log = [];
+  t.mock.method(globalThis, "fetch", mockFetch(log));
+
+  const sf = new Supafone({ apiKey: "sl_test" });
+  await sf.labs.agents.createInbound({
+    name: "Support intake",
+    tools: {
+      email: true,
+      ivrNavigation: true,
+      customTools: [{
+        name: "lookup_order",
+        description: "Read a confirmed order status.",
+        url: "https://api.acme.example/orders",
+        header: "X-API-Key",
+        apiKey: "tool-secret",
+        params: [
+          { name: "order_id", type: "string", required: true },
+          { name: "include_history", type: "boolean" },
+        ],
+        stages: ["support", "confirmation"],
+      }],
+    },
+    email: {
+      enabled: true,
+      fromEmail: "support@acme.example",
+      smtpHost: "smtp.acme.example",
+      smtpPort: 587,
+      smtpUser: "support@acme.example",
+      smtpPassword: "smtp-secret",
+    },
+  });
+
+  assert.equal(log[0].body.tools.ivr_navigation, true);
+  assert.equal(log[0].body.tools.custom_tools[0].params[1].type, "boolean");
+  assert.deepEqual(log[0].body.tools.custom_tools[0].stages, ["support", "confirmation"]);
+  assert.equal(log[0].body.email.smtp_host, "smtp.acme.example");
+  assert.equal(log[0].body.email.smtp_pass, "smtp-secret");
+});
+
 test("hosted discovery, voice filters, and runtime have REST parity", async (t) => {
   const log = [];
   t.mock.method(globalThis, "fetch", async (url, init) => {

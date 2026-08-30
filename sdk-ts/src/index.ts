@@ -578,8 +578,60 @@ export interface LabsToolsConfig {
   voicemail?: boolean;
   emergencyEscalation?: boolean;
   emergency_escalation?: boolean;
-  customTools?: Array<Record<string, unknown>>;
-  custom_tools?: Array<Record<string, unknown>>;
+  /** Makes the native DTMF tool available for bounded phone-tree navigation. */
+  ivrNavigation?: boolean;
+  ivr_navigation?: boolean;
+  /** Executable customer-owned HTTPS tools, proxied by Supafone at call time. */
+  customTools?: LabsCustomToolDefinition[];
+  custom_tools?: LabsCustomToolDefinition[];
+}
+
+export type LabsCustomToolParameterType = "string" | "number" | "integer" | "boolean";
+
+export interface LabsCustomToolParameter {
+  name: string;
+  description?: string;
+  type?: LabsCustomToolParameterType;
+  required?: boolean;
+}
+
+export interface LabsCustomToolDefinition {
+  /** Stable id returned by Supafone. Omit it when creating a tool. */
+  id?: string;
+  /** Lowercase model tool name, such as lookup_order. */
+  name: string;
+  description?: string;
+  /** HTTPS endpoint called by Supafone's guarded server-side proxy. */
+  url: string;
+  /** Optional secret header name. Defaults to Authorization: Bearer <apiKey>. */
+  header?: string;
+  apiKey?: string;
+  api_key?: string;
+  /** Set false on update to remove a previously stored secret. */
+  apiKeySet?: boolean;
+  api_key_set?: boolean;
+  params?: LabsCustomToolParameter[];
+  parameters?: LabsCustomToolParameter[];
+  /** Optional call-stage keys where this tool is available. Empty means every stage. */
+  stages?: string[];
+  allowedStages?: string[];
+  allowed_stages?: string[];
+}
+
+export interface LabsEmailConfig {
+  enabled?: boolean;
+  fromEmail?: string;
+  from_email?: string;
+  smtpHost?: string;
+  smtp_host?: string;
+  smtpPort?: number;
+  smtp_port?: number;
+  smtpUser?: string;
+  smtp_user?: string;
+  /** Encrypted by Supafone and never returned. */
+  smtpPassword?: string;
+  smtp_password?: string;
+  smtp_pass?: string;
 }
 
 export interface LabsRecordingConfig {
@@ -958,6 +1010,8 @@ export interface CreateLabsAgentRequest {
   artifacts?: LabsArtifactsConfig;
   compliance?: Record<string, unknown>;
   tools?: LabsToolsConfig;
+  /** Optional per-agent SMTP sender used by the callable send_email tool. */
+  email?: LabsEmailConfig;
   labs?: LabsSupervisorConfig;
   ultravox?: LabsUltravoxRuntime;
   supervisor?: boolean;
@@ -4114,6 +4168,7 @@ function labsAgentPayload(input: CreateLabsAgentRequest): Record<string, unknown
     artifacts: input.artifacts ? artifactsPayload(input.artifacts) : undefined,
     compliance: input.compliance,
     tools: input.tools ? toolsPayload(input.tools) : undefined,
+    email: input.email ? emailPayload(input.email) : undefined,
     labs: input.labs ? labsPayload(input.labs) : undefined,
     ultravox: input.ultravox ? ultravoxPayload(input.ultravox) : undefined,
     voice_watcher: input.supervisor ?? input.voice_watcher ?? input.voiceWatcher,
@@ -4505,7 +4560,19 @@ function toolsPayload(input: LabsToolsConfig): Record<string, unknown> {
     existing_client_lookup: input.existing_client_lookup ?? input.existingClientLookup,
     voicemail: input.voicemail,
     emergency_escalation: input.emergency_escalation ?? input.emergencyEscalation,
+    ivr_navigation: input.ivr_navigation ?? input.ivrNavigation,
     custom_tools: input.custom_tools ?? input.customTools,
+  });
+}
+
+function emailPayload(input: LabsEmailConfig): Record<string, unknown> {
+  return compact({
+    enabled: input.enabled,
+    from_email: input.from_email ?? input.fromEmail,
+    smtp_host: input.smtp_host ?? input.smtpHost,
+    smtp_port: input.smtp_port ?? input.smtpPort,
+    smtp_user: input.smtp_user ?? input.smtpUser,
+    smtp_pass: input.smtp_pass ?? input.smtp_password ?? input.smtpPassword,
   });
 }
 

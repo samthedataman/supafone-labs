@@ -2414,6 +2414,7 @@ def _labs_agent_payload(data: Mapping[str, Any]) -> dict[str, Any]:
             "artifacts": _artifacts_payload(data["artifacts"]) if data.get("artifacts") else None,
             "compliance": data.get("compliance"),
             "tools": _tools_payload(data["tools"]) if data.get("tools") else None,
+            "email": _email_payload(data["email"]) if data.get("email") else None,
             "labs": _labs_payload(data["labs"]) if data.get("labs") else None,
             "ultravox": _ultravox_payload(data["ultravox"]) if data.get("ultravox") else None,
             "custom_sip": _custom_sip_payload(_pick(data, "custom_sip", "customSip", "sip") or {}),
@@ -2641,7 +2642,21 @@ def _tools_payload(data: Mapping[str, Any]) -> dict[str, Any]:
             "existing_client_lookup": _pick(data, "existing_client_lookup", "existingClientLookup"),
             "voicemail": data.get("voicemail"),
             "emergency_escalation": _pick(data, "emergency_escalation", "emergencyEscalation"),
+            "ivr_navigation": _pick(data, "ivr_navigation", "ivrNavigation"),
             "custom_tools": _pick(data, "custom_tools", "customTools"),
+        }
+    )
+
+
+def _email_payload(data: Mapping[str, Any]) -> dict[str, Any]:
+    return _compact(
+        {
+            "enabled": data.get("enabled"),
+            "from_email": _pick(data, "from_email", "fromEmail"),
+            "smtp_host": _pick(data, "smtp_host", "smtpHost"),
+            "smtp_port": _pick(data, "smtp_port", "smtpPort"),
+            "smtp_user": _pick(data, "smtp_user", "smtpUser"),
+            "smtp_pass": _pick(data, "smtp_pass", "smtp_password", "smtpPassword"),
         }
     )
 
