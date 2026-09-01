@@ -15,14 +15,47 @@ through Python, TypeScript, REST, WebSocket, or MCP.
 [![API](https://img.shields.io/badge/cloud%20API-live-3fd0c9)](https://api.labs.supafone.ai/healthz)
 
 [**Website**](https://labs.supafone.ai) ·
-[**Docs**](https://labs.supafone.ai/docs.html) ·
-[**Console**](https://labs.supafone.ai/console.html) ·
-[**Get a free API key**](https://labs.supafone.ai/get-key.html) ·
+[**Docs**](https://labs.supafone.ai/docs/) ·
+[**Workspace**](https://labs.supafone.ai/builder.html) ·
+[**Get a free API key**](https://labs.supafone.ai/console.html?mode=register) ·
 [**API reference**](https://api.labs.supafone.ai/docs)
 
 </div>
 
 ---
+
+## The so what
+
+**A normal voice framework helps an agent speak. Supafone helps developers
+build, test, operate, supervise, and improve the entire voice product.**
+
+One API key connects phone and WebRTC delivery, managed voices, grounded
+knowledge, verified tools, SMTP email, live supervision, recordings,
+transcripts, and QA. Use the hosted Agent Factory or keep an existing OpenAI
+Realtime, Gemini, Grok, Ultravox, Vapi, Retell, LiveKit, or compatible stack.
+
+| What developers need | What ships in Supafone |
+| --- | --- |
+| Delivery | Managed phone provisioning, PSTN calls, and browser WebRTC testing |
+| Speech | Search and preview 1,600+ normalized Cartesia, ElevenLabs, Inworld, Deepgram, and Ultravox voices |
+| Grounding and actions | Website/document knowledge, retrieval and reranking, verified tools, and SMTP email |
+| Complex calls | Multi-stage flows, IVR navigation, language-aware voice profiles, handoffs, and campaigns as code |
+| Supervision and QA | Off-path Supafone Supervisor, tool-truth guardrails, recordings, transcripts, logs, and call evidence |
+| Developer surfaces | Python, TypeScript, REST, WebSocket, and MCP over the same hosted contracts |
+
+Supafone Cloud is **$0.10 per connected minute** for the standard managed call
+stack, including managed models, compatible voices, telephony, transcripts,
+Supafone Supervisor, and QA. By comparison, published rates such as Vapi's
+$0.05 platform fee, Deepgram Voice Agent's $0.075 standard rate, and
+ElevenAgents' $0.08 additional-call rate leave other provider or carrier costs
+separate. See the [full bundled-cost comparison](gitbook/README.md#cost-comparison)
+before comparing headline rates.
+
+The $0.10 pays for the production path, not only an orchestration request:
+carrier connection, compatible model and voice runtime, call artifacts,
+Supervisor inference, and QA share one meter. It also replaces the engineering
+work of securing, integrating, and reconciling several vendor accounts. BYOK
+remains available when a team already has preferred provider economics.
 
 ## Why we built it
 

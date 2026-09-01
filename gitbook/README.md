@@ -12,6 +12,86 @@
 [Developer console](https://labs.supafone.ai) ·
 [API reference](https://api.labs.supafone.ai/docs)
 
+## The so what
+
+**A normal voice framework helps an agent speak. Supafone helps developers
+build, test, operate, supervise, and improve the entire voice product.**
+
+Use one Supafone API key for the production systems that otherwise become
+separate integrations: phone and WebRTC delivery, managed voices, grounded
+knowledge, verified tools, email, live supervision, recordings, transcripts,
+QA, and post-call evidence. Start with Supafone-managed infrastructure, or
+keep the realtime model, carrier, and speech providers you already use.
+
+[Follow the 10-minute quickstart](quickstart.md) ·
+[Create an API key](https://labs.supafone.ai/console.html?mode=register) ·
+[Open the workspace](https://labs.supafone.ai/builder.html) ·
+[Review framework coverage](framework-support.md)
+
+## What changes for the developer
+
+| Production work you would otherwise build | What Supafone provides |
+| --- | --- |
+| Reconcile telephony, WebRTC, speech, knowledge, tools, email, supervision, and QA | **One integration** and one account model across the call lifecycle |
+| Replace a working agent to gain observability or guardrails | **Keep your existing stack** and attach Supafone Supervisor through the supported provider adapter |
+| Ask the speaking model to notice its own mistakes | **Independent supervision** that stays off the audio hot path and emits a bounded instruction only when evidence is strong |
+| Trust spoken claims about bookings, transfers, sends, or CRM writes | **Verified actions** that separate tool truth from model language |
+| Build carrier search, purchasing, assignment, and release workflows | **Managed phone provisioning** without requiring a separate Twilio control plane |
+| Buy a number before hearing the agent | **Browser WebRTC testing first**, then real PSTN testing when the agent is ready |
+| Integrate every speech provider independently | **One searchable catalog of 1,600+ normalized voices** with provider, language, style, compatibility, and preview metadata |
+| Assemble crawling, chunking, embeddings, retrieval, and reranking | **Private grounded knowledge** from approved websites and documents |
+| Put intake, qualification, scheduling, IVR, language changes, and campaigns into one prompt | **Reusable multi-stage behavior** with bounded IVR navigation, language-aware voice profiles, handoffs, and campaigns as code |
+| Reconcile recordings, transcripts, provider logs, and QA results | **Complete call evidence** linked to the agent, tool outcomes, and Supervisor decisions |
+| Commit to one programming surface | **Python, TypeScript, REST, WebSocket, and MCP** over the same hosted contracts |
+| Rebuild the surrounding product for every customer | **Faster delivery** focused on the agent's objective, business rules, and customer experience |
+
+## Voices without five separate integrations
+
+The managed catalog currently normalizes more than 1,600 voices across
+Cartesia Sonic, ElevenLabs, Inworld TTS-2, Deepgram Aura, and Ultravox's
+speech-native managed voices. Search and preview by provider, language, gender,
+and style, then deploy a compatible managed voice without adding that provider's
+API key. BYOK remains available for teams that need a specific provider account
+or private voice.
+
+## Cost comparison
+
+Supafone Cloud is **$0.10 per connected minute** for the standard managed call
+stack, including managed models, compatible voices, telephony, transcripts,
+Supafone Supervisor, and QA. The first five minutes are free; a 400-minute
+reload is $40. There is no seat fee.
+
+That $0.10 pays for the production path, not only the SDK call that starts it.
+Supafone operates the carrier connection, compatible model and voice runtime,
+artifact pipeline, Supervisor inference, and QA record under one meter. It also
+removes the engineering and operational overhead of securing several vendor
+credentials, reconciling their usage records, and rebuilding the same control
+plane for each agent. Teams that already have better provider economics can use
+BYOK and keep Supafone as the common runtime and evidence layer.
+
+Competitor headline rates often meter only one layer of the stack. This table
+keeps the published rate and the separately billed pieces visible:
+
+| Platform | Published connected-minute rate | What remains separate |
+| --- | ---: | --- |
+| **Supafone Cloud** | **$0.10** | Standard managed stack is bundled; optional BYOK usage stays with that provider |
+| [Vapi](https://vapi.ai/pricing) | $0.05 platform fee | Model, STT, TTS, and carrier usage |
+| [Retell](https://www.retellai.com/pricing) | $0.07-$0.31; published sample $0.11 | Final rate varies by voice, model, telephony, knowledge, guardrails, and QA choices |
+| [Deepgram Voice Agent](https://deepgram.com/pricing) | $0.075 standard; $0.065 with BYO TTS | External carrier and any BYO service usage |
+| [ElevenAgents](https://elevenlabs.io/pricing/agents) | $0.08 additional-call rate | LLM and telephony usage |
+| [Bland](https://www.bland.ai/pricing) | $0.14 on Start | Carrier usage; lower published minute rates require monthly platform plans |
+
+At 10,000 connected minutes, Supafone's standard managed stack is $1,000. The
+same published-volume subtotal is $500 for Vapi before model, speech, and
+carrier usage; $750 for Deepgram before carrier; $800 for ElevenAgents before
+LLM and telephony; and $1,400 for Bland Start before carrier. The point is not
+that every workload has the same provider mix. It is that Supafone's headline
+rate describes the standard production stack, while many headline rates are a
+base layer that still needs several services and integrations.
+
+Rates checked August 31, 2026. Vendor prices and inclusions change; follow the
+linked pricing pages before making a purchasing decision.
+
 ## Why we built it
 
 A voice demo can be assembled quickly. A dependable voice product cannot. The
