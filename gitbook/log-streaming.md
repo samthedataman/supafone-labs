@@ -1,6 +1,7 @@
 # Log Streaming
 
-Developers need to see what the system is doing: oracle calls, whispers, TTS,
+Developers need to see what the system is doing: Supervisor inferences, silent
+directives, TTS,
 STT, call reports, provider metadata, latency, and billing seconds. Supafone
 Labs exposes both snapshots and an SSE stream.
 
@@ -67,8 +68,11 @@ Each event is emitted as:
 ```text
 event: log
 id: 123
-data: {"id":123,"endpoint":"oracle","detail":"...","meta":{"provider":"anthropic"}}
+data: {"id":123,"endpoint":"tts","detail":"...","meta":{"provider":"cartesia"}}
 ```
+
+Historical records may contain the literal endpoint value `"oracle"`. Treat it
+as a deprecated compatibility value for `"supervisor"` when grouping logs.
 
 ## Builder UI Behavior
 

@@ -1,13 +1,29 @@
-"""The SupafoneLabs oracle: belief perception, directive coaching, session, and runtime policy."""
-from supafone_labs.oracle.belief_state import BeliefStateEngine
-from supafone_labs.oracle.directive import DirectiveGenerator, should_emit
-from supafone_labs.oracle.policy import OracleWorkflow
-from supafone_labs.oracle.session import OracleSession
+"""Deprecated compatibility imports for the pre-0.6 supervisor namespace."""
+from __future__ import annotations
+
+import warnings
+
+from supafone_labs.supervisor import (
+    BeliefStateEngine,
+    DirectiveGenerator,
+    SupervisorSession,
+    SupervisorWorkflow,
+    should_emit,
+)
+
+warnings.warn(
+    "supafone_labs.oracle is deprecated; import from supafone_labs.supervisor",
+    DeprecationWarning,
+    stacklevel=2,
+)
+
+OracleSession = SupervisorSession
+OracleWorkflow = SupervisorWorkflow
 
 __all__ = [
     "BeliefStateEngine",
     "DirectiveGenerator",
-    "should_emit",
     "OracleSession",
     "OracleWorkflow",
+    "should_emit",
 ]

@@ -31,6 +31,13 @@ setups you can optionally still mint a scoped `sf_live_...` key from the Supafon
 account-admin flow and point it at `https://api.supafone.ai` — but the `sl_` key
 already covers that surface, so it is the exception, not the default.
 
+The signup allowance is five **account-wide managed-runtime minutes**. It is
+shared across keys, agents, WebRTC sessions, PSTN calls, SDKs, CLI, and MCP.
+Managed calls reserve seconds atomically before provider startup; concurrent
+calls cannot overspend the same remaining balance. A structured HTTP 402 links
+to server-authored Stripe Checkout when the account needs more time. See
+[Pricing and Credits](pricing-and-credits.md#structured-402-payment-flow).
+
 ## 3. Create a Hosted Inbound Agent
 
 TypeScript:
@@ -132,7 +139,7 @@ if result.actions:
     await my_agent.deliver(result.actions[0])
 ```
 
-With `SUPAFONE_LABS_API_KEY=sl_live_...`, the oracle, TTS, and STT use Labs
+With `SUPAFONE_LABS_API_KEY=sl_live_...`, the Supervisor, TTS, and STT use Labs
 Cloud. Without it, the SDK can run with your own vendor keys or offline fake
 providers for tests.
 

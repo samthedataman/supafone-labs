@@ -20,6 +20,58 @@ webhooks, and assigns it to an agent.
 
 ## Search Shared Pool or Inventory
 
+Search finds a route for agent creation. To inspect the live, explicitly
+enrolled developer pool itself, use the pool endpoint:
+
+```bash
+curl https://api.supafone.ai/api/v1/labs/phone-numbers/pool \
+  -H "Authorization: Bearer $SUPAFONE_API_KEY"
+```
+
+The snapshot includes counts and per-number `available`, `status`, `reason`,
+`health`, and capability fields. Status is one of `available`, `in_use`,
+`cooldown`, `reserved`, or `unavailable`. Only `available` numbers are green;
+all other states are unavailable for a new shared route.
+
+TypeScript:
+
+```ts
+const snapshot = await supafone.labs.phoneNumbers.pool();
+console.log(snapshot.counts.available);
+
+const socket = await supafone.labs.phoneNumbers.connectPool();
+socket.addEventListener("message", (event) => {
+  console.log(JSON.parse(event.data));
+});
+```
+
+Python:
+
+```python
+snapshot = supafone.labs.phone_numbers.pool()
+print(snapshot["counts"]["available"])
+
+async for event in supafone.labs.phone_numbers.stream_pool():
+    print(event)
+```
+
+Python realtime streaming requires the optional `websockets` dependency;
+install `supafone-labs[stt]` or `supafone-labs[all]`.
+
+CLI:
+
+```bash
+supafone numbers pool
+supafone numbers watch --events 10
+```
+
+The REST snapshot exchanges the API key for a short-lived, pool-only WebSocket
+token. SDKs put that scoped token, never the full API key, in the stream URL.
+The response can contain only operator-enrolled developer routes; it does not
+infer customer-owned or merely unassigned numbers into the pool. Live status is
+availability telemetry, not ownership or a promise that a later claim cannot
+lose a race.
+
 ```ts
 const results = await supafone.labs.phoneNumbers.search({
   areaCode: "415",

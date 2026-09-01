@@ -1,6 +1,6 @@
 {
   "name": "supafone-labs",
-  "version": "0.5.4",
+  "version": "0.6.0",
   "description": "Build and supervise production voice, web, and campaign agents through one SDK.",
   "type": "module",
   "main": "./dist/cjs/index.js",
@@ -43,7 +43,7 @@
     "elevenlabs",
     "deepgram",
     "gpt-realtime",
-    "oracle",
+    "supervisor",
     "supervisor",
     "prompt-optimization",
     "transcription"

@@ -163,10 +163,10 @@ async def classify_call_report(
 ) -> dict | None:
     """Post-call analysis: POST one finished call to ``/v1/calls/classify``.
 
-    The oracle labels the call against the agent's objective — achieved/missed,
+    The Supervisor labels the call against the agent's objective — achieved/missed,
     per-criterion verdicts, failure reasons — and files the enriched report
     server-side (the fuel objective stats and the optimizer learn from).
-    Billed one oracle call. Never raises; returns None on any failure so the
+    Billed one Supervisor inference. Never raises; returns None on any failure so the
     caller can fall back to the plain zero-billed report.
     """
     if not _enabled():

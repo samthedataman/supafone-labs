@@ -81,7 +81,7 @@ def test_multilingual_promotes_tap_to_language_authority():
 def test_multilingual_without_audio_access_degrades_to_heuristics():
     rec = recommended_setup("vapi", multilingual=True)
     assert not rec.run_deepgram_tap
-    assert rec.language_source == "oracle_heuristics"
+    assert rec.language_source == "supervisor_heuristics"
 
 
 def test_deepgram_voice_agent_is_already_language_tagged():

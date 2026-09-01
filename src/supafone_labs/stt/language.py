@@ -115,13 +115,13 @@ PROVIDER_PROFILES: dict[str, ProviderTranscriptProfile] = {
 class TapRecommendation:
     run_deepgram_tap: bool
     transcript_source: str          # "provider" | "deepgram_tap"
-    language_source: str            # "provider" | "deepgram_tap" | "oracle_heuristics"
+    language_source: str            # "provider" | "deepgram_tap" | "supervisor_heuristics"
     mode: STTMode = field(default_factory=lambda: choose_language_mode(None))
     notes: str = ""
 
 
 def needs_deepgram_tap(provider: str, *, multilingual: bool = False) -> bool:
-    """True when the stack can't deliver what the oracle needs without our own STT."""
+    """True when the stack needs a dedicated STT tap for supervision."""
     profile = PROVIDER_PROFILES.get(str(provider or "").lower())
     if profile is None or not profile.streams_transcripts:
         return True
@@ -135,10 +135,10 @@ def recommended_setup(
     preferred_languages: list[str] | None = None,
 ) -> TapRecommendation:
     """The one rule that prevents every bad combination: exactly ONE transcript
-    source feeds the oracle per call.
+    source feeds the Supervisor per call.
 
     - Provider streams transcripts + monolingual -> use provider transcripts;
-      the oracle's language heuristics cover the rare stray sentence.
+      Supervisor language heuristics cover the rare stray sentence.
     - Provider streams transcripts + multilingual matters -> run the tap as the
       transcript AND language authority (provider transcripts get ignored, not
       merged — merging double-ingests every utterance).
@@ -153,7 +153,7 @@ def recommended_setup(
         return TapRecommendation(
             run_deepgram_tap=True,
             transcript_source="deepgram_tap",
-            language_source="deepgram_tap" if mode.code_switching else "oracle_heuristics",
+            language_source="deepgram_tap" if mode.code_switching else "supervisor_heuristics",
             mode=mode,
             notes=f"'{name or 'unknown'}' provides no transcript stream — the tap is mandatory.",
         )
@@ -172,17 +172,17 @@ def recommended_setup(
         return TapRecommendation(
             run_deepgram_tap=False,
             transcript_source="provider",
-            language_source="oracle_heuristics",
+            language_source="supervisor_heuristics",
             mode=mode,
             notes=(
-                f"'{name}' exposes no raw audio to tap; provider transcripts + the oracle's "
+                f"'{name}' exposes no raw audio to tap; provider transcripts + Supervisor "
                 "language heuristics are the best available."
             ),
         )
     return TapRecommendation(
         run_deepgram_tap=False,
         transcript_source="provider",
-        language_source="provider" if profile.language_tagged else "oracle_heuristics",
+        language_source="provider" if profile.language_tagged else "supervisor_heuristics",
         mode=mode,
-        notes=f"'{name}' transcripts feed the oracle directly; no STT double-spend.",
+        notes=f"'{name}' transcripts feed Supafone Supervisor directly; no STT double-spend.",
     )

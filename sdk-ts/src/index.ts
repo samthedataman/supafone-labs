@@ -4,7 +4,7 @@
  * A dependency-free TypeScript client for creating hosted Supafone agents
  * through the Supafone API, including managed phone numbers, voices, stages,
  * tools, recordings, transcripts, widgets, and Supafone Supervisor. It also
- * includes the Labs cloud sidecar oracle, hosted TTS/STT, live multilingual
+ * includes Supafone Supervisor, hosted TTS/STT, live multilingual
  * transcription, telemetry, agent builder, and objective-driven optimizer.
  *
  * Works in Node 18+ (native fetch/WebSocket) and the browser.
@@ -50,7 +50,7 @@ export interface SupafoneLabsOptions {
    * (or structured messages) first classifies the finished call against the
    * agent's objective — generating labels (achieved/missed, per-criterion
    * verdicts, failure reasons) — and files the enriched report server-side.
-   * Billed one oracle call per analyzed call; reports without a transcript
+   * Billed one Supervisor inference per analyzed call; reports without a transcript
    * fall back to the plain zero-billed report.
    */
   postCallAnalysis?: boolean;
@@ -69,19 +69,24 @@ export interface ChatMessage {
   content: string;
 }
 
-export interface OracleRequest {
+export interface SupervisorRequest {
   messages: ChatMessage[];
-  /** Any claude-* / gpt-* / grok-* id, or the alias "supafone-labs-oracle". */
+  /** Any supported managed/BYOK model id, or the alias "supafone-supervisor". */
   model?: string;
   maxTokens?: number;
   temperature?: number;
 }
 
-export interface OracleResult {
+export interface SupervisorResult {
   text: string;
   model: string;
   usage?: Record<string, number>;
 }
+
+/** @deprecated Use SupervisorRequest. */
+export type OracleRequest = SupervisorRequest;
+/** @deprecated Use SupervisorResult. */
+export type OracleResult = SupervisorResult;
 
 export interface WhisperOptions {
   model?: string;
@@ -219,7 +224,7 @@ export interface LabsCallStage {
   metadata?: Record<string, unknown>;
 }
 
-export type LabsStageGeneration = "oracle" | "template" | "off";
+export type LabsStageGeneration = "managed" | "template" | "off" | "oracle";
 
 export interface LabsCallPlan {
   version: "supafone_call_plan_v1" | string;
@@ -473,6 +478,8 @@ export interface LabsProviderByokConfig {
   provider?: string;
   apiKey?: string;
   api_key?: string;
+  apiKeyConfigured?: boolean;
+  api_key_configured?: boolean;
   credentials?: Record<string, unknown>;
   settings?: Record<string, unknown>;
   model?: string;
@@ -674,15 +681,39 @@ export interface LabsArtifactsConfig {
   metadata?: Record<string, unknown>;
 }
 
+export type LabsSupervisorProvider =
+  | "anthropic"
+  | "claude"
+  | "openai"
+  | "gemini"
+  | "google"
+  | "openrouter"
+  | "groq"
+  | "cerebras";
+
+export interface LabsByokSupervisorConfig {
+  enabled?: boolean;
+  mode?: "managed" | "supafone_managed" | "byok";
+  provider?: LabsSupervisorProvider;
+  model?: string;
+  apiKey?: string;
+  api_key?: string;
+  apiKeyConfigured?: boolean;
+  api_key_configured?: boolean;
+}
+
 export interface LabsSupervisorConfig {
   enabled?: boolean;
-  supervisor?: boolean;
+  supervisor?: boolean | LabsByokSupervisorConfig;
   /** @deprecated Use supervisor. */
   voiceWatcher?: boolean;
   /** @deprecated Use supervisor. */
   voice_watcher?: boolean;
   apiKey?: string;
   api_key?: string;
+  apiKeyConfigured?: boolean;
+  api_key_configured?: boolean;
+  provider?: LabsSupervisorProvider;
   model?: string;
   mode?: "supafone_managed" | "byok" | string;
   managedInfrastructure?: boolean;
@@ -1014,7 +1045,7 @@ export interface CreateLabsAgentRequest {
   email?: LabsEmailConfig;
   labs?: LabsSupervisorConfig;
   ultravox?: LabsUltravoxRuntime;
-  supervisor?: boolean;
+  supervisor?: boolean | LabsByokSupervisorConfig;
   /** @deprecated Use supervisor. */
   voiceWatcher?: boolean;
   /** @deprecated Use supervisor. */
@@ -1378,6 +1409,53 @@ export interface LabsPhoneNumberListResponse {
   telephony?: Record<string, unknown>;
 }
 
+export type LabsSharedPhonePoolStatus =
+  | "available"
+  | "in_use"
+  | "cooldown"
+  | "reserved"
+  | "unavailable";
+
+export interface LabsSharedPhonePoolNumber {
+  id: string;
+  pool_id: string;
+  pool_name: string;
+  phone_number: string;
+  display_name: string;
+  provider: string;
+  status: LabsSharedPhonePoolStatus;
+  status_color: "green" | "red";
+  available: boolean;
+  reason: string;
+  health: string;
+  capabilities: string[];
+  cooldown_until?: string | null;
+  updated_at: string;
+}
+
+export interface LabsSharedPhonePoolSnapshot {
+  version: "developer_phone_pool_v1" | string;
+  revision: string;
+  counts: {
+    total: number;
+    available: number;
+    in_use: number;
+    unavailable: number;
+  };
+  numbers: LabsSharedPhonePoolNumber[];
+  stream?: {
+    url: string;
+    token: string;
+    expires_in_seconds: number;
+    protocol: "developer_phone_pool_v1" | string;
+  };
+}
+
+export interface LabsPhonePoolStreamOptions {
+  /** Inject a WebSocket implementation for Node versions without a global WebSocket. */
+  WebSocketImpl?: typeof WebSocket;
+}
+
 export interface LabsPhoneNumberProvisionRequest {
   agencyId?: string;
   agency_id?: string;
@@ -1623,6 +1701,8 @@ export interface BuilderChatResult {
   emotion?: string;
   language?: string;
   intent?: string;
+  supervisor_ms?: number;
+  /** @deprecated Use supervisor_ms. */
   oracle_ms?: number;
   standing_version?: number;
 }
@@ -1668,7 +1748,9 @@ export interface QASuiteResult {
     passed: number;
     avg_ssr_score: number;
     ssr_histogram: Record<SSRLabel, number>;
-    oracle_calls_billed: number;
+    supervisor_inferences_billed?: number;
+    /** @deprecated Legacy server field. */
+    oracle_calls_billed?: number;
   };
 }
 
@@ -1688,7 +1770,9 @@ export interface QAResult {
     passed_supervised: number;
     passed_unsupervised: number;
     avg_lift: number;
-    oracle_calls_billed: number;
+    supervisor_inferences_billed?: number;
+    /** @deprecated Legacy server field. */
+    oracle_calls_billed?: number;
   };
 }
 
@@ -1783,6 +1867,18 @@ export class SupafoneLabsError extends Error {
     super(message);
     this.name = "SupafoneLabsError";
   }
+}
+
+function errorDetailMessage(detail: unknown, fallback: string): string {
+  if (detail && typeof detail === "object" && !Array.isArray(detail)) {
+    const value = detail as Record<string, unknown>;
+    for (const key of ["message", "detail", "error", "code"]) {
+      const candidate = value[key];
+      if (typeof candidate === "string" && candidate.trim()) return candidate.trim();
+    }
+  }
+  if (typeof detail === "string" && detail.trim()) return detail.trim();
+  return fallback;
 }
 
 const DEFAULT_BASE = "https://api.labs.supafone.ai";
@@ -2029,8 +2125,12 @@ export class SupafoneLabs {
       const text = await res.text();
       const parsed = text ? safeJson(text) : {};
       if (!res.ok) {
-        const detail = (parsed as { detail?: string })?.detail ?? text ?? `HTTP ${res.status}`;
-        throw new SupafoneLabsError(`${method} ${path}: ${detail}`, res.status, parsed);
+        const detail = (parsed as { detail?: unknown })?.detail ?? text;
+        throw new SupafoneLabsError(
+          `${method} ${path}: ${errorDetailMessage(detail, `HTTP ${res.status}`)}`,
+          res.status,
+          parsed,
+        );
       }
       return parsed as T;
     } finally {
@@ -2052,8 +2152,12 @@ export class SupafoneLabs {
       const text = await res.text();
       const parsed = text ? safeJson(text) : {};
       if (!res.ok) {
-        const detail = (parsed as { detail?: string })?.detail ?? text ?? `HTTP ${res.status}`;
-        throw new SupafoneLabsError(`${method} ${path}: ${detail}`, res.status, parsed);
+        const detail = (parsed as { detail?: unknown })?.detail ?? text;
+        throw new SupafoneLabsError(
+          `${method} ${path}: ${errorDetailMessage(detail, `HTTP ${res.status}`)}`,
+          res.status,
+          parsed,
+        );
       }
       return parsed as T;
     } finally {
@@ -2083,8 +2187,12 @@ export class SupafoneLabs {
       const text = await res.text();
       const parsed = text ? safeJson(text) : {};
       if (!res.ok) {
-        const detail = (parsed as { detail?: string })?.detail ?? text ?? `HTTP ${res.status}`;
-        throw new SupafoneLabsError(`POST ${path}: ${detail}`, res.status, parsed);
+        const detail = (parsed as { detail?: unknown })?.detail ?? text;
+        throw new SupafoneLabsError(
+          `POST ${path}: ${errorDetailMessage(detail, `HTTP ${res.status}`)}`,
+          res.status,
+          parsed,
+        );
       }
       return parsed as T;
     } finally {
@@ -2105,8 +2213,12 @@ export class SupafoneLabs {
       if (!res.ok) {
         const text = await res.text();
         const parsed = text ? safeJson(text) : {};
-        const detail = (parsed as { detail?: string })?.detail ?? text ?? `HTTP ${res.status}`;
-        throw new SupafoneLabsError(`GET ${path}: ${detail}`, res.status, parsed);
+        const detail = (parsed as { detail?: unknown })?.detail ?? text;
+        throw new SupafoneLabsError(
+          `GET ${path}: ${errorDetailMessage(detail, `HTTP ${res.status}`)}`,
+          res.status,
+          parsed,
+        );
       }
       return {
         content: await res.arrayBuffer(),
@@ -2176,8 +2288,12 @@ export class SupafoneLabs {
       const text = await res.text();
       const parsed = text ? safeJson(text) : {};
       if (!res.ok) {
-        const detail = (parsed as { detail?: string })?.detail ?? text ?? `HTTP ${res.status}`;
-        throw new SupafoneLabsError(`POST ${path}: ${detail}`, res.status, parsed);
+        const detail = (parsed as { detail?: unknown })?.detail ?? text;
+        throw new SupafoneLabsError(
+          `POST ${path}: ${errorDetailMessage(detail, `HTTP ${res.status}`)}`,
+          res.status,
+          parsed,
+        );
       }
       return parsed as T;
     };
@@ -2209,8 +2325,12 @@ export class SupafoneLabs {
       const text = await res.text();
       const parsed = text ? safeJson(text) : {};
       if (!res.ok) {
-        const detail = (parsed as { detail?: string })?.detail ?? text ?? `HTTP ${res.status}`;
-        throw new SupafoneLabsError(`${method} ${path}: ${detail}`, res.status, parsed);
+        const detail = (parsed as { detail?: unknown })?.detail ?? text;
+        throw new SupafoneLabsError(
+          `${method} ${path}: ${errorDetailMessage(detail, `HTTP ${res.status}`)}`,
+          res.status,
+          parsed,
+        );
       }
       return parsed as T;
     } finally {
@@ -2300,14 +2420,19 @@ export class SupafoneLabs {
     return this.requestAccountApi("POST", "/api/v1/agents/generate-intake", payload);
   }
 
-  /** Raw oracle completion — full control over messages and model. */
-  async oracle(req: OracleRequest): Promise<OracleResult> {
-    return this.request<OracleResult>("POST", "/v1/oracle/complete", {
+  /** Raw Supervisor completion with either Supafone-managed or BYOK inference. */
+  async completeWithSupervisor(req: SupervisorRequest): Promise<SupervisorResult> {
+    return this.request<SupervisorResult>("POST", "/v1/supervisor/complete", {
       messages: req.messages,
-      model: req.model ?? "supafone-labs-oracle",
+      model: req.model ?? "supafone-supervisor",
       max_tokens: req.maxTokens ?? 256,
       ...(req.temperature !== undefined ? { temperature: req.temperature } : {}),
     });
+  }
+
+  /** @deprecated Use completeWithSupervisor(). */
+  async oracle(req: SupervisorRequest): Promise<SupervisorResult> {
+    return this.completeWithSupervisor(req);
   }
 
   /**
@@ -2316,7 +2441,7 @@ export class SupafoneLabs {
    */
   async whisper(transcript: string, opts: WhisperOptions = {}): Promise<string> {
     const system = opts.guardrails ? `${COACH_SYSTEM}\n\nOperator rules:\n${opts.guardrails}` : COACH_SYSTEM;
-    const out = await this.oracle({
+    const out = await this.completeWithSupervisor({
       model: opts.model,
       maxTokens: opts.maxTokens ?? 120,
       ...(opts.temperature !== undefined ? { temperature: opts.temperature } : {}),
@@ -2348,7 +2473,7 @@ export class SupafoneLabs {
       directiveContractPrompt(contract),
       operatorRules.length ? `Operator rules:\n${operatorRules.join("\n")}` : "",
     ].filter(Boolean).join("\n\n");
-    const out = await this.oracle({
+    const out = await this.completeWithSupervisor({
       model: opts.model,
       maxTokens: opts.maxTokens ?? 320,
       ...(opts.temperature !== undefined ? { temperature: opts.temperature } : {}),
@@ -2451,7 +2576,7 @@ export class SupafoneLabs {
     return this.request<Balance>("GET", "/v1/billing/balance");
   }
 
-  /** Today's usage against your plan caps (oracle/tts/stt/…). */
+  /** Today's usage across Supervisor, TTS, STT, and managed runtime meters. */
   usage(): Promise<UsageToday> {
     return this.request<UsageToday>("GET", "/v1/usage");
   }
@@ -2518,7 +2643,7 @@ export class SupafoneLabs {
    *
    * With `postCallAnalysis: true` on the client and a transcript (or
    * messages) present, the call is automatically classified first: the
-   * oracle labels it against the agent's objective (achieved/missed,
+   * Supervisor labels it against the agent's objective (achieved/missed,
    * per-criterion verdicts, failure reasons) and files the enriched report
    * server-side. The generated labels come back on `analysis`. Analysis is
    * best-effort — on any failure the plain zero-billed report still lands.
@@ -2551,7 +2676,7 @@ export class SupafoneLabs {
    * objective and get labels back — achieved/missed, per-criterion verdicts,
    * failure reasons, and the blended objective value. Files an enriched call
    * report server-side (feeding optimizer.improve() and objective stats).
-   * Billed one oracle call.
+   * Billed one Supervisor inference.
    */
   classifyCall(input: ClassifyCallInput): Promise<CallClassification> {
     return this.request<CallClassification>(
@@ -2568,7 +2693,7 @@ export class SupafoneLabs {
     );
   }
 
-  /** Available oracle model ids (live vendor catalog). */
+  /** Available managed and BYOK Supervisor model ids. */
   async models(): Promise<string[]> {
     const d = await this.request<{ models: Array<string | { id: string }> }>("GET", "/v1/models");
     return d.models.map((m) => (typeof m === "string" ? m : m.id));
@@ -3095,6 +3220,10 @@ class LabsNamespace {
 export type LabsBillingCheckoutKind = "plan" | "credits" | "number_addon";
 
 export interface LabsBillingCheckoutInput {
+  /** Current prepaid managed-minute package SKU. */
+  sku?: string;
+  packageSku?: string;
+  package_sku?: string;
   kind?: LabsBillingCheckoutKind;
   planKey?: "developer" | "growth" | "scale" | string;
   plan_key?: string;
@@ -3110,10 +3239,16 @@ export interface LabsBillingCheckoutInput {
 }
 
 export interface LabsBillingCheckoutResponse {
-  status: "requires_payment" | "pending" | "paid" | string;
-  checkout_session_id: string;
+  status?: "requires_payment" | "pending" | "paid" | string;
+  checkout_session_id?: string;
   checkout_url?: string;
-  kind: LabsBillingCheckoutKind | string;
+  /** Canonical minute-top-up Checkout URL. */
+  url?: string;
+  kind?: LabsBillingCheckoutKind | string;
+  sku?: string;
+  minutes?: number;
+  amount_cents?: number;
+  purchase_id?: string;
   plan_key?: string | null;
   number_strategy?: string | null;
   phone_number?: string | null;
@@ -3127,6 +3262,10 @@ class LabsBillingNamespace {
 
   /** Start hosted Stripe Checkout. MCP callers should render checkout_url as a link. */
   checkout(input: LabsBillingCheckoutInput = {}): Promise<LabsBillingCheckoutResponse> {
+    const sku = input.sku ?? input.packageSku ?? input.package_sku;
+    if (sku) {
+      return this.sm.request("POST", "/v1/billing/checkout", { sku });
+    }
     return this.sm.request("POST", "/v1/billing/checkout", compact({
       kind: input.kind ?? "plan",
       plan_key: input.plan_key ?? input.planKey,
@@ -3136,6 +3275,12 @@ class LabsBillingNamespace {
       success_url: input.success_url ?? input.successUrl,
       cancel_url: input.cancel_url ?? input.cancelUrl,
     }));
+  }
+
+  /** Start Stripe Checkout for one prepaid managed-minute package. */
+  topUp(sku = "sf_voice_minutes_400_v1"): Promise<LabsBillingCheckoutResponse> {
+    if (!sku.trim()) return Promise.reject(new SupafoneLabsError("sku is required"));
+    return this.checkout({ sku });
   }
 
   status(checkoutSessionId: string): Promise<LabsBillingCheckoutResponse> {
@@ -3703,6 +3848,48 @@ class LabsPhoneNumbersNamespace {
     );
   }
 
+  /**
+   * Read the explicitly enrolled shared developer-number pool. This inventory
+   * never infers customer or merely-unassigned numbers into the response.
+   */
+  pool(): Promise<LabsSharedPhonePoolSnapshot> {
+    return this.sm.requestSupafoneApi<LabsSharedPhonePoolSnapshot>(
+      "GET",
+      "/api/v1/labs/phone-numbers/pool",
+    );
+  }
+
+  /**
+   * Connect to realtime pool state using a short-lived pool-only token. The
+   * Supafone API key is never placed in the WebSocket URL.
+   */
+  async connectPool(opts: LabsPhonePoolStreamOptions = {}): Promise<WebSocket> {
+    const snapshot = await this.pool();
+    const stream = snapshot.stream;
+    if (!stream?.url || !stream.token) {
+      throw new SupafoneLabsError("Phone-pool response did not include stream metadata");
+    }
+    const WS = opts.WebSocketImpl ?? (globalThis as { WebSocket?: typeof WebSocket }).WebSocket;
+    if (!WS) {
+      throw new SupafoneLabsError(
+        "No WebSocket available - pass opts.WebSocketImpl (for example, the ws package)",
+      );
+    }
+    const url = new URL(stream.url, `${this.sm.supafoneApiBaseUrl}/`);
+    url.protocol = url.protocol === "https:" ? "wss:" : "ws:";
+    url.searchParams.set("token", stream.token);
+    const socket = new WS(url.toString(), stream.protocol || "developer_phone_pool_v1");
+    await new Promise<void>((resolve, reject) => {
+      socket.addEventListener("open", () => resolve(), { once: true });
+      socket.addEventListener(
+        "error",
+        () => reject(new SupafoneLabsError("Could not connect to the phone-pool stream")),
+        { once: true },
+      );
+    });
+    return socket;
+  }
+
   /** Search Supafone-managed inventory. This uses Supafone's master telephony account. */
   search(opts: LabsPhoneNumberSearchOptions = {}): Promise<LabsPhoneNumberSearchResponse> {
     return this.sm.requestSupafoneApi<LabsPhoneNumberSearchResponse>(
@@ -3795,21 +3982,32 @@ class LabsPhoneNumbersNamespace {
   async buyAndAssign(
     input: LabsPhoneNumberBuyAndAssignRequest,
   ): Promise<LabsPhoneNumberProvisionResponse | LabsBillingCheckoutResponse> {
+    const strategy = input.number_strategy ?? input.numberStrategy ?? (input.premium ? "premium" : "default_pool");
     let phoneNumber = input.phoneNumber ?? input.phone_number ?? "";
     if (!phoneNumber) {
-      const found = await this.search({
-        ...(input.search ?? {}),
-        agencyId: input.agencyId ?? input.agency_id ?? input.search?.agencyId,
-        limit: input.search?.limit ?? 1,
-      });
-      phoneNumber = found.numbers[0]?.phone_number ?? "";
+      if (strategy === "default_pool") {
+        const found = await this.pool();
+        const areaCode = String(input.search?.areaCode ?? input.search?.area_code ?? "");
+        phoneNumber = found.numbers.find((number) =>
+          number.available && (!areaCode || number.phone_number.startsWith(`+1${areaCode}`))
+        )?.phone_number ?? "";
+      } else {
+        const found = await this.search({
+          ...(input.search ?? {}),
+          agencyId: input.agencyId ?? input.agency_id ?? input.search?.agencyId,
+          limit: input.search?.limit ?? 1,
+        });
+        phoneNumber = found.numbers[0]?.phone_number ?? "";
+      }
       if (!phoneNumber) {
-        throw new SupafoneLabsError("No Supafone-managed phone numbers matched the search");
+        const source = strategy === "default_pool" ? "shared developer" : "Supafone-managed";
+        throw new SupafoneLabsError(`No ${source} phone numbers matched the request`);
       }
     }
     return this.buy({
       ...input,
       phoneNumber,
+      numberStrategy: strategy,
       telephony: input.telephony ?? { mode: "supafone_managed", provider: "supafone" },
     });
   }
@@ -4125,6 +4323,7 @@ function campaignSettingsPayload(
 
 function labsAgentPayload(input: CreateLabsAgentRequest): Record<string, unknown> {
   const fixedLanguage = input.preferred_language ?? input.preferredLanguage ?? input.language;
+  const supervisor = input.supervisor;
   return compact({
     agency_id: input.agency_id ?? input.agencyId,
     agent_key: input.agent_key ?? input.agentKey,
@@ -4171,7 +4370,14 @@ function labsAgentPayload(input: CreateLabsAgentRequest): Record<string, unknown
     email: input.email ? emailPayload(input.email) : undefined,
     labs: input.labs ? labsPayload(input.labs) : undefined,
     ultravox: input.ultravox ? ultravoxPayload(input.ultravox) : undefined,
-    voice_watcher: input.supervisor ?? input.voice_watcher ?? input.voiceWatcher,
+    supervisor:
+      supervisor && typeof supervisor === "object" ? supervisorPayload(supervisor) : undefined,
+    voice_watcher:
+      typeof supervisor === "boolean"
+        ? supervisor
+        : supervisor && typeof supervisor === "object"
+          ? supervisor.enabled ?? true
+          : input.voice_watcher ?? input.voiceWatcher,
     voice_watcher_model: input.voice_watcher_model ?? input.voiceWatcherModel,
     metadata: labsAgentMetadataPayload(input),
   });
@@ -4302,7 +4508,8 @@ function callStagesPayload(
   const auto = input.auto_call_stages ?? input.autoCallStages;
   if (Array.isArray(explicit)) return explicit.map(callStagePayload);
   if (explicit === false || auto === false) return false;
-  if (explicit === "oracle" || explicit === "template" || explicit === "off") return explicit;
+  if (explicit === "managed" || explicit === "template" || explicit === "off") return explicit;
+  if (explicit === "oracle") return "managed";
   // Omitted means the private Supafone API generates and compiles the plan.
   return undefined;
 }
@@ -4616,9 +4823,21 @@ function artifactsPayload(input: LabsArtifactsConfig): Record<string, unknown> {
 }
 
 function labsPayload(input: LabsSupervisorConfig): Record<string, unknown> {
+  const nestedSupervisor =
+    input.supervisor && typeof input.supervisor === "object"
+      ? input.supervisor
+      : input.provider
+        ? input
+        : undefined;
   return compact({
     enabled: input.enabled,
-    voice_watcher: input.supervisor ?? input.voice_watcher ?? input.voiceWatcher,
+    supervisor: nestedSupervisor ? supervisorPayload(nestedSupervisor) : undefined,
+    voice_watcher:
+      typeof input.supervisor === "boolean"
+        ? input.supervisor
+        : nestedSupervisor
+          ? nestedSupervisor.enabled ?? true
+          : input.voice_watcher ?? input.voiceWatcher,
     api_key: input.api_key ?? input.apiKey,
     model: input.model,
     mode: input.mode,
@@ -4628,6 +4847,19 @@ function labsPayload(input: LabsSupervisorConfig): Record<string, unknown> {
     tts: input.tts,
     provider_keys: input.provider_keys ?? input.providerKeys,
     label: input.label,
+  });
+}
+
+function supervisorPayload(
+  input: LabsByokSupervisorConfig | LabsSupervisorConfig,
+): Record<string, unknown> {
+  return compact({
+    enabled: input.enabled,
+    mode: input.mode,
+    provider: input.provider,
+    model: input.model,
+    api_key: input.api_key ?? input.apiKey,
+    api_key_configured: input.api_key_configured ?? input.apiKeyConfigured,
   });
 }
 

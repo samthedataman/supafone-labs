@@ -1,5 +1,10 @@
 # Deployment on Render
 
+This page is for maintainers of Supafone's managed deployment mirror. The
+public SDK repository does not distribute the private `cloud/` or `landing/`
+service directories; SDK users do not need this procedure to install or use
+`supafone-labs`.
+
 The live Labs deployment is split between the Python API and static web/docs
 surface.
 

@@ -4,7 +4,7 @@ Cartesia is not an agent: Sonic is a TTS engine and Ink is a streaming STT
 engine. There is no model to whisper to, so this adapter is **tap-only** —
 Ink websocket messages (``type: "transcript"`` with ``text`` / ``is_final`` /
 ``language``, plus ``flush_done`` / ``done`` / ``error``) become canonical
-transcript events that feed the oracle watching the rest of your stack.
+transcript events that feed the Supervisor watching the rest of your stack.
 ``compile`` intentionally returns no actions; capabilities advertise that.
 """
 from __future__ import annotations
@@ -97,6 +97,6 @@ class CartesiaAdapter(BaseAdapter):
         decision: RuntimeDecision,
         state: RuntimeState,
     ) -> list[ProviderAction]:
-        # Tap-only: a raw TTS/STT engine has no agent to coach. The oracle's
+        # Tap-only: a raw TTS/STT engine has no agent to coach. The Supervisor's
         # directive still reaches whatever *agent* adapter shares the session.
         return []

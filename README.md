@@ -103,6 +103,65 @@ import { Supafone } from "supafone-labs";
 const supafone = new Supafone({ apiKey: process.env.SUPAFONE_TOKEN! });
 ```
 
+Agent Factory customers can use Supafone's managed Supervisor models without
+another vendor key:
+
+```ts
+const agent = await supafone.labs.agents.createInbound({
+  name: "Northline intake",
+  supervisor: {
+    mode: "managed",
+    model: "supafone-supervisor", // or supafone-supervisor-pro
+  },
+});
+```
+
+Or bring the independent reasoning model already approved by your team. BYOK
+Supervisor supports six explicit first-party provider contracts:
+
+| Provider | `provider` | Default model | Environment variable |
+| --- | --- | --- | --- |
+| Claude | `anthropic` | `claude-haiku-4-5-20251001` | `ANTHROPIC_API_KEY` |
+| OpenAI | `openai` | `gpt-5-mini` | `OPENAI_API_KEY` |
+| Gemini | `gemini` | `gemini-2.5-flash` | `GEMINI_API_KEY` |
+| OpenRouter | `openrouter` | `anthropic/claude-haiku-4.5` | `OPENROUTER_API_KEY` |
+| Groq | `groq` | `llama-3.1-8b-instant` | `GROQ_API_KEY` |
+| Cerebras | `cerebras` | `gpt-oss-120b` | `CEREBRAS_API_KEY` |
+
+```python
+import os
+from supafone_labs import Supafone
+
+supafone = Supafone(api_key=os.environ["SUPAFONE_API_KEY"])
+agent = supafone.labs.agents.create_inbound({
+    "name": "Gemini supervised intake",
+    "supervisor": {
+        "enabled": True,
+        "mode": "byok",
+        "provider": "gemini",
+        "model": "gemini-2.5-flash",
+        "api_key": os.environ["GEMINI_API_KEY"],
+    },
+})
+```
+
+```ts
+const agent = await supafone.labs.agents.createInbound({
+  name: "OpenAI supervised intake",
+  supervisor: {
+    enabled: true,
+    mode: "byok",
+    provider: "openai",
+    model: "gpt-5-mini",
+    apiKey: process.env.OPENAI_API_KEY!,
+  },
+});
+```
+
+Keys are encrypted before storage and never returned. The complete
+[managed/BYOK guide](docs/supervisor-models.md) includes Claude, OpenAI, Gemini,
+OpenRouter, Groq, and Cerebras examples for Python, TypeScript, REST, and CLI.
+
 Already running Vapi, Retell, Ultravox, OpenAI Realtime, LiveKit, Pipecat, or
 another stack? Keep it. Feed provider events into the Supervisor and deliver its
 canonical silent directive through the matching adapter.
@@ -244,7 +303,7 @@ separate:
 | Telephony | Carrier, trunk, and phone-network credentials | Twilio, Telnyx, Plivo, SignalWire, SIP/custom trunks |
 | TTS | Voice rendering and voice-clone/provider credentials | Cartesia, ElevenLabs, Inworld, Deepgram, custom TTS |
 | STT | Live transcription and language authority | Deepgram or provider-native transcripts |
-| Supervisor LLM | The model that produces Supervisor directives | Supafone hosted, Anthropic, OpenAI, xAI, custom LLM |
+| Supervisor model | The model that produces Supervisor directives | Supafone managed, Claude, OpenAI, Gemini, OpenRouter, Groq, Cerebras |
 
 Those lanes can be mixed. A team can use Supafone-managed telephony with BYOK
 TTS, or BYOK Twilio/Telnyx with the managed supervisor, or bring the full
@@ -289,7 +348,7 @@ brain is MIT. The cloud exists for one reason: one key that runs the models,
 the voices, and the transcription is more convenient than five vendor accounts.
 
 **And when the supervisor fails?** Nothing happens. It runs behind a timeout,
-off the hot path; a stalled oracle yields no note and the call proceeds exactly
+off the hot path; a stalled Supervisor yields no note and the call proceeds exactly
 as it would have without us. Degrade-safety is tested, not promised.
 
 ## Every platform, one whisper
@@ -328,7 +387,7 @@ as it would have without us. Degrade-safety is tested, not promised.
 
 ## Get started in 60 seconds
 
-**1 — Get a key** (5 free minutes, no card):
+**1 — Get a key** (five account-wide managed-runtime minutes, no card):
 
 ```bash
 curl -X POST https://api.labs.supafone.ai/v1/signup \
@@ -349,7 +408,7 @@ import supafone_labs
 
 brain = supafone_labs.supercharge(my_agent, scenario="legal_intake")
 result = await brain.observe(raw_event)     # feed your platform's events
-# result.actions -> the compiled native whisper (or [] if the oracle is quiet)
+# result.actions -> the compiled native whisper (or [] when supervision is quiet)
 ```
 
 Want every finished call automatically labeled? Construct the brain with
@@ -366,7 +425,7 @@ brain.analysis("session-123")   # -> {"achieved": True, "criteria": {...}, "fail
 brain.last_analysis             # labels for the most recently classified call
 ```
 
-With the key set, the oracle, TTS, and live multilingual STT all run on
+With the key set, the Supervisor, TTS, and live multilingual STT all run on
 Supafone Labs' hosted infrastructure. Without it, everything runs on **your own
 vendor keys** — or fully offline on deterministic fakes. Same code, all three
 modes.
@@ -499,7 +558,7 @@ campaign surface is available in code via `supafone_labs` (PyPI) and
   (any platform)      │             Deepgram nova-3 multilingual    │
                       │             STT for audio-only stacks       │
                       ├─────────────────────────────────────────────┤
-                      │  THINK      belief state + coaching oracle  │
+                      │  THINK      belief state + Supervisor       │
                       │             (off the latency path, timeout- │
                       │             bounded, degrade-safe)          │
                       ├─────────────────────────────────────────────┤
@@ -510,14 +569,14 @@ campaign surface is available in code via `supafone_labs` (PyPI) and
 
 ## The Cloud API
 
-One key fronts the whole stack — hosted oracle models, four TTS engines under
+One key fronts the whole stack — hosted Supervisor models, four TTS engines under
 one voice namespace, and live multilingual transcription. Billed by the
 minute; every request itemized.
 
 | Endpoint | What it does |
 |---|---|
-| `POST /v1/signup` | Self-serve key — 5 free minutes, no card |
-| `POST /v1/oracle/complete` | Hosted LLM completion (Claude / GPT / Grok, prefix-routed) |
+| `POST /v1/signup` | Self-serve key — five account-wide managed-runtime minutes, no card |
+| `POST /v1/supervisor/complete` | Hosted Supervisor completion |
 | `GET  /v1/models` | Live model catalog, fetched hourly from vendors — **never stale** |
 | `POST /v1/tts` | Managed Cartesia TTS by default; other engines are explicit BYOK choices |
 | `GET  /v1/voices` | The hosted voice catalog |
@@ -532,6 +591,19 @@ minute; every request itemized.
 | `POST /v1/qa/generate` | Adversarial test scenarios generated from your agent's own prompt |
 | `POST /v1/qa/suite` | One-call auto QA suite: mock calls vs your real config, pass/fail + SSR grades |
 | `POST /v1/calls/classify` | Post-call analysis: label a finished call against your objective |
+
+The five-minute allowance belongs to the account, not each key or agent.
+Managed WebRTC and PSTN calls reserve available seconds atomically before the
+provider session starts, so concurrent calls cannot spend the same balance.
+Settlement bills connected time and refunds the unused hold. A depleted account
+receives a structured HTTP 402 with `detail.code=managed_minutes_exhausted` and
+`detail.checkout_endpoint=/v1/billing/checkout`; complete the server-authored
+Stripe Checkout and retry the original call.
+
+The hosted product API also exposes the safe shared developer-number inventory
+at `GET https://api.supafone.ai/api/v1/labs/phone-numbers/pool`. Its stream uses
+a short-lived pool-only token and includes only numbers an operator explicitly
+enrolled for developer use, never customer production lines.
 
 **Adversarial QA, built in.** `POST /v1/qa/suite` generates a bespoke test
 suite from your agent's own objective, plays each scenario as a mock call
@@ -551,9 +623,9 @@ import httpx
 
 API, KEY = "https://api.labs.supafone.ai", os.environ["SUPAFONE_LABS_API_KEY"]
 
-r = httpx.post(f"{API}/v1/oracle/complete",
+r = httpx.post(f"{API}/v1/supervisor/complete",
     headers={"Authorization": f"Bearer {KEY}"},
-    json={"model": "supafone-labs-oracle", "messages": [...]})
+    json={"model": "supafone-supervisor", "messages": [...]})
 directive = r.json()["text"]                     # the silent coaching line
 
 audio = httpx.post(f"{API}/v1/tts",
@@ -569,10 +641,10 @@ audio = httpx.post(f"{API}/v1/tts",
 const API = "https://api.labs.supafone.ai";
 const auth = { Authorization: `Bearer ${process.env.SUPAFONE_LABS_API_KEY}` };
 
-const { text } = await fetch(`${API}/v1/oracle/complete`, {
+const { text } = await fetch(`${API}/v1/supervisor/complete`, {
   method: "POST",
   headers: { ...auth, "Content-Type": "application/json" },
-  body: JSON.stringify({ model: "supafone-labs-oracle", messages: [...] }),
+  body: JSON.stringify({ model: "supafone-supervisor", messages: [...] }),
 }).then(r => r.json());
 
 // live multilingual STT — language-tagged Results, 10 languages, code-switching
@@ -589,13 +661,13 @@ Full reference with every endpoint, WebSocket framing, and error shapes:
 
 | | |
 |---|---|
-| **Signup** | 5 free minutes, no card |
+| **Signup** | Five account-wide managed-runtime minutes, no card |
 | **Developer** | $49/mo → 300 included Supafone minutes; then $0.14/min |
 | **Growth** | $249/mo → 2,500 included Supafone minutes; then $0.11/min |
 | **Scale** | $999/mo → 12,000 included Supafone minutes; then $0.085/min |
 | **Managed numbers** | $1.25-$1.50/number-month depending on tier |
-| **Metering** | oracle call = 1s · TTS ≈ seconds of speech · live STT = session time |
-| **Self-host** | free forever — the gateway (`cloud/`) is in this repo, MIT |
+| **Metering** | Supervisor work, TTS speech, and live STT are itemized in usage logs |
+| **Open-source SDK** | MIT runtime, adapters, replay, and local BYOK integrations; hosted Supafone Cloud remains a managed service |
 
 Every billed second is itemized in [`/v1/logs`](https://labs.supafone.ai/console.html).
 The live pricing contract is exposed at [`/v1/pricing`](https://api.labs.supafone.ai/v1/pricing)
@@ -663,11 +735,11 @@ routes through the hosted proxy automatically.
 ```python
 brain = supafone_labs.SupafoneLabs(
     provider="ultravox",
-    oracle_model="claude-sonnet-4-6",     # provider auto-inferred (Anthropic/OpenAI/xAI/hosted)
-    oracle_instructions="Coach for a bilingual intake desk. Empathy before logistics.",
+    supervisor_model="claude-sonnet-4-6",
+    supervisor_instructions="Coach for a bilingual intake desk. Empathy before logistics.",
 )
 
-models = await supafone_labs.discover_oracle_models()   # live vendor catalogs, cached hourly
+models = await supafone_labs.discover_supervisor_models()
 ```
 
 Model routing is prefix-based and the catalogs are fetched from vendor APIs at
@@ -676,7 +748,7 @@ static table in `config.py` is an offline fallback only.
 
 ## Built for production
 
-- **Degrade-safe by construction** — the oracle runs behind a timeout off the
+- **Degrade-safe by construction** — the Supervisor runs behind a timeout off the
   hot path; a stalled LLM, a dead STT socket, or a failed TTS backend can never
   take down the call it's shadowing. The TTS chain fails downward
   (hosted → your keys → offline audio); the tap no-ops without credentials.
@@ -686,8 +758,9 @@ static table in `config.py` is an offline fallback only.
   injection compile, and capability honesty; end-to-end facade runs per
   provider; billing; tiering) plus live contract checks against Deepgram,
   Ultravox, ElevenLabs, Cartesia, and Inworld.
-- **No lock-in** — MIT package, MIT gateway. Self-host the whole cloud:
-  `cd cloud && uvicorn app:app`.
+- **No SDK lock-in** — the runtime, adapters, replay, and local BYOK paths are
+  MIT licensed. Supafone-managed telephony, billing, and hosted model services
+  remain managed infrastructure.
 
 ## The research behind it
 
@@ -701,26 +774,27 @@ the evidence that models [can't reliably self-correct](https://arxiv.org/abs/231
 optimization ([OPRO](https://arxiv.org/abs/2309.03409), [DSPy](https://arxiv.org/abs/2310.03714),
 [TextGrad](https://arxiv.org/abs/2406.07496)). All 22 citations, verified and annotated:
 [**the research page**](https://labs.supafone.ai/research.html), and the full synthesis —
-meta-analysis plus the formal runtime treatment — is the
-[**whitepaper (PDF)**](https://labs.supafone.ai/whitepaper.pdf)
-([LaTeX source](paper/whitepaper.tex)).
+meta-analysis plus the formal runtime treatment — is available as the
+[**whitepaper (PDF)**](https://labs.supafone.ai/whitepaper.pdf) and the
+[versioned documentation source](gitbook/research-paper.md).
 
 The QA methodology has its own paper: **Grading the Call** — objective-derived
 adversarial suites, SSR nominal-scale judging with deterministic score
 distributions, and supervision-lift A/B testing, situated against the
 2025–2026 voice-QA landscape (Coval, Hamming, Roark, Cekura, Bluejay,
-platform-native suites, τ-bench, VoiceBench) —
-[PDF](paper/voice-qa.pdf) ([LaTeX source](paper/voice-qa.tex)).
+platform-native suites, τ-bench, VoiceBench) — read the
+[versioned QA landscape and methodology](gitbook/voice-qa-landscape.md).
 
 ## Repo layout
 
 ```
-src/supafone_labs/     the package — facade, oracle, runtime + 14 audited runtimes, tts, stt, tiers
-cloud/              Supafone Labs Cloud — the hosted gateway (FastAPI)
-landing/            the website (landing, get-key, console, docs)
-examples/           one runnable integration per platform + TypeScript client
-tests/              200+ offline tests · live contract checks (pytest -m live)
-docs/               provider capability matrix + quickstart
+src/supafone_labs/  Python SDK, CLI, Supervisor, runtime adapters, TTS, STT
+sdk-ts/             TypeScript SDK
+mcp/                MCP server and tool contracts
+examples/           runnable integrations
+tests/              offline and credentialed contract checks
+docs/               MkDocs source
+gitbook/            GitBook source
 ```
 
 ## Development
@@ -731,7 +805,6 @@ make test                     # offline suite (live tests skip without keys)
 make test-provider-contracts  # 14-runtime event -> Supervisor -> exact-action gate
 make test-live-injection      # real controls; missing credentials are skips
 make lint                     # ruff
-cd cloud && uvicorn app:app --reload    # run the gateway locally
 ```
 
 ## Security
@@ -743,5 +816,6 @@ key) for your own auditability. Report vulnerabilities via
 
 ## License
 
-MIT © 2026 Sam Savage. Free tier is free forever; the cloud exists because one
-key that runs everything is more convenient than five vendor accounts.
+MIT © 2026 Sam Savage. The SDK is open source; Supafone-managed runtime usage
+is metered because it operates the hosted models, speech, telephony, billing,
+and artifact infrastructure behind one key.

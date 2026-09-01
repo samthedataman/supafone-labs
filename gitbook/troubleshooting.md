@@ -10,18 +10,24 @@ and `https://api.supafone.ai`. If you get a 401:
   the key — the product API maps the key to your account by owner email.
 
 Legacy scoped `sf_live_...` keys authenticate only the hosted-agent surface
-(`https://api.supafone.ai/api/v1/labs`), not Labs Cloud oracle/TTS/STT.
+(`https://api.supafone.ai/api/v1/labs`), not Labs Cloud Supervisor/TTS/STT.
 
-## 402 Out of Minutes
+## 402 Managed Minutes Exhausted
 
-The Labs Cloud minute balance is empty.
+The account-wide managed-runtime ledger cannot reserve another call. The first
+five minutes belong to the account, so creating another key, agent, browser
+session, or CLI process does not create another allowance. Calls already
+starting or in progress may also hold `active_reserved_seconds`.
 
 ```bash
 curl https://api.labs.supafone.ai/v1/billing/balance \
   -H "Authorization: Bearer $SUPAFONE_LABS_API_KEY"
 ```
 
-Top up through the returned Stripe links or have an admin grant credits.
+Read the structured response's `detail.code`. For
+`managed_minutes_exhausted`, use its `checkout_endpoint` to create a Stripe
+Checkout Session, open `checkout_url`, poll the Checkout status, and retry only
+after payment is confirmed. See [Pricing and Credits](pricing-and-credits.md#structured-402-payment-flow).
 
 ## 403 Admin Secret Required
 
@@ -46,7 +52,7 @@ curl https://api.labs.supafone.ai/v1/usage \
 
 The gateway is missing the vendor key for the requested feature. Examples:
 
-- oracle models need Anthropic, OpenAI, or xAI keys,
+- BYOK Supervisor models need the selected provider key,
 - TTS engines need the selected engine key,
 - STT needs `DEEPGRAM_API_KEY`,
 - Stripe webhooks need `STRIPE_WEBHOOK_SECRET` in production.
@@ -91,7 +97,7 @@ Builder and QA run under a console session:
 await supafone.login(process.env.SM_EMAIL!, process.env.SM_PASSWORD!);
 ```
 
-API-key-only auth is enough for usage, logs, oracle, TTS, STT, nudges, metrics,
+API-key-only auth is enough for usage, logs, Supervisor, TTS, STT, nudges, metrics,
 and hosted-agent methods, but not for session-scoped builder flows.
 
 ## WebSocket Live STT Fails in Node

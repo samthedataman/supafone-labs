@@ -182,7 +182,7 @@ class DirectiveContract(BaseModel):
 
 
 class BeliefState(BaseModel):
-    """The oracle's structured, continuously-revised read of the caller."""
+    """The supervisor's structured, continuously revised read of the caller."""
 
     model_config = {"extra": "ignore"}
 

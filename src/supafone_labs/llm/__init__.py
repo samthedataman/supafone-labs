@@ -1,4 +1,4 @@
-"""LLM providers for the SupafoneLabs oracle."""
+"""Managed and BYOK reasoning providers for Supafone Supervisor."""
 from supafone_labs.llm.base import AnthropicProvider, FakeLLMProvider, LLMProvider
 from supafone_labs.llm.hosted_provider import HostedLLMProvider
 from supafone_labs.llm.openai_provider import OpenAIProvider

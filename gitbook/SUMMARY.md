@@ -21,12 +21,12 @@
 ## Supervise Existing Agents
 
 * [Supafone Supervisor](supafone-supervisor.md)
+* [Supervisor Models: Managed and BYOK](supervisor-models.md)
 * [Programmable Supervisor Directives](programmable-supervisor-directives.md)
 * [Framework Coverage](framework-support.md)
 * [Provider-Agnostic Runtime](provider-agnostic-framework.md)
 * [BYOK Providers](byok-providers.md)
 * [LLMs and Agent Prompts](llms-ai-agent-prompt.md)
-* [Oracle Models and Controls](oracle-models-and-controls.md)
 
 ## Build Complete Agents
 
@@ -53,7 +53,7 @@
 
 * [Testing Voice Agents](voice-qa-landscape.md)
 * [End-to-End Testing](e2e-testing.md)
-* [The Sidecar Oracle](research-paper.md)
+* [Supervisor Architecture Research](research-paper.md)
 
 ## Operate and Administer
 

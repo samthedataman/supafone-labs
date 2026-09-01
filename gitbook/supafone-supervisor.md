@@ -66,6 +66,22 @@ This is why the framework can become more useful without taking over the live
 audio path. The speaking agent stays fast; the supervisor accumulates context,
 detects patterns, and closes the verification loop.
 
+## The directive packet is a supervisor note, not another prompt
+
+The canonical packet keeps the judgments a human call supervisor makes
+separate: `empathy_directive` controls the interpersonal response,
+`tactical_directive` names one next operational move, `surface_facts` preserves
+observed evidence, `guardrails` protects policy and tool truth, `language`
+selects the next-turn language, `confidence` decides whether intervention is
+justified, and `kind` classifies the help. Weak evidence produces no packet.
+
+The packet is proposed by the Supervisor model, checked again by deterministic
+gates, and only then compiled into a provider-native hidden steer. It is never
+automatically spoken to the caller. Read
+[Programmable Supervisor Directives](programmable-supervisor-directives.md) for
+the JSON shape, human-supervisor mapping, field bounds, transforms, and safety
+behavior.
+
 ## Model agnostic by construction
 
 The contract is between call events and supervisor directives, not between
@@ -242,6 +258,6 @@ curl "https://api.labs.supafone.ai/v1/optimizer/standing?agent=intake" \
 
 ## Degrade Safety
 
-The supervisor is timeout-bounded and off the hot path. If the oracle fails,
+The Supervisor is timeout-bounded and off the hot path. If its model fails,
 times out, hits a balance or cap error, or decides no intervention is needed,
 it returns no directive and the call continues normally.

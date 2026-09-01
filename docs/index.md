@@ -40,6 +40,11 @@ The speaking agent stays on the realtime path. Supafone's supervisor observes
 off that path, issues guidance only when evidence clears the configured gate,
 and becomes a no-op when unavailable or uncertain.
 
+Its canonical packet maps directly to a human supervisor's work: interpersonal
+guidance, one operational next move, observed evidence, policy/tool-truth
+boundaries, language choice, intervention confidence, and guidance category.
+See [Programmable Supervisor Directives](https://github.com/samthedataman/supafone-labs/blob/main/gitbook/programmable-supervisor-directives.md).
+
 ## One package, two main features
 
 Supafone Labs gives you two product pillars:
@@ -59,7 +64,11 @@ Supafone Labs gives you two product pillars:
 
 BYOK is optional. Hosted delivery keeps agent-runtime, telephony, and TTS
 credentials independent; the Supervisor also supports separate STT and supervisor
-LLM credentials. Every domain can be mixed with Supafone-managed defaults.
+model credentials. Choose managed Supafone models with no additional key, or
+bring Anthropic/Claude, OpenAI, Gemini, OpenRouter, Groq, or Cerebras. Every
+domain can be mixed with Supafone-managed defaults. See
+[Managed and BYOK Supervisor Models](supervisor-models.md) for complete Python,
+TypeScript, REST, and CLI examples.
 
 You can also run the deterministic open-source runtime and adapters locally
 with your own keys.
@@ -69,16 +78,17 @@ with your own keys.
 - **`supafone_labs.runtime`** — the deterministic, provider-agnostic voice **runtime** (the
   body). Canonical events, call state, truth/consent/watchdog policies, replay, and
   silent injection compiled to every provider. No LLM.
-- **`supafone_labs`** — the LLM **oracle** + self-optimizing prompt engine on top of the
-  runtime (the brain).
+- **`supafone_labs`** — the independent **Supervisor** + self-optimizing prompt
+  engine on top of the runtime (the reasoning layer).
 
-> The runtime is the rails and the train; the brain is the driver that gets smarter
-> every trip. The split makes the brain **degrade-safe** — if it stalls, the call keeps
-> running on the runtime's deterministic reflexes.
+> The split is degrade-safe: if supervision is slow, unavailable, or uncertain,
+> the call keeps running on the deterministic runtime without waiting.
 
 ## Next
 
 - [Quickstart](quickstart.md) — supercharge an agent in 60 seconds.
+- [Supervisor models](supervisor-models.md) — managed, Claude, OpenAI, Gemini,
+  OpenRouter, Groq, and Cerebras configurations.
 - [Hosted Agents API](hosted-agents-api.md) — create Supafone-hosted agents from
   code with managed voices, built-in stages, tools, widget snippets, and
   Supafone Supervisor.

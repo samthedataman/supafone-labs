@@ -29,6 +29,8 @@ theme:
 nav:
   - Why Supafone: index.md
   - Quickstart: quickstart.md
+  - CLI: cli.md
+  - Supervisor Models: supervisor-models.md
   - Framework Coverage: providers.md
   - Hosted Agents API: hosted-agents-api.md
   - Outbound IVR Call Mode: outbound-ivr-call-mode.md
@@ -41,4 +43,6 @@ markdown_extensions:
   - admonition
   - pymdownx.highlight
   - pymdownx.superfences
+  - pymdownx.tabbed:
+      alternate_style: true
   - tables

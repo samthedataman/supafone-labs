@@ -1,8 +1,39 @@
+import io
 import json
 
 import pytest
 
 from supafone_labs import Supafone, SupafoneError, VoicePreview
+from supafone_labs import client as client_module
+
+
+def test_structured_payment_error_has_readable_message_and_machine_body(monkeypatch):
+    payload = {
+        "detail": {
+            "code": "managed_minutes_exhausted",
+            "message": "Your five free managed minutes have been used.",
+            "checkout_endpoint": "/v1/billing/checkout",
+        }
+    }
+
+    def fail(req, timeout=0):
+        raise client_module.error.HTTPError(
+            req.full_url,
+            402,
+            "Payment Required",
+            hdrs=None,
+            fp=io.BytesIO(json.dumps(payload).encode()),
+        )
+
+    monkeypatch.setattr(client_module.request, "urlopen", fail)
+    supafone = Supafone(api_key="sl_test")
+
+    with pytest.raises(SupafoneError) as caught:
+        supafone.labs.billing.top_up()
+
+    assert caught.value.status == 402
+    assert str(caught.value) == "Your five free managed minutes have been used."
+    assert caught.value.body == payload
 
 
 def test_create_inbound_serializes_hosted_agent_payload():
@@ -89,6 +120,39 @@ def test_create_inbound_serializes_executable_custom_tools_and_smtp():
     assert payload["tools"]["custom_tools"][0]["stages"] == ["support", "confirmation"]
     assert payload["email"]["smtp_host"] == "smtp.acme.example"
     assert payload["email"]["smtp_pass"] == "smtp-secret"
+
+
+@pytest.mark.parametrize(
+    "provider",
+    ["anthropic", "openai", "gemini", "openrouter", "groq", "cerebras"],
+)
+def test_create_agent_serializes_byok_supervisor_provider(provider):
+    calls = []
+
+    def transport(method, path, payload):
+        calls.append((method, path, payload))
+        return {"success": True, "agent": {"agent_key": "supervised"}}
+
+    supafone = Supafone(api_key="sf_test", transport=transport)
+    supafone.labs.agents.create_inbound(
+        {
+            "name": "Supervised intake",
+            "supervisor": {
+                "mode": "byok",
+                "provider": provider,
+                "model": "selected-model",
+                "apiKey": "provider-secret",
+            },
+        }
+    )
+
+    assert calls[0][2]["supervisor"] == {
+        "mode": "byok",
+        "provider": provider,
+        "model": "selected-model",
+        "api_key": "provider-secret",
+    }
+    assert calls[0][2]["voice_watcher"] is True
 
 
 def test_language_voice_routing_serializes_only_public_preferences():
@@ -311,8 +375,12 @@ def test_create_inbound_with_number_searches_and_assigns_number():
         calls.append((method, path, payload))
         if path == "/api/v1/labs/agents":
             return {"success": True, "agent": {"agent_key": payload["agent_key"]}, "runtime": {}}
-        if path == "/api/v1/labs/phone-numbers/search":
-            return {"numbers": [{"phone_number": "+14155550123"}]}
+        if path == "/api/v1/labs/phone-numbers/pool":
+            return {
+                "numbers": [
+                    {"phone_number": "+14155550123", "available": True}
+                ]
+            }
         if path == "/api/v1/labs/phone-numbers":
             return {"success": True, "number": {"phone_number": payload["phone_number"]}}
         raise AssertionError(path)
@@ -330,11 +398,7 @@ def test_create_inbound_with_number_searches_and_assigns_number():
 
     assert result["number"]["number"]["phone_number"] == "+14155550123"
     assert calls[0][1] == "/api/v1/labs/agents"
-    assert calls[1] == (
-        "POST",
-        "/api/v1/labs/phone-numbers/search",
-        {"area_code": "415", "limit": 1},
-    )
+    assert calls[1] == ("GET", "/api/v1/labs/phone-numbers/pool", None)
     assert calls[2] == (
         "POST",
         "/api/v1/labs/phone-numbers",
@@ -672,8 +736,12 @@ def test_camelcase_agent_methods_match_typescript_contract():
         calls.append((method, path, payload))
         if path == "/api/v1/labs/agents":
             return {"success": True, "agent": {"agent_key": payload["agent_key"]}, "runtime": {}}
-        if path == "/api/v1/labs/phone-numbers/search":
-            return {"numbers": [{"phone_number": "+14155550124"}]}
+        if path == "/api/v1/labs/phone-numbers/pool":
+            return {
+                "numbers": [
+                    {"phone_number": "+14155550124", "available": True}
+                ]
+            }
         if path == "/api/v1/labs/phone-numbers":
             return {"success": True, "number": {"phone_number": payload["phone_number"]}}
         raise AssertionError(path)
@@ -705,11 +773,7 @@ def test_camelcase_agent_methods_match_typescript_contract():
         "voice_watcher": True,
     }
     assert "call_stages" not in payload
-    assert calls[1] == (
-        "POST",
-        "/api/v1/labs/phone-numbers/search",
-        {"area_code": "415", "limit": 1},
-    )
+    assert calls[1] == ("GET", "/api/v1/labs/phone-numbers/pool", None)
     assert calls[2] == (
         "POST",
         "/api/v1/labs/phone-numbers",
@@ -1049,6 +1113,26 @@ def test_phone_number_lifecycle_methods_are_exposed():
     ]
 
 
+def test_shared_phone_pool_snapshot_uses_the_product_api():
+    calls = []
+
+    def transport(method, path, payload):
+        calls.append((method, path, payload))
+        return {
+            "version": "developer_phone_pool_v1",
+            "revision": "rev-1",
+            "counts": {"total": 1, "available": 1, "in_use": 0, "unavailable": 0},
+            "numbers": [{"phone_number": "+14155550123", "available": True}],
+            "stream": {"url": "/pool/stream", "token": "scoped", "protocol": "developer_phone_pool_v1"},
+        }
+
+    supafone = Supafone(api_key="sf_test", transport=transport)
+    snapshot = supafone.labs.phone_numbers.pool()
+
+    assert snapshot["counts"]["available"] == 1
+    assert calls == [("GET", "/api/v1/labs/phone-numbers/pool", None)]
+
+
 def test_labs_billing_checkout_status_and_portal_are_exposed():
     calls = []
 
@@ -1088,6 +1172,22 @@ def test_labs_billing_checkout_status_and_portal_are_exposed():
         ),
         ("GET", "/v1/billing/checkout/cs_test_123", None),
         ("POST", "/v1/billing/portal", {}),
+    ]
+
+
+def test_labs_billing_top_up_sends_the_current_package_sku_only():
+    calls = []
+
+    def transport(method, path, payload):
+        calls.append((method, path, payload))
+        return {"url": "https://checkout.stripe.com/c/pay/topup", "minutes": 400}
+
+    supafone = Supafone(api_key="sl_test", transport=transport)
+    result = supafone.labs.billing.top_up()
+
+    assert result["minutes"] == 400
+    assert calls == [
+        ("POST", "/v1/billing/checkout", {"sku": "sf_voice_minutes_400_v1"})
     ]
 
 

@@ -31,7 +31,7 @@ except Exception:  # pragma: no cover - exercised only when SDK import is broken
 
 
 SERVER_NAME = "supafone-labs-mcp"
-SERVER_VERSION = "0.5.4"
+SERVER_VERSION = "0.6.0"
 DEFAULT_PROTOCOL_VERSION = "2024-11-05"
 DEFAULT_HOSTED_API_BASE = "https://api.supafone.ai"
 DEFAULT_LABS_API_BASE = "https://api.labs.supafone.ai"
@@ -231,6 +231,76 @@ def _custom_tool_schema() -> dict[str, Any]:
     }
 
 
+def _supervisor_schema() -> dict[str, Any]:
+    return {
+        "description": (
+            "Supafone Supervisor configuration. Use true or managed mode for Supafone-managed "
+            "supervision, false to disable it, or BYOK mode with a supported reasoning provider."
+        ),
+        "oneOf": [
+            {
+                "type": "boolean",
+                "description": "Enable the managed Supervisor (true) or disable supervision (false).",
+            },
+            {
+                "type": "object",
+                "properties": {
+                    "enabled": {
+                        "type": "boolean",
+                        "default": True,
+                        "description": "Whether this agent runs with live supervision.",
+                    },
+                    "mode": {
+                        "type": "string",
+                        "enum": ["managed", "byok"],
+                        "default": "managed",
+                        "description": (
+                            "managed uses Supafone's hosted Supervisor; byok uses the supplied "
+                            "provider credential."
+                        ),
+                    },
+                    "provider": {
+                        "type": "string",
+                        "enum": [
+                            "anthropic",
+                            "openai",
+                            "gemini",
+                            "openrouter",
+                            "groq",
+                            "cerebras",
+                        ],
+                        "description": "Required when mode is byok.",
+                    },
+                    "model": {
+                        "type": "string",
+                        "description": "Optional provider model override.",
+                    },
+                    "apiKey": {
+                        "type": "string",
+                        "description": (
+                            "BYOK provider secret. Supafone encrypts it and never returns it."
+                        ),
+                    },
+                    "api_key": {
+                        "type": "string",
+                        "description": "Snake-case alias for apiKey.",
+                    },
+                },
+                "additionalProperties": False,
+                "allOf": [
+                    {
+                        "if": {
+                            "properties": {"mode": {"const": "byok"}},
+                            "required": ["mode"],
+                        },
+                        "then": {"required": ["provider"]},
+                    }
+                ],
+            },
+        ],
+    }
+
+
 def _agent_schema(*, with_number: bool = False) -> dict[str, Any]:
     properties: dict[str, Any] = {
         "config": {
@@ -284,10 +354,14 @@ def _agent_schema(*, with_number: bool = False) -> dict[str, Any]:
             "additionalProperties": True,
             "description": "Voice config, for example {provider, voiceId, model}.",
         },
+        "supervisor": _supervisor_schema(),
         "labs": {
             "type": "object",
             "additionalProperties": True,
-            "description": "Self-healing watcher config. Use enabled:true only when Labs should run.",
+            "description": (
+                "Deprecated compatibility metadata for older clients. Use the top-level "
+                "supervisor field for managed or BYOK supervision."
+            ),
         },
         "providerKeys": {
             "type": "object",
@@ -344,8 +418,11 @@ def _agent_schema(*, with_number: bool = False) -> dict[str, Any]:
         },
         "stageGeneration": {
             "type": "string",
-            "enum": ["oracle", "template", "off"],
-            "description": "Hosted Haiku planner (default), offline template, or no generated override.",
+            "enum": ["managed", "template", "off", "oracle"],
+            "description": (
+                "Managed hosted planner (default), offline template, or no generated override. "
+                "The oracle value remains a deprecated alias for managed."
+            ),
         },
         "stageCount": {
             "type": "integer",
@@ -731,7 +808,8 @@ TOOLS: list[dict[str, Any]] = [
         "name": "run_watcher_qa",
         "description": (
             "Run the A/B Watcher benchmark: every selected scenario runs once without and once "
-            "with supervision. Requires Labs email/password session auth and uses oracle credits."
+            "with supervision. Requires Labs email/password session auth and uses managed "
+            "Supervisor credits."
         ),
         "inputSchema": {
             "type": "object",
@@ -756,6 +834,13 @@ TOOLS: list[dict[str, Any]] = [
             "type": "object",
             "properties": {
                 "kind": {"type": "string", "enum": ["plan", "credits", "number_addon"]},
+                "sku": {
+                    "type": "string",
+                    "description": (
+                        "Versioned prepaid-minute SKU. Defaults to sf_voice_minutes_400_v1 "
+                        "when kind is credits."
+                    ),
+                },
                 "planKey": {"type": "string", "enum": ["developer", "growth", "scale"]},
                 "numberStrategy": {"type": "string", "enum": ["dedicated", "premium"]},
                 "phoneNumber": {"type": "string", "description": "E.164 number selected for paid reservation."},
@@ -801,6 +886,22 @@ TOOLS: list[dict[str, Any]] = [
             "properties": {
                 "agencyId": {"type": "string"},
                 "activeOnly": {"type": "boolean"},
+                "apiKey": {"type": "string"},
+                "supafoneApiBaseUrl": {"type": "string"},
+            },
+            "additionalProperties": True,
+        },
+    },
+    {
+        "name": "get_shared_phone_pool",
+        "description": (
+            "Return a snapshot of explicitly enrolled shared developer numbers, including live "
+            "available/in-use state and authenticated WebSocket stream metadata. Customer-owned "
+            "numbers are never inferred into this pool."
+        ),
+        "inputSchema": {
+            "type": "object",
+            "properties": {
                 "apiKey": {"type": "string"},
                 "supafoneApiBaseUrl": {"type": "string"},
             },
@@ -1300,6 +1401,9 @@ class SupafoneMCPServer:
         except ToolError as exc:
             return self._tool_error(str(exc))
         except SupafoneError as exc:
+            if getattr(exc, "status", None) == 402:
+                detail = self._payment_required_detail(exc)
+                return self._tool_error(_json_dumps(detail), structured=detail)
             body = getattr(exc, "body", None)
             status = getattr(exc, "status", None)
             detail = {"message": str(exc), "status": status, "body": body}
@@ -1410,7 +1514,13 @@ class SupafoneMCPServer:
                 turns=_safe_int(arguments.get("turns"), default=2, minimum=1, maximum=8),
             )
         if name == "start_billing_checkout":
-            result = self._hosted_client(arguments).labs.billing.checkout(_merge_config(arguments))
+            billing = self._hosted_client(arguments).labs.billing
+            if str(arguments.get("kind") or "") == "credits" or arguments.get("sku"):
+                result = billing.top_up(
+                    str(arguments.get("sku") or "sf_voice_minutes_400_v1")
+                )
+            else:
+                result = billing.checkout(_merge_config(arguments))
             if isinstance(result, Mapping) and result.get("checkout_url"):
                 return {
                     **dict(result),
@@ -1433,6 +1543,8 @@ class SupafoneMCPServer:
                 agencyId=_pick(arguments, "agencyId", "agency_id"),
                 activeOnly=_pick(arguments, "activeOnly", "active_only"),
             )
+        if name == "get_shared_phone_pool":
+            return self._hosted_client(arguments).labs.phone_numbers.pool()
         if name == "search_phone_numbers":
             return self._hosted_client(arguments).labs.phone_numbers.search(_merge_config(arguments))
         if name == "buy_phone_number":
@@ -1983,6 +2095,42 @@ class SupafoneMCPServer:
             raise ToolError("numberId is required")
         return str(number_id)
 
+    def _payment_required_detail(self, exc: Exception) -> dict[str, Any]:
+        body = getattr(exc, "body", None)
+        raw_detail = body.get("detail") if isinstance(body, Mapping) else None
+        usage = dict(raw_detail) if isinstance(raw_detail, Mapping) else {}
+        error_type = str(usage.get("code") or "payment_required")
+        checkout_endpoint = usage.get("checkout_endpoint") or "/v1/billing/checkout"
+        checkout_url = usage.get("checkout_url")
+        payment: dict[str, Any] = {
+            "required": True,
+            "checkout_tool": "start_billing_checkout",
+            "checkout_arguments": {
+                "kind": "credits",
+                "sku": "sf_voice_minutes_400_v1",
+            },
+            "checkout_endpoint": checkout_endpoint,
+            "status_tool": "get_billing_checkout",
+            "next_step": (
+                "Call start_billing_checkout with kind='credits', open the returned checkout_url, "
+                "then call get_billing_checkout with its checkout_session_id before retrying the "
+                "original tool."
+            ),
+        }
+        if checkout_url:
+            payment["checkout_url"] = checkout_url
+            payment["checkout_requires_browser"] = True
+        return {
+            "error": {
+                "type": error_type,
+                "message": str(exc),
+                "status": 402,
+            },
+            "payment": payment,
+            "usage": usage,
+            "body": body,
+        }
+
     def _hosted_client(self, arguments: Mapping[str, Any]) -> Any:
         if Supafone is None:
             raise ToolError("supafone_labs SDK import failed; run from the repo or install supafone-labs")
@@ -2157,8 +2305,16 @@ class SupafoneMCPServer:
             response["structuredContent"] = result
         return response
 
-    def _tool_error(self, message: str) -> dict[str, Any]:
-        return {"content": [{"type": "text", "text": message}], "isError": True}
+    def _tool_error(
+        self, message: str, *, structured: Optional[dict[str, Any]] = None
+    ) -> dict[str, Any]:
+        result: dict[str, Any] = {
+            "content": [{"type": "text", "text": message}],
+            "isError": True,
+        }
+        if structured is not None:
+            result["structuredContent"] = structured
+        return result
 
     def _result(self, message_id: Any, result: Any) -> dict[str, Any]:
         return {"jsonrpc": "2.0", "id": message_id, "result": result}

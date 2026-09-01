@@ -1,7 +1,7 @@
 """Supafone Labs — give any voice agent a supervisor in one line.
 
-The deterministic, provider-agnostic runtime lives at ``supafone_labs.runtime``; the LLM
-oracle and the developer-facing facade live here.
+The deterministic runtime lives at ``supafone_labs.runtime``; Supafone
+Supervisor and the developer-facing facade live here.
 """
 from supafone_labs import (
     runtime,  # noqa: F401  (re-export the vendored runtime subpackage)
@@ -22,7 +22,12 @@ from supafone_labs.client import (
     outbound_call_mode_provider_profile,
     outbound_call_mode_readiness,
 )
-from supafone_labs.config import ORACLE_MODELS, Settings, get_settings, provider_for_model
+from supafone_labs.config import (
+    SUPERVISOR_MODELS,
+    Settings,
+    get_settings,
+    provider_for_model,
+)
 from supafone_labs.facade import (
     CRM,
     SCENARIO_PRESETS,
@@ -44,12 +49,12 @@ from supafone_labs.llm import (
     get_default_provider,
     get_provider,
 )
-from supafone_labs.models import clear_model_cache, discover_oracle_models
-from supafone_labs.oracle import (
+from supafone_labs.models import clear_model_cache, discover_supervisor_models
+from supafone_labs.supervisor import (
     BeliefStateEngine,
     DirectiveGenerator,
-    OracleSession,
-    OracleWorkflow,
+    SupervisorSession,
+    SupervisorWorkflow,
     should_emit,
 )
 from supafone_labs.tiers import Tier, TierError, current_tier, has_feature, require_feature
@@ -71,7 +76,7 @@ from supafone_labs.types import (
     directive_to_decision,
 )
 
-__version__ = "0.5.4"
+__version__ = "0.6.0"
 
 __all__ = [
     # facade
@@ -97,9 +102,9 @@ __all__ = [
     "OUTBOUND_CALL_MODE_PROVIDER_MATRIX",
     "outbound_call_mode_provider_profile",
     "outbound_call_mode_readiness",
-    # oracle
-    "OracleSession",
-    "OracleWorkflow",
+    # supervisor
+    "SupervisorSession",
+    "SupervisorWorkflow",
     "BeliefStateEngine",
     "DirectiveGenerator",
     "should_emit",
@@ -136,11 +141,23 @@ __all__ = [
     # config
     "Settings",
     "get_settings",
-    "ORACLE_MODELS",
+    "SUPERVISOR_MODELS",
     "provider_for_model",
+    "discover_supervisor_models",
+    # Deprecated compatibility exports
+    "OracleSession",
+    "OracleWorkflow",
+    "ORACLE_MODELS",
     "discover_oracle_models",
     "clear_model_cache",
     "runtime",
     "stt",
     "__version__",
 ]
+
+# Backward-compatible top-level imports. Canonical docs and generated code use
+# the Supervisor names.
+OracleSession = SupervisorSession
+OracleWorkflow = SupervisorWorkflow
+ORACLE_MODELS = SUPERVISOR_MODELS
+discover_oracle_models = discover_supervisor_models

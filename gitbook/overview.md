@@ -14,7 +14,7 @@ turns, verifies tool truth and workflow progress, and emits a silent native
 directive only when intervention is useful.
 
 **Labs Cloud** is hosted at `https://api.labs.supafone.ai` with an `sl_live_...`
-key. This path runs the oracle, hosted TTS/STT, live multilingual
+key. This path runs the Supervisor, hosted TTS/STT, live multilingual
 transcription, logs, usage, QA, optimizer, and the managed side of Voice
 Supervisor.
 
@@ -42,7 +42,8 @@ not create the agent.
 - **Empathy pattern state**: cross-turn intent, urgency, emotion, language,
   trust, progress, and tool truth used to decide whether a nudge is warranted.
 - **Runtime**: canonical call events, state, policies, and provider adapters.
-- **Oracle**: hosted or BYO LLM layer that decides whether to whisper.
+- **Supervisor model**: managed or BYOK reasoning model that proposes a
+  directive; deterministic gates decide whether it is delivered.
 - **Whisper**: a silent directive injected into the agent's native control
   channel. The caller never hears it.
 - **Supervisor**: Supafone Supervisor live supervision attached to a hosted or BYO agent.

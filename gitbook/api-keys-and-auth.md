@@ -11,7 +11,7 @@ One key covers both surfaces:
 
 | Key | Base URL | Used for |
 | --- | --- | --- |
-| `sl_live_...` | `https://api.labs.supafone.ai` **and** `https://api.supafone.ai` | Everything: Labs Cloud oracle, TTS, STT, logs, usage, builder, QA, optimizer — plus the whole product API (campaigns, calls, agents) via one-key auth |
+| `sl_live_...` | `https://api.labs.supafone.ai` **and** `https://api.supafone.ai` | Everything: Labs Cloud Supervisor, TTS, STT, logs, usage, builder, QA, optimizer — plus the whole product API (campaigns, calls, agents) via one-key auth |
 | `sf_live_...` (legacy) | `https://api.supafone.ai/api/v1/labs` | Optional scoped key for hosted-agent-only use — the `sl_` key already covers this surface |
 
 ## One Key, Both APIs

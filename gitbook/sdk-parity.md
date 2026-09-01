@@ -228,4 +228,5 @@ platform, telephony, and TTS credentials do not get mixed together.
   in the live runtime, not merely returned as suggestions.
 - `callStages: false` / `"callStages": False` explicitly requests legacy
   single-prompt behavior. `"template"` selects the deterministic offline-safe
-  planner; `"oracle"` selects hosted generation.
+  planner; `"managed"` selects hosted generation. The literal `"oracle"`
+  value remains a deprecated compatibility alias.

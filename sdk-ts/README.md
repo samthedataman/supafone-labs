@@ -6,7 +6,7 @@ Use this package to create hosted Supafone agents from code: inbound
 receptionists, outbound sales agents, web agents, Supafone-managed phone
 numbers, built-in stages, tools, recordings, transcripts, widgets, and Supafone
 Pro watcher. It also includes the [Supafone Labs cloud](https://labs.supafone.ai)
-sidecar oracle, hosted TTS/STT, live multilingual transcription, the builder,
+Supervisor, hosted TTS/STT, live multilingual transcription, the builder,
 and the adversarial QA suite.
 
 Dependency-free. Works in Node 18+ and the browser (native `fetch` / `WebSocket`).
@@ -21,7 +21,7 @@ The SDK talks to two related APIs:
 
 | Environment variable | Key shape | Used for |
 | --- | --- | --- |
-| `SUPAFONE_LABS_API_KEY` | `sl_live_...` | Labs cloud oracle, hosted TTS/STT, logs, usage, QA, optimizer |
+| `SUPAFONE_LABS_API_KEY` | `sl_live_...` | Labs Cloud Supervisor, hosted TTS/STT, logs, usage, QA, optimizer |
 | `SUPAFONE_API_KEY` | `sf_live_...` | Hosted Supafone agents on `/api/v1/labs/*` |
 
 If you only use hosted-agent methods, `SUPAFONE_API_KEY` is enough. If you use
@@ -113,6 +113,12 @@ voice catalog, fixed BCP-47 language selection, automatic voice compatibility
 filtering, structured Supervisor directives, and the same configuration model
 across TypeScript and Python. Fixed language selection does not enable
 mid-call language or voice switching.
+
+The canonical packet separates interpersonal guidance, the next operational
+move, observed evidence, policy/tool-truth boundaries, language, confidence,
+and guidance kind. See
+[Programmable Supervisor Directives](../gitbook/programmable-supervisor-directives.md)
+for the human-supervisor mapping and field controls.
 
 Agent Factory can opt into managed live language and matching-voice routing
 with one field. It remains absent and disabled for existing agents:
@@ -407,7 +413,7 @@ const { analysis } = await supafone.reportCall({
 ```
 
 The enriched report is filed server-side (feeding `optimizer.improve()` and
-`/v1/optimizer/objective/stats`); billed one oracle call per analyzed call.
+`/v1/optimizer/objective/stats`); billed one Supervisor inference per analyzed call.
 Reports without a transcript — or any analysis failure — fall back to the
 plain zero-billed report. You can also classify explicitly with
 `supafone.classifyCall({ transcript, agent })`.
@@ -539,11 +545,12 @@ and `const { Supafone } = require("supafone-labs")` both work, with full types.
 | `labs.agents.syncKnowledge/detachWebsiteKnowledge/reindexKnowledge` | Managed website corpus lifecycle using `agent.id` |
 | `labs.agents.uploadKnowledgeDocument/deleteKnowledgeDocument/chatKnowledge` | Account-isolated document and grounded-query methods |
 | `labs.phoneNumbers.search/buy/assign/list/buyAndAssign` | `/api/v1/labs/phone-numbers*` |
+| `labs.phoneNumbers.pool/connectPool` | Safe shared developer-number snapshot and scoped realtime stream |
 | `labs.billing.checkout/status/portal` | Stripe-hosted Checkout, payment polling, and Customer Portal |
 | `labs.telephony.get/configure/useSupafoneManaged` | `/api/v1/labs/telephony` |
 | `labs.presets.list()` · `labs.tools.list()` · `labs.voices.list()` | Supafone hosted-agent discovery |
-| `whisper(transcript, opts?)` | convenience over the oracle |
-| `oracle({ messages, model?, ... })` | `POST /v1/oracle/complete` |
+| `whisper(transcript, opts?)` | Convenience over Supervisor completion and directive extraction |
+| `completeWithSupervisor({ messages, model?, ... })` | `POST /v1/supervisor/complete` |
 | `tts(text, voice?)` | `POST /v1/tts` |
 | `stt(audio, opts?)` | `POST /v1/stt` |
 | `liveTranscribe(opts?)` | `WS /v1/stt/live` |
@@ -553,7 +560,19 @@ and `const { Supafone } = require("supafone-labs")` both work, with full types.
 | `qa.run/generate/suite/history` | `/v1/qa/*` |
 | `optimizer.improve/standing` | `/v1/optimizer/*` |
 
-Get a key (5 free minutes, no card): <https://labs.supafone.ai/get-key.html>
+Get a key (five account-wide managed-runtime minutes, no card):
+<https://labs.supafone.ai/get-key.html>
+
+That allowance is shared by every key, agent, WebRTC tab, PSTN call, SDK, CLI,
+and MCP client linked to the account. Managed calls reserve time atomically
+before provider startup; settlement refunds unused held seconds. HTTP 402
+responses expose `detail.code=managed_minutes_exhausted` and a
+`checkout_endpoint`. Create Checkout with `labs.billing.checkout()`, open the
+returned `checkout_url`, poll `labs.billing.status()`, and retry after payment.
+
+The older `oracle()` method and `POST /v1/oracle/complete` route remain only as
+deprecated compatibility aliases. New integrations should use
+`completeWithSupervisor()` and `POST /v1/supervisor/complete`.
 
 For `dedicated` or `premium`, `labs.phoneNumbers.buy()` first returns a public
 `checkout_url`. Open it, poll `labs.billing.status()`, then call `buy()` again

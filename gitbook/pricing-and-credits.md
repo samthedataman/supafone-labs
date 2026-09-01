@@ -18,7 +18,18 @@ curl https://api.labs.supafone.ai/v1/pricing
 | Growth | `$249/mo` | `2,500` | `$0.11/min` | `3` |
 | Scale | `$999/mo` | `12,000` | `$0.085/min` | `20` |
 
-The trial signup grants 5 free minutes.
+The trial signup grants **five managed-runtime minutes to the account**, not
+five minutes per API key, agent, device, or process. Browser WebRTC, PSTN,
+SDK, CLI, and MCP calls that use Supafone-managed infrastructure debit the same
+account ledger.
+
+Before a managed call starts, Supafone atomically reserves that call's allowed
+runtime from the account balance. Concurrent calls therefore cannot each spend
+the same remaining seconds. When a call ends, Supafone settles the connected
+seconds and refunds the unused reservation. A provider failure cancels the
+reservation; expired abandoned reservations are reclaimed. The balance response
+may include `active_reserved_seconds` so clients can distinguish spendable time
+from time held by calls already starting or in progress.
 
 ## What a recording costs
 
@@ -33,7 +44,7 @@ stay auditable; the customer still sees one clear Supafone balance.
 | Meter | Unit | Notes |
 | --- | --- | --- |
 | `agent_minute` | minute | Live hosted voice-agent runtime |
-| `self_healing` | second | Oracle, QA, optimizer, and whisper work |
+| `self_healing` | second | Supervisor, QA, optimizer, and silent-guidance work |
 | `tts` | spoken second | Hosted voice output |
 | `stt` | audio second | Prerecorded and live transcription |
 | `shared_number_pool` | pooled route | Default shared Supafone number pool |
@@ -80,6 +91,50 @@ After payment, poll `client.labs.billing.status(checkout_session_id)`. Use
 `client.labs.billing.portal()` to return an authenticated Stripe Customer Portal
 link for payment methods, invoices, and cancellation. Stripe webhook events are
 signature-verified and deduplicated before credits or entitlements are granted.
+
+## Structured 402 Payment Flow
+
+When the account cannot reserve another managed call, the API returns HTTP
+`402 Payment Required` before opening a provider session:
+
+```json
+{
+  "detail": {
+    "code": "managed_minutes_exhausted",
+    "message": "Add managed minutes to start this call.",
+    "minutes_remaining": 0,
+    "checkout_endpoint": "/v1/billing/checkout"
+  }
+}
+```
+
+Treat `detail.code`, not the English message, as the programmatic branch. Create
+a server-authored Checkout Session through `POST /v1/billing/checkout`, open the
+returned `checkout_url`, and poll `GET /v1/billing/checkout/{session_id}` until
+it reports paid. Then retry the original call request. Do not retry a 402 in a
+tight loop and do not collect card data yourself.
+
+The public clients expose the same flow:
+
+```ts
+const checkout = await supafone.labs.billing.checkout({
+  sku: "sf_voice_minutes_400_v1"
+});
+console.log(checkout.checkout_url);
+```
+
+```python
+checkout = supafone.labs.billing.checkout(sku="sf_voice_minutes_400_v1")
+print(checkout["checkout_url"])
+```
+
+```bash
+supafone account checkout --sku sf_voice_minutes_400_v1
+```
+
+The CLI also recognizes a structured 402, requests a Checkout link, and returns
+it under `data.payment` while preserving the original error status and usage
+detail. MCP uses `start_billing_checkout` followed by `get_billing_checkout`.
 
 ## Stripe Checkout Metadata
 

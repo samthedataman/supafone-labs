@@ -1,10 +1,10 @@
 """Free vs paid tiering.
 
 SupafoneLabs is MIT-licensed and fully functional on the **free** tier with your
-own keys (BYO Anthropic/OpenAI for the oracle, BYO Deepgram/Cartesia/ElevenLabs
+own keys (BYOK Anthropic/OpenAI for the Supervisor, BYOK Deepgram/Cartesia/ElevenLabs
 for TTS) — or with no keys at all via the offline fake providers.
 
-Setting ``SUPAFONE_LABS_API_KEY`` unlocks the **pro** tier: the oracle and TTS run
+Setting ``SUPAFONE_LABS_API_KEY`` unlocks the **pro** tier: Supervisor and TTS run
 against Supafone Labs' hosted endpoints on Supafone Labs' own model keys, so users
 never manage LLM/voice credentials. Everything else is identical — tiering
 gates *who pays for inference*, never correctness or safety.
@@ -23,10 +23,22 @@ class Tier(str, Enum):
 # What each tier can use. Deliberately small and honest: the free tier is not
 # crippled — pro only adds Supafone Labs-managed inference.
 FEATURES: dict[Tier, frozenset[str]] = {
-    Tier.FREE: frozenset({"byo_oracle", "byo_tts", "offline_fake", "all_adapters"}),
+    Tier.FREE: frozenset({"byok_supervisor", "byo_tts", "offline_fake", "all_adapters"}),
     Tier.PRO: frozenset(
-        {"byo_oracle", "byo_tts", "offline_fake", "all_adapters", "hosted_oracle", "hosted_tts"}
+        {
+            "byok_supervisor",
+            "byo_tts",
+            "offline_fake",
+            "all_adapters",
+            "managed_supervisor",
+            "hosted_tts",
+        }
     ),
+}
+
+_LEGACY_FEATURES = {
+    "byo_oracle": "byok_supervisor",
+    "hosted_oracle": "managed_supervisor",
 }
 
 
@@ -44,7 +56,7 @@ def current_tier() -> Tier:
 
 
 def has_feature(name: str, tier: Tier | None = None) -> bool:
-    return name in FEATURES[tier or current_tier()]
+    return _LEGACY_FEATURES.get(name, name) in FEATURES[tier or current_tier()]
 
 
 def require_feature(name: str) -> None:

@@ -4,18 +4,21 @@ build-backend = "hatchling.build"
 
 [project]
 name = "supafone-labs"
-version = "0.5.4"
+version = "0.6.0"
 description = "Build and supervise production voice agents through one SDK."
 readme = "README.md"
 license = "MIT"
 requires-python = ">=3.11"
 authors = [{ name = "Sam Savage", email = "samatcrispy@gmail.com" }]
-keywords = ["voice-ai", "agents", "ultravox", "vapi", "gpt-realtime", "oracle", "prompt-optimization"]
+keywords = ["voice-ai", "agents", "ultravox", "vapi", "gpt-realtime", "supervisor", "prompt-optimization"]
 dependencies = ["pydantic>=2.0.0"]
+
+[project.scripts]
+supafone = "supafone_labs.cli:main"
 
 [project.urls]
 Homepage = "https://labs.supafone.ai"
-Documentation = "https://labs.supafone.ai/docs.html"
+Documentation = "https://labs.supafone.ai/docs/"
 Repository = "https://github.com/samthedataman/supafone-labs"
 Issues = "https://github.com/samthedataman/supafone-labs/issues"
 

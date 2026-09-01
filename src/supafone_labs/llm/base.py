@@ -34,7 +34,7 @@ class FakeLLMProvider:
     """Deterministic, network-free provider for tests and zero-key demos.
 
     Branches on whether the prompt is asking for a belief state or a directive so the
-    full oracle pipeline produces a real, inspectable result with no API key.
+    full Supervisor pipeline produces an inspectable result with no API key.
     """
 
     def __init__(self, belief_json: str | None = None, directive_json: str | None = None) -> None:

@@ -1,4 +1,4 @@
-# The Sidecar Oracle
+# The Sidecar Supervisor
 
 **A Provider-Agnostic Supervisor Harness for Real-Time Voice Agents**
 
@@ -23,7 +23,7 @@ Five threads of published evidence converge on the sidecar design:
 | Design principle | Load-bearing evidence |
 | --- | --- |
 | Separate the talker from the deliberator | Talker-Reasoner (Christakopoulou et al. 2024); dual-process framing (Booch et al. 2020) |
-| Supervision must be external | Intrinsic self-correction degrades (GSM8K 75.9→74.7; CSQA 75.8→38.1) while oracle-triggered correction gains (→84.3) (Huang et al. 2023) |
+| Supervision must be external | Intrinsic self-correction degrades (GSM8K 75.9→74.7; CSQA 75.8→38.1) while externally triggered correction gains (→84.3) (Huang et al. 2023) |
 | The supervisor can be small | 6B verifier ≈ 30× generator scale (Cobbe et al. 2021); 7B critic ≈ ChatGPT (Shepherd); monitor recall 95% (Baker et al. 2025) |
 | Supervise turns, not outcomes | Process supervision 78.2% vs outcome-only 72.4% on MATH (Lightman et al. 2023) |
 | Never optimize against the monitor | Obfuscated reward hacking; monitor recall → 0 when judgments join the reward (Baker et al. 2025) |
@@ -35,7 +35,7 @@ The pivotal negative result is Huang et al.: a model reviewing its own answer wi
 
 ### 3.1 The substrate problem
 
-Voice-AI serving stacks fall into three classes: **speech-to-speech** agents (OpenAI Realtime, Grok Voice, Ultravox) with no out-of-band channel beyond a live session patch; **pipeline** agents (Vapi, Retell, ElevenLabs, Deepgram VA, Bland) where injection lands in LLM context between turns — when a channel exists at all; and **frameworks/components** (Pipecat, LiveKit; Cartesia, Inworld, raw STT) where the integrator owns the loop or nothing is injectable. Every class differs in event vocabulary, and wire formats drift quarterly. This heterogeneity, not the oracle, is the engineering problem.
+Voice-AI serving stacks fall into three classes: **speech-to-speech** agents (OpenAI Realtime, Grok Voice, Ultravox) with no out-of-band channel beyond a live session patch; **pipeline** agents (Vapi, Retell, ElevenLabs, Deepgram VA, Bland) where injection lands in LLM context between turns — when a channel exists at all; and **frameworks/components** (Pipecat, LiveKit; Cartesia, Inworld, raw STT) where the integrator owns the loop or nothing is injectable. Every class differs in event vocabulary, and wire formats drift quarterly. This heterogeneity, not the Supervisor model, is the engineering problem.
 
 ### 3.2 Canonical events and the deterministic reducer
 
@@ -62,7 +62,7 @@ One abstract decision compiles across fourteen audited runtime integrations:
 
 ### 3.4 The whisper path and degrade-safety
 
-Off the hot path, the oracle maintains a belief state (identity, intent, emotion, language, urgency) and produces a directive under operator guardrails, gated by a confidence threshold. The entire oracle runs behind a timeout with catch-all semantics: **supervisor failure composes with the live call as the identity.** A stalled model, dead STT socket, or failed TTS backend cannot lengthen, alter, or end the call it shadows. The worst case is the status quo.
+Off the hot path, the Supervisor maintains a belief state (identity, intent, emotion, language, urgency) and produces a directive under operator guardrails, gated by a confidence threshold. The entire Supervisor runs behind a timeout with catch-all semantics: **supervisor failure composes with the live call as the identity.** A stalled model, dead STT socket, or failed TTS backend cannot lengthen, alter, or end the call it shadows. The worst case is the status quo.
 
 ## 4 · The Improvement Loop
 
@@ -84,7 +84,7 @@ The harness owns one prompt surface on every injectable platform: its own channe
 
 ### 4.4 Observability as a product invariant
 
-Every directive the oracle whispers is logged with its confidence, language, the caller's inferred emotional state, oracle latency, model, and billing cost; every optimization step records the reports it consumed; every SSR verdict stores both its label and mapped score. A system that whispers into production calls must be auditable end-to-end.
+Every directive the Supervisor proposes is logged with its confidence, language, the caller's inferred emotional state, Supervisor latency, model, and billing cost; every optimization step records the reports it consumed; every SSR verdict stores both its label and mapped score. A system that silently steers production calls must be auditable end-to-end.
 
 ## 5 · The Agent Factory
 
@@ -92,7 +92,7 @@ The same control plane that supervises third-party stacks can provision complete
 
 ## 6 · Limitations
 
-(1) No controlled trial yet measures the sidecar's effect on business outcomes; the meta-analysis validates components in adjacent domains. (2) SSR grading applies where an LLM judge is required; deterministic scoring covers only tool-verified ground truth. (3) Whisper uptake is bounded by each platform's injection semantics; two platforms offer no channel. (4) Standing-directive optimization inherits OPRO's brittleness; directive length is bounded and version history retained because regressions are expected. (5) The oracle adds cost per turn; small-supervisor economics and per-second metering make it visible.
+(1) No controlled trial yet measures the sidecar's effect on business outcomes; the meta-analysis validates components in adjacent domains. (2) SSR grading applies where an LLM judge is required; deterministic scoring covers only tool-verified ground truth. (3) Whisper uptake is bounded by each platform's injection semantics; two platforms offer no channel. (4) Standing-directive optimization inherits OPRO's brittleness; directive length is bounded and version history retained because regressions are expected. (5) The Supervisor adds cost per turn; small-model economics and per-second metering make it visible.
 
 ## 7 · Conclusion
 

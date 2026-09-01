@@ -12,7 +12,7 @@ import os
 import re
 import time
 from dataclasses import dataclass
-from typing import Any, Callable, Iterator, Literal, Mapping, Optional, TypedDict
+from typing import AsyncIterator, Any, Callable, Iterator, Literal, Mapping, Optional, TypedDict
 from urllib import error, parse, request
 
 DEFAULT_SUPAFONE_API_BASE = "https://api.supafone.ai"
@@ -290,6 +290,23 @@ class SupafoneError(RuntimeError):
         self.body = body
 
 
+def _error_detail_message(detail: Any, fallback: Any) -> str:
+    """Return a readable API error while preserving the structured body.
+
+    Payment-required responses intentionally put checkout metadata beside a
+    human-facing ``message``.  Rendering the mapping directly makes CLI and SDK
+    errors look like Python dictionaries instead of actionable errors.
+    """
+    if isinstance(detail, Mapping):
+        for key in ("message", "detail", "error", "code"):
+            value = detail.get(key)
+            if isinstance(value, str) and value.strip():
+                return value.strip()
+    if isinstance(detail, str) and detail.strip():
+        return detail.strip()
+    return str(fallback)
+
+
 @dataclass
 class VoicePreview:
     """Audio bytes returned by Supafone Labs voice preview/TTS."""
@@ -427,7 +444,9 @@ class Supafone:
             except json.JSONDecodeError:
                 parsed = raw
             detail = parsed.get("detail") if isinstance(parsed, dict) else parsed
-            raise SupafoneError(str(detail or exc.reason), status=exc.code, body=parsed) from exc
+            raise SupafoneError(
+                _error_detail_message(detail, exc.reason), status=exc.code, body=parsed
+            ) from exc
 
     def _request_supafone_upload(self, path: str, *, filename: str, data: bytes) -> Any:
         """Upload a knowledge file with the same account-scoped Labs key."""
@@ -477,7 +496,9 @@ class Supafone:
             except json.JSONDecodeError:
                 parsed = raw
             detail = parsed.get("detail") if isinstance(parsed, dict) else parsed
-            raise SupafoneError(str(detail or exc.reason), status=exc.code, body=parsed) from exc
+            raise SupafoneError(
+                _error_detail_message(detail, exc.reason), status=exc.code, body=parsed
+            ) from exc
 
     def _request_supafone_binary(self, path: str) -> VoicePreview:
         if self._transport:
@@ -505,7 +526,9 @@ class Supafone:
             except json.JSONDecodeError:
                 parsed = raw
             detail = parsed.get("detail") if isinstance(parsed, dict) else parsed
-            raise SupafoneError(str(detail or exc.reason), status=exc.code, body=parsed) from exc
+            raise SupafoneError(
+                _error_detail_message(detail, exc.reason), status=exc.code, body=parsed
+            ) from exc
 
     # --- account API (campaigns + real calls) --------------------------------
     # Same product base URL as _request_supafone_api but authenticated with the
@@ -593,7 +616,9 @@ class Supafone:
             except json.JSONDecodeError:
                 parsed = raw
             detail = parsed.get("detail") if isinstance(parsed, dict) else parsed
-            raise SupafoneError(str(detail or exc.reason), status=exc.code, body=parsed) from exc
+            raise SupafoneError(
+                _error_detail_message(detail, exc.reason), status=exc.code, body=parsed
+            ) from exc
 
     def _request_account_http(
         self, method: str, path: str, payload: Optional[dict[str, Any]], *, token: str
@@ -622,7 +647,9 @@ class Supafone:
             except json.JSONDecodeError:
                 parsed = raw
             detail = parsed.get("detail") if isinstance(parsed, dict) else parsed
-            raise SupafoneError(str(detail or exc.reason), status=exc.code, body=parsed) from exc
+            raise SupafoneError(
+                _error_detail_message(detail, exc.reason), status=exc.code, body=parsed
+            ) from exc
 
     def call_from_agent(
         self,
@@ -775,7 +802,9 @@ class Supafone:
             except json.JSONDecodeError:
                 parsed = raw
             detail = parsed.get("detail") if isinstance(parsed, dict) else parsed
-            raise SupafoneError(str(detail or exc.reason), status=exc.code, body=parsed) from exc
+            raise SupafoneError(
+                _error_detail_message(detail, exc.reason), status=exc.code, body=parsed
+            ) from exc
 
     def _request_labs_api_bytes(
         self, method: str, path: str, payload: Optional[dict[str, Any]] = None
@@ -805,7 +834,9 @@ class Supafone:
             except json.JSONDecodeError:
                 parsed = raw
             detail = parsed.get("detail") if isinstance(parsed, dict) else parsed
-            raise SupafoneError(str(detail or exc.reason), status=exc.code, body=parsed) from exc
+            raise SupafoneError(
+                _error_detail_message(detail, exc.reason), status=exc.code, body=parsed
+            ) from exc
 
     def report_call(self, report: dict[str, Any]) -> dict[str, Any]:
         """File a post-call report — the fuel the optimizer improves against.
@@ -1093,6 +1124,11 @@ class LabsBillingNamespace:
 
     def checkout(self, config: Optional[Mapping[str, Any]] = None, **kwargs: Any) -> Any:
         data = _merge(config, kwargs)
+        sku = _pick(data, "sku", "package_sku", "packageSku")
+        if sku:
+            return self._client._request_labs_api(
+                "POST", "/v1/billing/checkout", {"sku": str(sku)}
+            )
         payload = _compact(
             {
                 "kind": data.get("kind") or "plan",
@@ -1105,6 +1141,12 @@ class LabsBillingNamespace:
             }
         )
         return self._client._request_labs_api("POST", "/v1/billing/checkout", payload)
+
+    def top_up(self, sku: str = "sf_voice_minutes_400_v1") -> Any:
+        """Create Stripe Checkout for one prepaid managed-minute package."""
+        if not str(sku or "").strip():
+            raise ValueError("sku is required")
+        return self.checkout(sku=str(sku).strip())
 
     def status(self, checkout_session_id: str) -> Any:
         if not str(checkout_session_id or "").strip():
@@ -1119,6 +1161,7 @@ class LabsBillingNamespace:
 
     create_checkout = checkout
     createCheckout = checkout
+    topUp = top_up
     get_checkout = status
     getCheckout = status
 
@@ -1988,6 +2031,67 @@ class LabsPhoneNumbersNamespace:
         suffix = f"?{parse.urlencode(query)}" if query else ""
         return self._client._request_supafone_api("GET", f"/api/v1/labs/phone-numbers{suffix}")
 
+    def pool(self) -> Any:
+        """Return explicitly enrolled shared developer numbers and live-stream metadata.
+
+        This inventory is separate from account-owned numbers. The server only
+        includes platform numbers an operator deliberately enrolled in the
+        developer pool, so unassigned customer numbers cannot leak into it.
+        """
+        return self._client._request_supafone_api(
+            "GET", "/api/v1/labs/phone-numbers/pool"
+        )
+
+    async def stream_pool(self) -> AsyncIterator[dict[str, Any]]:
+        """Yield realtime shared-pool snapshots and heartbeats.
+
+        The initial REST request exchanges the API key for a short-lived,
+        pool-only capability. The full API key is never placed in the WebSocket
+        URL. Install ``supafone-labs[stt]`` or ``supafone-labs[all]`` to include
+        the optional ``websockets`` dependency.
+        """
+        try:
+            import websockets
+        except ImportError as exc:  # pragma: no cover - environment dependent
+            raise SupafoneError(
+                "phone_numbers.stream_pool requires websockets; "
+                "install supafone-labs[stt] or supafone-labs[all]"
+            ) from exc
+
+        snapshot = self.pool()
+        stream = snapshot.get("stream") if isinstance(snapshot, Mapping) else None
+        if not isinstance(stream, Mapping):
+            raise SupafoneError("Phone-pool response did not include stream metadata")
+        token = str(stream.get("token") or "")
+        path = str(stream.get("url") or "")
+        protocol = str(stream.get("protocol") or "developer_phone_pool_v1")
+        if not token or not path:
+            raise SupafoneError("Phone-pool stream metadata is incomplete")
+
+        http_url = parse.urljoin(f"{self._client.supafone_api_base_url}/", path.lstrip("/"))
+        parsed = parse.urlsplit(http_url)
+        ws_url = parse.urlunsplit(
+            (
+                "wss" if parsed.scheme == "https" else "ws",
+                parsed.netloc,
+                parsed.path,
+                parse.urlencode({"token": token}),
+                "",
+            )
+        )
+        try:
+            connection = websockets.connect(ws_url, subprotocols=[protocol])
+        except TypeError:  # pragma: no cover - older websockets builds
+            connection = websockets.connect(ws_url, subprotocol=protocol)
+        async with connection as socket:
+            async for raw in socket:
+                try:
+                    event = json.loads(raw)
+                except (TypeError, json.JSONDecodeError) as exc:
+                    raise SupafoneError("Phone-pool stream returned invalid JSON") from exc
+                if isinstance(event, dict):
+                    yield event
+
     def search(self, config: Optional[Mapping[str, Any]] = None, **kwargs: Any) -> Any:
         return self._client._request_supafone_api(
             "POST",
@@ -2071,21 +2175,43 @@ class LabsPhoneNumbersNamespace:
 
     def buy_and_assign(self, config: Optional[Mapping[str, Any]] = None, **kwargs: Any) -> Any:
         data = _merge(config, kwargs)
+        strategy = str(
+            _pick(data, "number_strategy", "numberStrategy")
+            or ("premium" if data.get("premium") else "default_pool")
+        ).strip().lower()
         phone_number = data.get("phoneNumber") or data.get("phone_number")
         if not phone_number:
-            search = dict(data.get("search") or {})
-            search.setdefault("agencyId", data.get("agencyId") or data.get("agency_id"))
-            search.setdefault("limit", 1)
-            found = self.search(search)
-            numbers = found.get("numbers") if isinstance(found, dict) else None
-            phone_number = (numbers or [{}])[0].get("phone_number")
+            if strategy == "default_pool":
+                found = self.pool()
+                candidates = [
+                    item
+                    for item in (found.get("numbers") or [])
+                    if item.get("available") is True
+                ] if isinstance(found, dict) else []
+                area_code = str((data.get("search") or {}).get("areaCode") or (data.get("search") or {}).get("area_code") or "")
+                if area_code:
+                    candidates = [
+                        item for item in candidates
+                        if str(item.get("phone_number") or "").startswith(f"+1{area_code}")
+                    ]
+                phone_number = (candidates or [{}])[0].get("phone_number")
+            else:
+                search = dict(data.get("search") or {})
+                search.setdefault("agencyId", data.get("agencyId") or data.get("agency_id"))
+                search.setdefault("limit", 1)
+                found = self.search(search)
+                numbers = found.get("numbers") if isinstance(found, dict) else None
+                phone_number = (numbers or [{}])[0].get("phone_number")
             if not phone_number:
-                raise SupafoneError("No Supafone-managed phone numbers matched the search")
+                source = "shared developer" if strategy == "default_pool" else "Supafone-managed"
+                raise SupafoneError(f"No {source} phone numbers matched the request")
         data["phoneNumber"] = phone_number
+        data["number_strategy"] = strategy
         return self.buy(data)
 
     buyAndAssign = buy_and_assign
     returnToPool = return_to_pool
+    streamPool = stream_pool
 
 
 class LabsTelephonyNamespace:
@@ -2363,6 +2489,15 @@ def _labs_agent_payload(data: Mapping[str, Any]) -> dict[str, Any]:
     fixed_language = _pick(
         data, "preferred_language", "preferredLanguage", "language"
     )
+    supervisor = _pick(data, "supervisor", "voice_watcher", "voiceWatcher")
+    supervisor_config = (
+        _supervisor_payload(supervisor) if isinstance(supervisor, Mapping) else None
+    )
+    supervisor_enabled = (
+        _pick(supervisor, "enabled")
+        if isinstance(supervisor, Mapping) and "enabled" in supervisor
+        else True if isinstance(supervisor, Mapping) else supervisor
+    )
     return _compact(
         {
             "agency_id": _pick(data, "agency_id", "agencyId"),
@@ -2418,7 +2553,8 @@ def _labs_agent_payload(data: Mapping[str, Any]) -> dict[str, Any]:
             "labs": _labs_payload(data["labs"]) if data.get("labs") else None,
             "ultravox": _ultravox_payload(data["ultravox"]) if data.get("ultravox") else None,
             "custom_sip": _custom_sip_payload(_pick(data, "custom_sip", "customSip", "sip") or {}),
-            "voice_watcher": _pick(data, "supervisor", "voice_watcher", "voiceWatcher"),
+            "supervisor": supervisor_config,
+            "voice_watcher": supervisor_enabled,
             "voice_watcher_model": _pick(data, "voice_watcher_model", "voiceWatcherModel"),
             "metadata": _agent_metadata_payload(data),
         }
@@ -2707,10 +2843,18 @@ def _artifacts_payload(data: Mapping[str, Any]) -> dict[str, Any]:
 
 
 def _labs_payload(data: Mapping[str, Any]) -> dict[str, Any]:
+    supervisor = _pick(data, "supervisor")
+    nested = supervisor if isinstance(supervisor, Mapping) else data if data.get("provider") else None
+    enabled = (
+        _pick(nested, "enabled")
+        if isinstance(nested, Mapping) and "enabled" in nested
+        else True if isinstance(nested, Mapping) else supervisor
+    )
     return _compact(
         {
             "enabled": data.get("enabled"),
-            "voice_watcher": _pick(data, "supervisor", "voice_watcher", "voiceWatcher"),
+            "supervisor": _supervisor_payload(nested) if isinstance(nested, Mapping) else None,
+            "voice_watcher": enabled if enabled is not None else _pick(data, "voice_watcher", "voiceWatcher"),
             "api_key": _pick(data, "api_key", "apiKey"),
             "model": data.get("model"),
             "mode": data.get("mode"),
@@ -2720,6 +2864,21 @@ def _labs_payload(data: Mapping[str, Any]) -> dict[str, Any]:
             "tts": data.get("tts"),
             "provider_keys": _pick(data, "provider_keys", "providerKeys"),
             "label": data.get("label"),
+        }
+    )
+
+
+def _supervisor_payload(data: Mapping[str, Any]) -> dict[str, Any]:
+    return _compact(
+        {
+            "enabled": data.get("enabled"),
+            "mode": data.get("mode"),
+            "provider": data.get("provider"),
+            "model": data.get("model"),
+            "api_key": _pick(data, "api_key", "apiKey"),
+            "api_key_configured": _pick(
+                data, "api_key_configured", "apiKeyConfigured"
+            ),
         }
     )
 

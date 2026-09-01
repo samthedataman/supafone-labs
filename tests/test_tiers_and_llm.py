@@ -107,12 +107,12 @@ class _MockClient:
 async def test_hosted_provider_round_trip(clean_env):
     client = _MockClient({"text": '{"confidence": 0.9}'})
     provider = HostedLLMProvider(api_key="sl_live_123", client=client)
-    out = await provider.complete([{"role": "user", "content": "hi"}], model="oracle-1")
+    out = await provider.complete([{"role": "user", "content": "hi"}], model="supervisor-1")
     assert out == '{"confidence": 0.9}'
     call = client.calls[0]
-    assert call["url"].endswith("/oracle/complete")
+    assert call["url"].endswith("/supervisor/complete")
     assert call["headers"]["Authorization"] == "Bearer sl_live_123"
-    assert call["json"]["model"] == "oracle-1"
+    assert call["json"]["model"] == "supervisor-1"
 
 
 async def test_hosted_provider_requires_license(clean_env):
@@ -126,4 +126,4 @@ async def test_hosted_provider_honors_api_base(clean_env):
     client = _MockClient({"text": "ok"})
     provider = HostedLLMProvider(api_key="sl_live_123", client=client)
     await provider.complete([{"role": "user", "content": "hi"}])
-    assert client.calls[0]["url"] == "https://sm.example.com/api/oracle/complete"
+    assert client.calls[0]["url"] == "https://sm.example.com/api/supervisor/complete"

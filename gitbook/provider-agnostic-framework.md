@@ -19,7 +19,7 @@ brain = supafone_labs.supercharge(
 1. Normalize vendor events into canonical call events.
 2. Maintain deterministic runtime state such as stage, consent, tool state,
    caller intent, and risk flags.
-3. Run the oracle only when supervision is enabled.
+3. Run the Supervisor model only when supervision is enabled.
 4. Emit a silent directive or provider-native action.
 5. Log the decision, latency, provider, model, and billing metadata.
 
@@ -140,5 +140,5 @@ async def on_platform_event(raw_event):
         await deliver_to_voice_platform(action)
 ```
 
-The deterministic runtime can still emit policy decisions even if the LLM
-oracle is unavailable. That is the degrade-safe path.
+The deterministic runtime can still emit policy decisions even if the
+Supervisor model is unavailable. That is the degrade-safe path.

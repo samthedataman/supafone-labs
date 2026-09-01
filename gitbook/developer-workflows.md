@@ -239,7 +239,7 @@ hosted-delivery controls. See [BYOK providers](byok-providers.md).
 | Work | Key | Base URL |
 | --- | --- | --- |
 | Agent Factory, numbers, hosted voices | `sl_live_...` (or scoped `sf_live_...`) | `https://api.supafone.ai/api/v1/labs` |
-| Oracle, TTS previews, STT, usage, logs, QA | `sl_live_...` | `https://api.labs.supafone.ai` |
+| Supervisor, TTS previews, STT, usage, logs, QA | `sl_live_...` | `https://api.labs.supafone.ai` |
 | Campaigns, dialing, calls | `sl_live_...` (or account JWT) | `https://api.supafone.ai` |
 
 Since 0.4.4, one `sl_` key authenticates on **both** APIs

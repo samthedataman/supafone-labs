@@ -58,8 +58,15 @@ or private voice.
 
 Supafone Cloud is **$0.10 per connected minute** for the standard managed call
 stack, including managed models, compatible voices, telephony, transcripts,
-Supafone Supervisor, and QA. The first five minutes are free; a 400-minute
-reload is $40. There is no seat fee.
+Supafone Supervisor, and QA. The account receives five managed-runtime minutes;
+a 400-minute reload is $40. The allowance is shared across its keys, agents,
+WebRTC sessions, PSTN calls, SDKs, CLI, and MCP. There is no seat fee.
+
+Managed calls atomically reserve available seconds before provider startup, so
+concurrent calls cannot spend the same balance. Settlement refunds unused held
+time. When no call can be reserved, the API returns a structured HTTP 402 and a
+server-authored Stripe Checkout path. See
+[Pricing, Credits, and Checkout](pricing-and-credits.md#structured-402-payment-flow).
 
 That $0.10 pays for the production path, not only the SDK call that starts it.
 Supafone operates the carrier connection, compatible model and voice runtime,

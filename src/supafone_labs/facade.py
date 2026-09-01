@@ -1,20 +1,21 @@
 """The one-line developer surface: supafone_labs.supercharge(agent).
 
-Hides the runtime, adapters, oracle, and injection plumbing behind a single call so any
+Hides the runtime, adapters, supervisor, and injection plumbing behind a single call so any
 voice agent gains a supervisor with no knowledge of the internals.
 """
 from __future__ import annotations
 
 import asyncio
 import time
+import warnings
 from collections.abc import Mapping
 from dataclasses import dataclass, field
 from typing import Any, Callable, Optional
 
 from supafone_labs.config import Settings, get_settings
 from supafone_labs.llm.registry import get_default_provider
-from supafone_labs.oracle.policy import OracleWorkflow
-from supafone_labs.oracle.session import DirectiveTransform, OracleSession
+from supafone_labs.supervisor.policy import SupervisorWorkflow
+from supafone_labs.supervisor.session import DirectiveTransform, SupervisorSession
 from supafone_labs.runtime.adapters import (
     BlandAdapter,
     CartesiaAdapter,
@@ -36,7 +37,7 @@ from supafone_labs.runtime.core.decision import ProviderAction, RuntimeDecision
 from supafone_labs.runtime.core.state import RuntimeState, build_initial_state
 from supafone_labs.types import BeliefState, Directive, DirectiveContract, directive_to_decision
 
-# Scenario presets pre-tune the oracle's guardrails/lens for common verticals.
+# Scenario presets pre-tune the supervisor's guardrails for common verticals.
 SCENARIO_PRESETS: dict[str, list[str]] = {
     "legal_intake": [
         "Don't quote fees",
@@ -123,7 +124,7 @@ class CRM(_Source):
 
 @dataclass
 class Feed:
-    """The live-data spine the oracle draws on, plus standing guardrails."""
+    """The live-data spine the supervisor draws on, plus standing guardrails."""
 
     context: list[Any] = field(default_factory=list)
     guardrails: list[str] = field(default_factory=list)
@@ -220,12 +221,12 @@ class SupafoneLabs:
         feed: Optional[Feed] = None,
         scenario: Optional[str] = None,
         mode: str = "apply",
-        oracle: Optional[OracleSession] = None,
+        supervisor: Optional[SupervisorSession] = None,
         injector: Optional[Callable[[Any], Any]] = None,
         tts: Any = None,
         llm: Any = None,
-        oracle_model: Optional[str] = None,
-        oracle_instructions: Optional[str] = None,
+        supervisor_model: Optional[str] = None,
+        supervisor_instructions: Optional[str] = None,
         belief_prompt: Optional[str] = None,
         directive_prompt: Optional[str] = None,
         directive_contract: Optional[DirectiveContract | Mapping[str, Any]] = None,
@@ -234,7 +235,24 @@ class SupafoneLabs:
         telemetry: bool = True,
         post_call_analysis: bool = False,
         agent_label: str = "default",
+        **legacy_options: Any,
     ) -> None:
+        legacy_supervisor = legacy_options.pop("oracle", None)
+        legacy_model = legacy_options.pop("oracle_model", None)
+        legacy_instructions = legacy_options.pop("oracle_instructions", None)
+        if legacy_options:
+            names = ", ".join(sorted(legacy_options))
+            raise TypeError(f"Unexpected SupafoneLabs option(s): {names}")
+        if any(value is not None for value in (legacy_supervisor, legacy_model, legacy_instructions)):
+            warnings.warn(
+                "oracle options are deprecated; use supervisor, supervisor_model, and "
+                "supervisor_instructions",
+                DeprecationWarning,
+                stacklevel=2,
+            )
+        supervisor = supervisor or legacy_supervisor
+        supervisor_model = supervisor_model or legacy_model
+        supervisor_instructions = supervisor_instructions or legacy_instructions
         self.config = config or get_settings()
         self.mode = mode
         self.feed = feed
@@ -249,7 +267,7 @@ class SupafoneLabs:
         # automatically classified against the agent's objective — generating
         # labels (achieved/missed, per-criterion verdicts, failure reasons) —
         # and the enriched report is filed instead of the plain one. Results
-        # land in self.analyses / self.last_analysis. Billed one oracle call
+        # land in self.analyses / self.last_analysis. Billed one supervisor call
         # per analyzed call; falls back to the plain report on any failure.
         self.post_call_analysis = post_call_analysis
         self.analyses: dict[str, dict] = {}
@@ -267,33 +285,36 @@ class SupafoneLabs:
         # llm: a provider name ("anthropic" | "openai" | "xai" | "hosted" |
         # "fake"), a ready LLMProvider instance, or None. With only a model
         # given, the serving provider is inferred from the model id — so
-        # SupafoneLabs(oracle_model="gpt-4.1-mini") just works.
+        # SupafoneLabs(supervisor_model="gpt-4.1-mini") just works.
         if isinstance(llm, str):
             from supafone_labs.llm.registry import get_provider
 
             llm = get_provider(llm)
-        elif llm is None and oracle is None and oracle_model:
+        elif llm is None and supervisor is None and supervisor_model:
             from supafone_labs.config import provider_for_model
             from supafone_labs.llm.registry import get_provider
 
-            inferred = provider_for_model(oracle_model)
+            inferred = provider_for_model(supervisor_model)
             if inferred:
                 llm = get_provider(inferred)
-        self.oracle = oracle or OracleSession(
+        self.supervisor = supervisor or SupervisorSession(
             provider=llm or get_default_provider(),
             config=self.config,
             guardrails=guardrails,
-            model=oracle_model,
-            instructions=oracle_instructions,
+            model=supervisor_model,
+            instructions=supervisor_instructions,
             belief_prompt=belief_prompt,
             directive_prompt=directive_prompt,
             directive_contract=directive_contract,
             directive_transform=directive_transform,
         )
         self.confidence_threshold = float(
-            getattr(self.oracle, "confidence_threshold", self.config.confidence_threshold)
+            getattr(self.supervisor, "confidence_threshold", self.config.confidence_threshold)
         )
-        self.workflow = OracleWorkflow(self.oracle, threshold=self.confidence_threshold)
+        self.workflow = SupervisorWorkflow(
+            self.supervisor,
+            threshold=self.confidence_threshold,
+        )
 
         from supafone_labs.runtime.core.runtime import (
             AdheraRuntime,  # local: avoid heavy import cost
@@ -315,11 +336,25 @@ class SupafoneLabs:
             self._tts = SupafoneLabsTTS()
         return self._tts
 
+    @property
+    def oracle(self) -> SupervisorSession:
+        """Deprecated compatibility alias for supervisor."""
+        warnings.warn(
+            "SupafoneLabs.oracle is deprecated; use SupafoneLabs.supervisor",
+            DeprecationWarning,
+            stacklevel=2,
+        )
+        return self.supervisor
+
     async def speak(self, text_or_directive: Any = None) -> bytes:
         """Voice a directive (default: the last buffered one) or arbitrary text as audio bytes."""
         target = text_or_directive
         if target is None:
-            target = next(reversed(self.oracle._buffer.values()), None) if self.oracle._buffer else ""
+            target = (
+                next(reversed(self.supervisor._buffer.values()), None)
+                if self.supervisor._buffer
+                else ""
+            )
         if hasattr(target, "composed_text"):
             target = target.composed_text()
         return await self.tts.synthesize(str(target or ""))
@@ -333,7 +368,7 @@ class SupafoneLabs:
         return sid, state
 
     async def observe(self, raw_event: dict, provider: Optional[str] = None) -> SuperchargeResult:
-        """Ingest one provider event, run the oracle off-path, and (optionally) inject silently."""
+        """Ingest one provider event and run supervision off the audio path."""
         provider = provider or self.default_provider
         if provider not in self.runtime.adapters and "generic" in self.runtime.adapters:
             provider = "generic"  # unknown platform: best-effort webhook mapping
@@ -350,17 +385,24 @@ class SupafoneLabs:
         self._maybe_finish_session(sid, next_state, events)
 
         result = SuperchargeResult(events=events)
-        oracle_started = time.monotonic()
-        directive = await self.oracle.observe(next_state)
-        oracle_ms = (time.monotonic() - oracle_started) * 1000
-        result.belief = self.oracle.last_belief
+        supervisor_started = time.monotonic()
+        directive = await self.supervisor.observe(next_state)
+        supervisor_ms = (time.monotonic() - supervisor_started) * 1000
+        result.belief = self.supervisor.last_belief
         result.directive = directive
         if directive is None:
             return result
 
         decision = directive_to_decision(directive, self.confidence_threshold)
         if decision is None:
-            self._report_nudge(sid, provider, directive, next_state, oracle_ms, injected=False)
+            self._report_nudge(
+                sid,
+                provider,
+                directive,
+                next_state,
+                supervisor_ms,
+                injected=False,
+            )
             return result
         result.decision = decision
         try:
@@ -373,7 +415,14 @@ class SupafoneLabs:
             result.actions = []
         if self.mode == "apply" and self._injector and result.actions:
             result.injected = await self._apply(result.actions)
-        self._report_nudge(sid, provider, directive, next_state, oracle_ms, injected=result.injected)
+        self._report_nudge(
+            sid,
+            provider,
+            directive,
+            next_state,
+            supervisor_ms,
+            injected=result.injected,
+        )
         return result
 
     async def _ensure_standing(self) -> None:
@@ -387,8 +436,8 @@ class SupafoneLabs:
             standing = await fetch_standing(self.agent_label)
             if standing:
                 suffix = f"\n\nStanding directive (self-optimized v-latest):\n{standing}"
-                self.oracle.directive_gen.system_prompt += suffix
-                self.oracle.belief_engine.system_prompt += suffix
+                self.supervisor.directive_gen.system_prompt += suffix
+                self.supervisor.belief_engine.system_prompt += suffix
         except Exception:
             pass
 
@@ -467,7 +516,7 @@ class SupafoneLabs:
                 self.analyses[report.session_id] = analysis
                 self.last_analysis = analysis
                 return
-            # Analysis unavailable (offline / no oracle) — the plain
+            # Analysis unavailable (offline / no supervisor) — the plain
             # zero-billed deterministic report still lands.
             await report_call(
                 session_id=report.session_id,
@@ -491,7 +540,7 @@ class SupafoneLabs:
         provider: str,
         directive: Any,
         state: RuntimeState,
-        oracle_ms: float,
+        supervisor_ms: float,
         *,
         injected: bool,
     ) -> None:
@@ -505,7 +554,7 @@ class SupafoneLabs:
         try:
             from supafone_labs.telemetry import report_nudge_soon
 
-            belief = self.oracle.last_belief
+            belief = self.supervisor.last_belief
             report_nudge_soon(
                 session_id=session_id,
                 provider=self.inject_via or provider,
@@ -517,8 +566,8 @@ class SupafoneLabs:
                 emotion=str(getattr(belief, "emotional_state", "") or ""),
                 intent=str(getattr(belief, "intent", "") or ""),
                 urgency=float(getattr(belief, "urgency", 0.0) or 0.0),
-                latency_ms=round(oracle_ms, 1),
-                model=str(self.oracle.config.oracle_model),
+                latency_ms=round(supervisor_ms, 1),
+                model=str(self.supervisor.config.supervisor_model),
                 turns=len(state.transcript),
             )
         except Exception:
@@ -544,15 +593,16 @@ def supercharge(
     config: Optional[Settings] = None,
     adapters: Optional[list[Any]] = None,
     injector: Optional[Callable[[Any], Any]] = None,
-    oracle: Optional[OracleSession] = None,
+    supervisor: Optional[SupervisorSession] = None,
     tts: Any = None,
     llm: Any = None,
-    oracle_model: Optional[str] = None,
-    oracle_instructions: Optional[str] = None,
+    supervisor_model: Optional[str] = None,
+    supervisor_instructions: Optional[str] = None,
     belief_prompt: Optional[str] = None,
     directive_prompt: Optional[str] = None,
     directive_contract: Optional[DirectiveContract | Mapping[str, Any]] = None,
     directive_transform: Optional[DirectiveTransform] = None,
+    **legacy_options: Any,
 ) -> SupafoneLabs:
     """Give any voice agent a supervisor in one line. Provider is auto-detected from `agent`."""
     return SupafoneLabs(
@@ -564,15 +614,16 @@ def supercharge(
         scenario=scenario,
         mode=mode,
         injector=injector,
-        oracle=oracle,
+        supervisor=supervisor,
         tts=tts,
         llm=llm,
-        oracle_model=oracle_model,
-        oracle_instructions=oracle_instructions,
+        supervisor_model=supervisor_model,
+        supervisor_instructions=supervisor_instructions,
         belief_prompt=belief_prompt,
         directive_prompt=directive_prompt,
         directive_contract=directive_contract,
         directive_transform=directive_transform,
+        **legacy_options,
     )
 
 

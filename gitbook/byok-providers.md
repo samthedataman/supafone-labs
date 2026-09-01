@@ -36,7 +36,7 @@ STT and supervisor-LLM credentials:
 | Telephony | The carrier, trunk, SIP, and phone-network layer | Twilio, Telnyx, Plivo, SignalWire, SIP/custom trunks |
 | TTS | The voice-rendering provider | Cartesia, ElevenLabs, Inworld, Deepgram, custom TTS |
 | STT | The transcript and language-authority provider | Deepgram or provider-native streams |
-| Supervisor LLM | The model that forms Supervisor directives | Supafone hosted, Anthropic, OpenAI, xAI, custom LLM |
+| Supervisor model | The model that forms Supervisor directives | Supafone managed, Claude, OpenAI, Gemini, OpenRouter, Groq, Cerebras |
 
 Each domain can be managed by Supafone or brought by the customer. For example,
 a customer can bring Telnyx telephony and Cartesia TTS while still using
@@ -105,23 +105,26 @@ create/runtime contract and the runtime block returned on agent create.
 
 ## BYOK Supervisor Providers
 
+Supervisor BYOK is a per-agent `supervisor` object. It is separate from the
+speaking runtime, telephony, STT, and TTS lanes:
+
 ```json
 {
-  "labs": {
+  "supervisor": {
     "enabled": true,
     "mode": "byok",
-    "managedInfrastructure": false,
-    "stt": { "provider": "deepgram", "model": "nova-3" },
-    "llm": { "provider": "openai", "model": "gpt-4.1-mini" },
-    "tts": { "provider": "elevenlabs" }
-  },
-  "byok": {
-    "llm": { "provider": "openai", "apiKey": "$OPENAI_API_KEY" },
-    "stt": { "provider": "deepgram", "apiKey": "$DEEPGRAM_API_KEY" },
-    "tts": { "provider": "elevenlabs", "apiKey": "$ELEVENLABS_API_KEY" }
+    "provider": "openai",
+    "model": "gpt-5-mini",
+    "api_key": "$OPENAI_API_KEY"
   }
 }
 ```
+
+The current first-class providers are `anthropic`, `openai`, `gemini`,
+`openrouter`, `groq`, and `cerebras`. Supafone uses each provider's fixed
+official endpoint, encrypts the submitted key, and never returns it. Use
+[Supervisor Models: Managed and BYOK](supervisor-models.md) for complete Python,
+TypeScript, REST, and CLI examples for all six.
 
 Supported agent/provider-stack fields include:
 

@@ -1,4 +1,4 @@
-"""HostedLLMProvider — the paid tier's oracle backend (Supafone Labs' own keys).
+"""HostedLLMProvider: Supafone-managed Supervisor inference.
 
 POSTs the chat messages to the Supafone Labs cloud (``SUPAFONE_LABS_API_BASE``,
 default ``https://api.labs.supafone.ai/v1``) authenticated with the user's
@@ -51,7 +51,7 @@ class HostedLLMProvider:
             client = httpx.AsyncClient(timeout=self.timeout)
         try:
             resp = await client.post(
-                f"{self.base_url}/oracle/complete",
+                f"{self.base_url}/supervisor/complete",
                 headers={"Authorization": f"Bearer {self._api_key}"},
                 json={
                     "messages": messages,

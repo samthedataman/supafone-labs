@@ -29,7 +29,7 @@ console.log(suite.summary);
 //   tests: 4, passed: 3,
 //   avg_ssr_score: 0.57,
 //   ssr_histogram: { poorly: 0, ok: 1, good: 2, great: 1, perfectly: 0 },
-//   oracle_calls_billed: 21
+//   supervisor_inferences_billed: 21
 // }
 ```
 
@@ -135,7 +135,7 @@ platform that matters in 2026:
 
 | Tool | Test generation | Simulation | Scoring | A/B & regression | CI | Pricing |
 | --- | --- | --- | --- | --- | --- | --- |
-| **Supafone Labs** | Auto from your agent's own prompt/objective | Text-level mock calls vs your **real** config (audio mode on the roadmap) | Pass/fail assertions + **SSR nominal grading** with deterministic distributions | **Supervision-lift A/B**; achievement trend per directive version | API today (Action + webhooks on the roadmap) | Metered oracle credits, exact `oracle_calls_billed`, free minutes at signup |
+| **Supafone Labs** | Auto from your agent's own prompt/objective | Text-level mock calls vs your **real** config (audio mode on the roadmap) | Pass/fail assertions + **SSR nominal grading** with deterministic distributions | **Supervision-lift A/B**; achievement trend per directive version | API today (Action + webhooks on the roadmap) | Metered Supervisor inferences, exact `supervisor_inferences_billed`, free managed-runtime allowance at signup |
 | **Hamming** | Auto from agent prompt; prod calls → tests; red-team | Real phone calls at scale (1k+ concurrent), IVR/DTMF | 50+ metrics, STT/LLM/TTS breakdowns | Agent-version A/B, golden-call checks | GH Actions/Jenkins, webhooks | Sales-led (contact us) |
 | **Coval** | Personas/permutations (27 voices, 10 languages, 20 environments) | Voice-native audio + text | Metrics + tool-call validation + verdict cards with human override | Vendor bakeoffs, behavioral regression | GH Actions, schedules, CLI | $100 / $500 / $4,500+ per mo, metered sim + monitoring minutes |
 | **Roark** | From your real call types; prod replay → tests | Real audio, 45 languages/accents, noise | Audio-native metrics (emotion, stress, pace) + rubrics | Prompt diffs, cross-metric regression watch | Merge gates, SDKs, webhooks | $0.15→$0.05/sim-min + provider passthrough; $0.04/metric/min |
@@ -247,7 +247,8 @@ History you can already build on: every run persists — `qa.history()` /
 For a single developer or small team, what ships today is the point: suites
 with zero authoring, judge-noise-controlled scores, supervision priced per
 scenario, everything metered in the same credits as the rest of Labs with
-exact `oracle_calls_billed` — no sales call.
+exact `supervisor_inferences_billed` — no sales call. Older responses may also
+include the deprecated compatibility field `oracle_calls_billed`.
 
 If you're wondering whether this category supports enterprise budgets: it
 demonstrably does — Coval's enterprise tier starts at $4,500/mo and Roark's

@@ -1,9 +1,8 @@
 """TTS provider contract + a deterministic offline fake.
 
-A ``TTSProvider`` turns text into audio bytes. SupafoneLabs uses it to *voice*
-oracle output — e.g. whisper a directive into a supervisor's ear, read a
-call-summary aloud, or serve as the speech engine for a pipeline stack
-(Pipecat/LiveKit) that wants SupafoneLabs as its TTS component.
+A ``TTSProvider`` turns text into audio bytes. SupafoneLabs can use it to
+render Supervisor output, call summaries, or speech for a pipeline stack such
+as Pipecat or LiveKit.
 
 ``FakeTTSProvider`` needs no key and no network: it renders a soft sine-tone
 WAV whose duration tracks the text length, so demos and tests produce real,

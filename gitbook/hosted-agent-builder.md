@@ -165,8 +165,8 @@ copilot turn takes developer prose in and returns validated field updates out.
 The caller sends a `fields` catalog (key, label, type, options) plus the
 current `draft`; the response is `{updates, reply}` with every value clamped
 to the caller's catalog — a deterministic contract the UI can apply directly
-to the real form. It authenticates with an `sl_` key and bills one oracle
-call per turn (only when the model actually ran).
+to the real form. It authenticates with an `sl_` key and bills one Supervisor
+inference per turn (only when the model actually ran).
 
 ```http
 POST https://api.labs.supafone.ai/v1/builder/wizard

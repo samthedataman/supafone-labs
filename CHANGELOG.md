@@ -1,5 +1,22 @@
 # Changelog
 
+## 0.6.0 - 2026-09-01
+
+- Add a production CLI for agents, lifecycle, runtime, telephony, calls,
+  artifacts, knowledge, activity, plans, QA, campaigns, voices, billing, and
+  the realtime shared-number pool.
+- Add managed or encrypted BYOK Supafone Supervisor configuration for
+  Anthropic, OpenAI, Gemini, OpenRouter, Groq, and Cerebras.
+- Document and expose the structured Supervisor directive packet, including
+  developer-controlled empathy, tactics, facts, guardrails, language,
+  confidence, and intervention kind.
+- Add account-wide managed-runtime reservations so concurrent WebRTC and PSTN
+  calls share one five-minute allowance without overspending it.
+- Return structured payment-required errors with an account-bound Stripe
+  Checkout recovery path across SDK, CLI, MCP, and browser surfaces.
+- Expose only explicitly approved developer-pool numbers through authenticated
+  snapshots and short-lived realtime stream tokens.
+
 ## 0.5.4 - 2026-08-30
 
 - Add executable, typed HTTPS custom tools across TypeScript, Python, REST, and MCP.

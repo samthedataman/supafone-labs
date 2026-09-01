@@ -77,7 +77,7 @@ Supafone selects exactly one transcript authority per call:
 - Provider transcript for a supported monolingual stream.
 - Deepgram live tap when multilingual language authority is required and raw
   audio is available.
-- Oracle heuristics only where a provider supplies transcript text but no
+- Supervisor language inference only where a provider supplies transcript text but no
   language tags and no raw-audio tap is available.
 
 This prevents duplicate ingestion and conflicting language decisions. See

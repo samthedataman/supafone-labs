@@ -46,12 +46,12 @@ export SUPAFONE_LABS_API_KEY=sl_live_...
 If no Labs key is present, use BYO provider keys such as `ANTHROPIC_API_KEY`,
 `OPENAI_API_KEY`, `XAI_API_KEY`, or local fake providers for tests.
 
-### Oracle provider and controls
+### Supervisor provider and controls
 
 `labs.enabled: true` attaches the model-agnostic supervisor. A Supafone
-`sl_...` key uses the hosted Oracle; BYOK can use Anthropic, OpenAI, xAI/Grok,
-or an explicitly constructed OpenAI-compatible provider. The speaking agent
-and supervisor providers are independent.
+`sl_...` key can use a managed Supervisor model; BYOK can use Claude, OpenAI,
+Gemini, OpenRouter, Groq, or Cerebras. The speaking agent and Supervisor model
+are independent.
 
 ```python
 from supafone_labs import SupafoneLabs
@@ -60,18 +60,23 @@ from supafone_labs.config import Settings
 supervisor = SupafoneLabs(
     provider="ultravox",       # speaking-agent adapter
     llm="anthropic",           # supervisor provider
-    oracle_model="claude-haiku-4-5-20251001",
+    supervisor_model="claude-haiku-4-5-20251001",
     config=Settings(
         confidence_threshold=0.65,
-        oracle_timeout_seconds=5.0,
+        supervisor_timeout_seconds=5.0,
     ),
-    oracle_instructions="Prioritize empathy, tool truth, and the next required intake step.",
+    supervisor_instructions="Prioritize empathy, tool truth, and the next required intake step.",
     scenario="intake",
     mode="apply",
     telemetry=True,
     post_call_analysis=True,
 )
 ```
+
+The older `oracle_model`, `oracle_timeout_seconds`, and `oracle_instructions`
+names remain deprecated compatibility aliases. New code should use the
+Supervisor names above. See [Supervisor Models: Managed and BYOK](supervisor-models.md)
+and [Programmable Supervisor Directives](programmable-supervisor-directives.md).
 
 For raw hosted completions, both SDKs expose `model`, `max_tokens`/
 `maxTokens`, and `temperature`. `whisper()` additionally accepts operator

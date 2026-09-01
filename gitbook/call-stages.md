@@ -98,7 +98,7 @@ without receiving your provider credentials.
 
 | Setting | What happens | Best for |
 | --- | --- | --- |
-| omitted or `oracle` | Supafone generates and validates the complete plan | Normal production use |
+| omitted or `managed` | Supafone generates and validates the complete plan | Normal production use |
 | `template` | Supafone uses the deterministic offline template | Tests and fixed-cost environments |
 | explicit stage array | Supafone validates and executes exactly what you supplied | Reviewed or regulated workflows |
 | `off` / `false` | No generated override; the product's built-in staged default remains | Legacy compatibility |
@@ -106,11 +106,14 @@ without receiving your provider credentials.
 ```ts
 await supafone.labs.agents.createInbound({
   name: "Reviewed intake",
-  stageGeneration: "template", // or "oracle" / "off"
+  stageGeneration: "template", // or "managed" / "off"
   stageCount: 4,                 // 3-8
   stageDetail: "standard",
 });
 ```
+
+The literal `"oracle"` value remains a deprecated compatibility alias for
+`"managed"`; do not use it in new configurations.
 
 ## What comes back
 

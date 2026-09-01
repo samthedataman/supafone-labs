@@ -157,7 +157,8 @@ agent.
 
 ## 2. Give it a live data feed
 
-The oracle is only as smart as what it can see. Snap in context sources:
+The Supervisor is only as useful as the evidence it can see. Snap in context
+sources:
 
 ```python
 feed = supafone_labs.Feed(

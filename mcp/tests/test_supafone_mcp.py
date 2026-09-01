@@ -23,7 +23,7 @@ def test_initialize_and_list_tools():
         }
     )
     assert init["result"]["serverInfo"]["name"] == "supafone-labs-mcp"
-    assert init["result"]["serverInfo"]["version"] == "0.5.4"
+    assert init["result"]["serverInfo"]["version"] == "0.6.0"
 
     listed = server.handle({"jsonrpc": "2.0", "id": 2, "method": "tools/list"})
     tool_names = {tool["name"] for tool in listed["result"]["tools"]}
@@ -45,6 +45,7 @@ def test_initialize_and_list_tools():
         "get_billing_checkout",
         "open_billing_portal",
         "buy_phone_number",
+        "get_shared_phone_pool",
         "list_logs",
         "tail_logs",
         "poll_logs",
@@ -67,6 +68,25 @@ def test_initialize_and_list_tools():
         "boolean",
     ]
     assert properties["email"]["properties"]["smtpPort"]["default"] == 587
+    supervisor = properties["supervisor"]
+    supervisor_object = supervisor["oneOf"][1]
+    assert supervisor["oneOf"][0]["type"] == "boolean"
+    assert supervisor_object["properties"]["mode"]["enum"] == ["managed", "byok"]
+    assert supervisor_object["properties"]["provider"]["enum"] == [
+        "anthropic",
+        "openai",
+        "gemini",
+        "openrouter",
+        "groq",
+        "cerebras",
+    ]
+    assert properties["stageGeneration"]["enum"] == [
+        "managed",
+        "template",
+        "off",
+        "oracle",
+    ]
+    assert "deprecated alias" in properties["stageGeneration"]["description"]
 
 
 def test_create_inbound_agent_uses_python_sdk(monkeypatch):
@@ -95,6 +115,13 @@ def test_create_inbound_agent_uses_python_sdk(monkeypatch):
             "apiKey": "sf_test",
             "agentKey": "northline-intake",
             "name": "Northline intake",
+            "supervisor": {
+                "enabled": True,
+                "mode": "byok",
+                "provider": "anthropic",
+                "model": "claude-haiku-4-5",
+                "apiKey": "supervisor-secret",
+            },
             "labs": {"enabled": True},
             "tools": {
                 "customTools": [
@@ -130,6 +157,13 @@ def test_create_inbound_agent_uses_python_sdk(monkeypatch):
         {
             "agentKey": "northline-intake",
             "name": "Northline intake",
+            "supervisor": {
+                "enabled": True,
+                "mode": "byok",
+                "provider": "anthropic",
+                "model": "claude-haiku-4-5",
+                "apiKey": "supervisor-secret",
+            },
             "labs": {"enabled": True},
             "tools": {
                 "customTools": [
@@ -215,6 +249,14 @@ def test_billing_checkout_returns_clickable_browser_handoff(monkeypatch):
             calls.append(("portal",))
             return {"url": "https://billing.stripe.com/p/session/test"}
 
+        def top_up(self, sku):
+            calls.append(("top_up", sku))
+            return {
+                "status": "requires_payment",
+                "checkout_session_id": "cs_test_credits",
+                "checkout_url": "https://checkout.stripe.com/c/pay/credits",
+            }
+
     class FakeLabs:
         def __init__(self):
             self.billing = FakeBilling()
@@ -240,11 +282,16 @@ def test_billing_checkout_returns_clickable_browser_handoff(monkeypatch):
         {"apiKey": "sl_test", "checkoutSessionId": "cs_test_123"},
     )
     portal = server.call_tool("open_billing_portal", {"apiKey": "sl_test"})
+    credits = server.call_tool(
+        "start_billing_checkout",
+        {"apiKey": "sl_test", "kind": "credits"},
+    )
 
     assert checkout["checkout_requires_browser"] is True
     assert checkout["checkout_url"].startswith("https://checkout.stripe.com/")
     assert status["status"] == "paid"
     assert portal["portal_requires_browser"] is True
+    assert credits["checkout_url"].endswith("/credits")
     assert calls == [
         (
             "checkout",
@@ -256,7 +303,100 @@ def test_billing_checkout_returns_clickable_browser_handoff(monkeypatch):
         ),
         ("status", "cs_test_123"),
         ("portal",),
+        ("top_up", "sf_voice_minutes_400_v1"),
     ]
+
+
+def test_shared_phone_pool_uses_existing_sdk_snapshot(monkeypatch):
+    calls = []
+
+    class FakePhoneNumbers:
+        def pool(self):
+            calls.append("pool")
+            return {
+                "version": "developer_phone_pool_v1",
+                "numbers": [
+                    {"phone_number": "+14155550123", "status": "available"},
+                    {"phone_number": "+14155550124", "status": "in_use"},
+                ],
+                "stream": {
+                    "url": "wss://api.supafone.ai/api/v1/labs/phone-numbers/pool/stream",
+                    "token": "scoped-token",
+                },
+            }
+
+    class FakeLabs:
+        def __init__(self):
+            self.phone_numbers = FakePhoneNumbers()
+
+    class FakeSupafone:
+        def __init__(self, **_kwargs):
+            self.labs = FakeLabs()
+
+    monkeypatch.setattr(supafone_mcp, "Supafone", FakeSupafone)
+    result = supafone_mcp.SupafoneMCPServer().call_tool(
+        "get_shared_phone_pool", {"apiKey": "sl_test"}
+    )
+
+    assert result["version"] == "developer_phone_pool_v1"
+    assert [number["status"] for number in result["numbers"]] == ["available", "in_use"]
+    assert result["stream"]["token"] == "scoped-token"
+    assert calls == ["pool"]
+
+
+def test_payment_required_error_is_structured_and_points_to_checkout(monkeypatch):
+    class FakeAgents:
+        def create_inbound(self, _config):
+            raise supafone_mcp.SupafoneError(
+                "Managed minutes exhausted",
+                status=402,
+                body={
+                    "detail": {
+                        "code": "managed_minutes_exhausted",
+                        "checkout_endpoint": "/v1/billing/checkout",
+                        "minutes_remaining": 0,
+                    }
+                },
+            )
+
+    class FakeLabs:
+        def __init__(self):
+            self.agents = FakeAgents()
+
+    class FakeSupafone:
+        def __init__(self, **_kwargs):
+            self.labs = FakeLabs()
+
+    monkeypatch.setattr(supafone_mcp, "Supafone", FakeSupafone)
+    response = supafone_mcp.SupafoneMCPServer().handle(
+        {
+            "jsonrpc": "2.0",
+            "id": 402,
+            "method": "tools/call",
+            "params": {
+                "name": "create_inbound_agent",
+                "arguments": {"apiKey": "sl_test", "name": "Front desk"},
+            },
+        }
+    )
+
+    result = response["result"]
+    assert result["isError"] is True
+    structured = result["structuredContent"]
+    assert structured["error"] == {
+        "type": "managed_minutes_exhausted",
+        "message": "Managed minutes exhausted",
+        "status": 402,
+    }
+    assert structured["usage"]["minutes_remaining"] == 0
+    assert structured["payment"]["checkout_tool"] == "start_billing_checkout"
+    assert structured["payment"]["checkout_arguments"] == {
+        "kind": "credits",
+        "sku": "sf_voice_minutes_400_v1",
+    }
+    assert structured["payment"]["checkout_endpoint"] == "/v1/billing/checkout"
+    assert structured["payment"]["status_tool"] == "get_billing_checkout"
+    assert "start_billing_checkout" in result["content"][0]["text"]
 
 
 def test_buy_phone_number_returns_checkout_handoff_and_paid_retry(monkeypatch):

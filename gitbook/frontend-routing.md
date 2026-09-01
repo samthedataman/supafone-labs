@@ -11,7 +11,7 @@ the static frontend should route users through the developer experience.
 | `/docs.html` | Native docs index or GitBook handoff |
 | `/builder.html` | Agent Factory and provider-agnostic builder |
 | `/console.html` | Account, usage, logs, keys |
-| `/tester.html` | Oracle/TTS/STT playground |
+| `/tester.html` | Supervisor/TTS/STT playground |
 | `/get-key.html` | Labs Cloud key signup |
 | `/pricing.html` | Pricing and credits |
 
