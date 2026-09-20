@@ -31,6 +31,7 @@
 ## Build Complete Agents
 
 * [Agent Factory](agent-factory.md)
+* [Native Realtime Agent Factory](realtime-agent-factory.md)
 * [Hosted Agent Builder](hosted-agent-builder.md)
 * [Hosted Agents API](hosted-agents-api.md)
 * [Call Stages](call-stages.md)

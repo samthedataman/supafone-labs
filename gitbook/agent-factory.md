@@ -36,6 +36,10 @@ See [Custom Tools](custom-tools.md) for executable HTTPS actions and
 The generated plan remains plain JSON. Your application can preview, edit,
 approve, diff, and version it before it reaches a caller.
 
+## Native realtime choice
+
+For direct speech-to-speech browser or phone calls, add a `realtime` selection. The selected provider key and carrier credentials are required, the model-native voice is used, and the runtime installs a fixed intake → booking → confirmation contract. Recording, Supervisor coaching, transfer, DTMF navigation, and public widgets are not part of this transport today. See [Native Realtime Agent Factory](realtime-agent-factory.md).
+
 ## Default Happy Path
 
 Start with the Supafone API key and hide provider keys until the user asks for

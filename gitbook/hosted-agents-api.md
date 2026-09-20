@@ -156,18 +156,15 @@ Expected capability themes:
     }
   },
   "runtimes": {
-    "available": ["ultravox"],
+    "available": ["ultravox", "openai", "google", "xai"],
     "managed": "ultravox",
-    "byok": ["ultravox"],
+    "byok": ["ultravox", "openai", "google", "xai"],
     "coming_soon": ["vapi", "retell", "bland", "livekit", "pipecat"]
   }
 }
 ```
 
-The `runtimes` block is honest about what runs today: Ultravox is available
-both **managed** (Supafone's platform key) and **BYOK** (your own key); Vapi,
-Retell, Bland, LiveKit, and Pipecat are still coming soon and their agent
-runtimes return **400 "coming soon"**.
+The `runtimes` block separates the managed Ultravox default from native realtime Agent Factory providers. Native `openai`, `google`, and `xai` routes require the selected model key and use the `supafone_realtime` transport. Vapi, Retell, Bland, LiveKit, and Pipecat remain adapter/Supervisor integrations rather than direct Agent Factory runtimes.
 
 ## Generate and Review a Call Plan
 
@@ -200,6 +197,10 @@ automatically.
 
 Only business context and enabled tool names go to the planner. Carrier,
 telephony, BYOK, billing, and provider credentials do not.
+
+## Native realtime request fields
+
+Add `realtime: {provider, model?, voice?}` to an agent create/update request. Discover valid combinations from `/api/v1/agents/catalog` or `/api/v1/labs/capabilities`; start a browser preview with `POST /api/v1/labs/agents/{agent_key}/test-call`. The native path uses fixed stages and reports its transport capabilities separately. See [Native Realtime Agent Factory](realtime-agent-factory.md).
 
 ## Create an Agent
 
@@ -426,7 +427,7 @@ Supported BYOK provider labels include `twilio`, `telnyx`, `plivo`, and `sip`.
 Secrets are encrypted at rest. All read responses are masked; the API never
 returns stored auth tokens or provider API keys.
 
-## Runtime (managed vs BYOK Ultravox)
+## Runtime: managed Ultravox or native realtime
 
 The agent runtime runs on Ultravox. By default it uses Supafone's managed
 platform key (managed billing). Connect your **own** Ultravox account to place
@@ -451,7 +452,7 @@ curl https://api.supafone.ai/api/v1/labs/runtime \
 ```
 
 `base_url` is optional. A blank `api_key` keeps the stored key, so you can
-re-save other fields. A non-`ultravox` provider returns **400 "coming soon"**.
+re-save other fields. Native realtime accepts `openai`, `google`, and `xai` here; it returns masked `{configured, connected, source}` status and never returns a key.
 Both `GET` and `PUT` return the same status shape:
 
 ```json
@@ -465,9 +466,7 @@ Both `GET` and `PUT` return the same status shape:
 }
 ```
 
-You can also connect the key at agent create via `byok.ultravox`. Non-Ultravox
-agent runtimes (Vapi, Retell, Bland, LiveKit, Pipecat) still return
-**400 "coming soon"**.
+Native realtime keys can also be supplied through the supported `byok`/provider-key fields when creating the selected model. Vapi, Retell, Bland, LiveKit, and Pipecat remain Supervisor/adapter integrations rather than direct Agent Factory runtimes.
 
 ## Calls, Recordings, and Transcripts
 

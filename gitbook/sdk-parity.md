@@ -71,6 +71,16 @@ agent = supafone.labs.agents.createInboundWithNumber({
 })
 ```
 
+## Native realtime parity
+
+| Capability | TypeScript | Python |
+| --- | --- | --- |
+| Select a native S2S model | `realtime: { provider, model, voice }` | `realtime={"provider": ..., "model": ..., "voice": ...}` |
+| Browser preview | `labs.agents.testCall(agentKey)` | `labs.agents.test_call(agent_key)` / `testCall()` |
+| Connect provider key | `labs.runtime.configure({ provider, credentials })` | `labs.runtime.configure({"provider": ..., "credentials": ...})` |
+
+Both SDKs preserve the same catalog values and return `transport: "supafone_realtime"` for native browser sessions. See [Native Realtime Agent Factory](realtime-agent-factory.md).
+
 ## One Contract, Four Entry Points
 
 The stage planner and Agent Factory are public API capabilities. TypeScript is

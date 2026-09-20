@@ -9,6 +9,8 @@
 - Add authenticated browser preview helpers to both SDKs.
 - Add Google/Gemini provider-key aliases for the realtime factory path.
 
+- Documentation now has a complete [native realtime Agent Factory guide](gitbook/realtime-agent-factory.md) covering OpenAI, Google/Gemini, xAI, browser preview, carrier phone paths, provider keys, limitations, and troubleshooting.
+
 ## 0.6.0 - 2026-09-01
 
 - Add a production CLI for agents, lifecycle, runtime, telephony, calls,

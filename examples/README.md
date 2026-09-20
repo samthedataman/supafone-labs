@@ -12,6 +12,7 @@ Vapi/Retell/ElevenLabs.
 
 | File | Stack | Kind | Whisper delivery |
 |---|---|---|---|
+| `native-realtime-agent-factory.ts` / `native-realtime-agent-factory.py` | Supafone Agent Factory | native S2S managed/BYO phone agent | authenticated browser preview or carrier phone |
 | `full_stack_twilio_ultravox.py` | **Twilio + Ultravox + Supafone Labs** | full deployment | tap audio, `inject_via` the agent |
 | `ultravox_end_to_end.py` | Ultravox | S2S agent | `inject_message` on the call WS |
 | `vapi_webhook_server.py` | Vapi | pipeline agent | `add-message` posted to the call `controlUrl` |

@@ -9,6 +9,10 @@ The catalog is live. Supafone pages each connected provider API to exhaustion,
 normalizes the results, and caches the account-scoped result for 10 minutes.
 Provider additions therefore appear without an SDK release.
 
+## Native realtime model voices
+
+This catalog describes synthesis/TTS voices. Native S2S voices belong to the selected realtime model and are validated by `GET /api/v1/agents/catalog`; they are documented separately in [Native Realtime Agent Factory](realtime-agent-factory.md). Do not mix a Cartesia/ElevenLabs voice ID into a native realtime selection.
+
 ## Provider Brands and Logos
 
 Catalog schema version 2 includes stable presentation data for every voice:

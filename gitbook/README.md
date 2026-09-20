@@ -205,6 +205,12 @@ acceptance criterion, and managed-delivery status for every runtime.
 | REST and WebSocket | Hosted agents, realtime services, events, recordings, transcripts, and custom clients |
 | MCP | Agent creation, calls, QA, logs, and operational workflows from AI development tools |
 
+## Native realtime Agent Factory
+
+The Agent Factory can run OpenAI GPT Realtime 2.1, OpenAI GPT Live 1, Google Gemini Live 3.1, and xAI Grok Voice directly for browser previews and phone calls. The [native realtime guide](realtime-agent-factory.md) documents model selection, encrypted provider keys, managed/BYO carriers, SDK parity, and transport limits.
+
+This direct S2S path is separate from the default managed Ultravox runtime and from Supafone Supervisor.
+
 ## Start here
 
 1. Read [the production problems](production-voice-ai-challenges.md).

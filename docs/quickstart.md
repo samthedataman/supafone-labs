@@ -15,6 +15,10 @@ brain = supafone_labs.supercharge(my_agent)     # provider auto-detected
 Runs with **no API key** using the built-in fake provider, so you can see it work
 immediately, then swap in a real provider via `ANTHROPIC_API_KEY`.
 
+## 1a. Native realtime Agent Factory
+
+The default quickstart below uses managed hosted delivery. For direct speech-to-speech, select a catalog `realtime` model, connect the provider key, and follow [Native Realtime Agent Factory](realtime-agent-factory.md). A live native call also needs carrier credentials and a public HTTPS/WebSocket URL.
+
 ## 1b. Or create a hosted Supafone agent from REST, Python, TypeScript, or MCP
 
 If you want Supafone to host the agent, use the public REST API directly or a

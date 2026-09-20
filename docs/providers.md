@@ -17,6 +17,10 @@ The distinction matters:
 - **Observation-only by default**: Bland has no documented prompt-injection
   control; Cartesia Line needs an explicit custom-event hook in your agent.
 
+## Native realtime Agent Factory
+
+Direct browser and phone delivery is available for OpenAI GPT Realtime/GPT Live, Google Gemini Live, and xAI Grok Voice. This is separate from the Supervisor adapter matrix below. See the [native realtime guide](realtime-agent-factory.md).
+
 ## Capability matrix
 
 `ProviderCapabilities` declares what each provider supports, so Supafone Labs picks the
@@ -24,7 +28,8 @@ best injection path automatically.
 
 | Runtime | Integration mode | Compiled action | Acceptance criterion |
 |---|---|---|---|
-| <a id="provider-supafone"></a>Supafone Agent Factory | managed native control | Ultravox `user_text_message`, `urgency=later` | managed call accepts the data message |
+| <a id="provider-supafone"></a>Supafone Agent Factory (managed) | managed native control | Ultravox `user_text_message`, `urgency=later` | managed call accepts the data message |
+| Native realtime Agent Factory | direct S2S transport | Provider-native audio WebSocket for OpenAI, Google, or xAI | Authenticated browser/carrier session remains healthy |
 | <a id="provider-ultravox"></a>Ultravox | native control | `user_text_message`, `urgency=later` | Send Data Message returns HTTP 204 |
 | <a id="provider-vapi"></a>Vapi | native call control | `add-message` with a system message | POST to the live call `controlUrl` succeeds |
 | <a id="provider-retell"></a>Retell | custom LLM context | system context entry | entry is present before the next response |

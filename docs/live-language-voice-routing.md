@@ -5,6 +5,8 @@ approved languages. Each language can use a distinct compatible voice.
 Existing agents keep their current fixed-language behavior unless
 `languageVoiceRouting` is explicitly enabled.
 
+Native realtime agents select one model-native voice for the session. This managed language-routing contract does not switch a native realtime model or voice mid-call. See [Native Realtime Agent Factory](realtime-agent-factory.md).
+
 ```ts
 const agent = await supafone.labs.agents.createInbound({
   name: "Puerto Rico intake",

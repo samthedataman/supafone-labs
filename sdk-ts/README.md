@@ -89,6 +89,18 @@ needs that vendor's key — free/trial tiers exist for all except OpenAI Realtim
 [gitbook/framework-support.md](../gitbook/framework-support.md). *(The npm
 package-page copy updates on the next release.)*
 
+## Native realtime Agent Factory
+
+Version 0.6.1 can create direct speech-to-speech browser and phone agents with `realtime: { provider, model, voice }`. Supported entries are OpenAI GPT Realtime 2.1, GPT Live 1, Google Gemini Live 3.1, and xAI Grok Voice. Use `labs.agents.testCall(agentKey)` for an authenticated browser preview. Provider keys and carrier credentials are required for live calls; see the [full guide](../gitbook/realtime-agent-factory.md).
+
+```ts
+const agent = await supafone.labs.agents.createInbound({
+  name: "Realtime intake",
+  realtime: { provider: "openai", model: "gpt-realtime-2.1", voice: "marin" },
+});
+const preview = await supafone.labs.agents.testCall(agent.agent.agent_key!);
+```
+
 ## Spawn a hosted Supafone agent
 
 Use the same package to create finished Supafone agents from code. This hits the

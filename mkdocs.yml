@@ -33,8 +33,10 @@ nav:
   - Supervisor Models: supervisor-models.md
   - Framework Coverage: providers.md
   - Hosted Agents API: hosted-agents-api.md
+  - Native Realtime Agent Factory: realtime-agent-factory.md
   - Outbound IVR Call Mode: outbound-ivr-call-mode.md
   - Language and Voice Routing: live-language-voice-routing.md
+  - Research QA Roadmap: research/qa-ssr-roadmap.md
 
 extra_css:
   - assets/stylesheets/extra.css

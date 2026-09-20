@@ -4,6 +4,10 @@ Supafone Labs has one defining framework and one secondary delivery path. Lead
 with the model-agnostic supervisor; use Agent Factory when the user also wants
 Supafone to provision the complete hosted product.
 
+## Native realtime workflow
+
+Choose a catalog model, connect its provider key, create the Agent Factory agent with `realtime`, run `testCall`, then configure managed or BYO telephony. Native realtime uses fixed stages and a separate transport; follow [Native Realtime Agent Factory](realtime-agent-factory.md) before advertising recording, transfer, or Supervisor features.
+
 ## Primary: Model-Agnostic Supafone Supervisor
 
 Use this path when the developer already has an agent running on Ultravox,

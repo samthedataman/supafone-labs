@@ -28,6 +28,16 @@ helping developers integrate Supafone Labs.
   TTS credentials; Supervisor deployments also separate STT and supervisor-LLM
   credentials.
 
+## Native realtime Agent Factory facts
+
+- Catalog models: `gpt-realtime-2.1`, `gpt-live-1`, `gemini-3.1-flash-live-preview`, and `grok-voice-latest`.
+- Providers: `openai`, `google`/`gemini`, and `xai`/`grok`.
+- Direct S2S calls require the selected provider key and carrier readiness.
+- Phone transports: Supafone-managed, BYO Twilio, BYO Telnyx, BYO Plivo, and BYO SIP.
+- Browser preview uses `labs.agents.testCall()` / `test_call()` and `transport: "supafone_realtime"`.
+- Native realtime agents use fixed intake → booking → confirmation stages and do not currently expose recording, Supervisor coaching, transfer, DTMF navigation, or public widgets.
+- The standard managed Agent Factory/Ultravox path and the native realtime path are separate choices.
+
 ## Do Not Confuse These
 
 | Incorrect | Correct |

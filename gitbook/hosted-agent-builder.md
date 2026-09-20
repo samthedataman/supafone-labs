@@ -34,6 +34,12 @@ When users open BYOK, split hosted-delivery settings into three drawers:
 Recording and transcription should be explicit controls: audio recording,
 transcription, PII redaction, retention days, and consent announcement.
 
+## Native realtime builder path
+
+The builder can select OpenAI GPT Realtime 2.1, GPT Live 1, Gemini Live 3.1, or Grok Voice. Show provider-key and carrier readiness before launch. Native realtime agents use the authenticated `supafone_realtime` browser transport and fixed intake → booking → confirmation stages; the normal hosted planner and Supervisor attachment do not apply.
+
+See [Native Realtime Agent Factory](realtime-agent-factory.md) for the complete request and readiness contract.
+
 ## Programmatic Hosted Agent Builder
 
 ```ts

@@ -21,6 +21,10 @@ behave like one product. The failure usually occurs between those layers.
 | Testing is manual and subjective | Adversarial QA and SSR grading produce repeatable evidence |
 | Call data is scattered across vendors | Durable activity APIs expose calls, plans, recordings, transcripts, and Supervisor events |
 
+## Native realtime Agent Factory
+
+The hosted Agent Factory now supports provider-native speech-to-speech for browser previews and phone calls. Read the [native realtime Agent Factory guide](realtime-agent-factory.md) for the four-model catalog, provider-key setup, carrier matrix, browser transport, fixed stages, and current feature boundaries.
+
 See the complete [framework coverage matrix](providers.md) for the exact
 support boundary of every runtime.
 

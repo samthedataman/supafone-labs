@@ -1,9 +1,11 @@
 # SDK Installation
 
 Supafone Labs publishes a Python package and an unscoped TypeScript package.
-The current release is **0.4.13** for both
+The current release is **0.6.1** for both
 [PyPI](https://pypi.org/project/supafone-labs/) and
 [npm](https://www.npmjs.com/package/supafone-labs).
+
+The 0.6.1 release includes native realtime Agent Factory selection in both SDKs. Install from [PyPI](https://pypi.org/project/supafone-labs/0.6.1/) or [npm](https://www.npmjs.com/package/supafone-labs/v/0.6.1), then follow [Native Realtime Agent Factory](realtime-agent-factory.md).
 
 ## Python
 
@@ -183,7 +185,7 @@ authorization and malformed E.164 numbers before dialing.
 
 ## Browser WebRTC calls
 
-Version `0.4.10` adds first-class browser-session creation without buying or
+Earlier release `0.4.10` added first-class browser-session creation without buying or
 dialing a phone number:
 
 ```ts
@@ -208,7 +210,7 @@ See [Pricing and Credits](pricing-and-credits.md) for the full flow.
 
 ## Hosted call planning and complete REST parity
 
-Version `0.4.13` turns one plain-language description into a validated,
+Earlier release `0.4.13` turned one plain-language description into a validated,
 reviewable 3–8 stage plan through REST, Python, TypeScript, or MCP. Agent
 creation installs the generated or developer-edited plan in the executable
 runtime. It also completes hosted discovery, runtime, call, recording, and

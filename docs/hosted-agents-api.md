@@ -31,8 +31,10 @@ The full public hosted namespace is available without either SDK:
 | Area | Endpoints |
 | --- | --- |
 | Discovery | `GET /capabilities`, `GET /presets`, `GET /tools` |
+| Native realtime catalog | `GET /api/v1/agents/catalog` |
 | Planning | `POST /agent-plans` |
 | Agents | `POST /agents`, `GET /agents`, `GET /agents/{agent_key}`, `DELETE /agents/{agent_key}` |
+| Native realtime preview | `POST /agents/{agent_key}/test-call`, `WS /realtime/connect` |
 | Voices | `GET /voices`, `GET /voices/preview` |
 | Runtime | `GET /runtime`, `PUT /runtime` |
 | Telephony | `GET /telephony`, `PUT /telephony` |
@@ -206,18 +208,15 @@ Important response fields:
     }
   },
   "runtimes": {
-    "available": ["ultravox"],
+    "available": ["ultravox", "openai", "google", "xai"],
     "managed": "ultravox",
-    "byok": ["ultravox"],
+    "byok": ["ultravox", "openai", "google", "xai"],
     "coming_soon": ["vapi", "retell", "bland", "livekit", "pipecat"]
   }
 }
 ```
 
-The `runtimes` block reports what runs today: Ultravox is available both
-**managed** (Supafone's platform key) and **BYOK** (your own key). Vapi, Retell,
-Bland, LiveKit, and Pipecat are still coming soon and their agent runtimes
-return `400 "coming soon"`.
+The `runtimes` block separates the managed Ultravox default from native realtime Agent Factory providers. Native `openai`, `google`, and `xai` routes require the selected model key and use the `supafone_realtime` transport. Vapi, Retell, Bland, LiveKit, and Pipecat remain adapter/Supervisor integrations rather than direct Agent Factory runtimes.
 
 List presets:
 
@@ -261,6 +260,10 @@ Voice responses include:
   }
 }
 ```
+
+## Native realtime request fields
+
+Use `realtime: {provider, model?, voice?}` for direct speech-to-speech browser and phone agents. Discover valid combinations from `/api/v1/agents/catalog`; preview with `POST /api/v1/labs/agents/{agent_key}/test-call`. The selected model key and carrier readiness are separate requirements. See [Native Realtime Agent Factory](realtime-agent-factory.md).
 
 ## Create an agent
 
@@ -509,9 +512,7 @@ curl "$SUPAFONE_API_BASE_URL/api/v1/labs/runtime" \
   }'
 ```
 
-`base_url` is optional. A blank `api_key` keeps the stored key so other fields
-can be re-saved. A non-`ultravox` provider returns `400 "coming soon"`. Both
-`GET` and `PUT` return the same status shape:
+`base_url` is optional. A blank `api_key` keeps the stored key. Native realtime accepts `openai`, `google`, or `xai` and returns masked `{configured, connected, source}` status. Ultravox remains the managed default. See [Native Realtime Agent Factory](realtime-agent-factory.md). Both `GET` and `PUT` return a masked status shape:
 
 ```json
 {
@@ -524,9 +525,7 @@ can be re-saved. A non-`ultravox` provider returns `400 "coming soon"`. Both
 }
 ```
 
-You can also connect the key at agent create via `byok.ultravox`. Non-Ultravox
-agent runtimes (Vapi, Retell, Bland, LiveKit, Pipecat) still return
-`400 "coming soon"`.
+Native realtime keys can also be supplied through the supported `byok`/provider-key fields when creating the selected model. Vapi, Retell, Bland, LiveKit, and Pipecat remain Supervisor/adapter integrations rather than direct Agent Factory runtimes.
 
 ## Supafone Supervisor
 

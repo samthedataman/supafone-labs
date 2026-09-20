@@ -84,13 +84,7 @@ BYOK mode:
 Use Supafone-managed mode as the default. Use BYOK when the customer already
 owns vendor accounts or wants vendor-specific control.
 
-For Supafone's own hosted runtime, Ultravox is available **managed or BYOK**:
-keep Supafone's platform Ultravox key (managed billing), or connect your own so
-the agent is both placed and monitored on your account (`runtime_mode: "byok"`).
-Connect it at agent create under `byok.ultravox`, or later via
-`PUT /api/v1/labs/runtime`. The other hosted runtimes (Vapi, Retell, Bland,
-LiveKit, Pipecat) are still coming soon. See
-[BYOK Providers](byok-providers.md) and [Hosted Agents API](hosted-agents-api.md).
+For Supafone's standard hosted runtime, Ultravox remains available **managed or BYOK**. Separately, native realtime Agent Factory supports OpenAI, Google/Gemini, and xAI with the selected provider key and a `supafone_realtime` transport. Vapi, Retell, Bland, LiveKit, and Pipecat remain Supervisor/adapter integrations rather than direct Agent Factory runtimes. See [Native Realtime Agent Factory](realtime-agent-factory.md), [BYOK Providers](byok-providers.md), and [Hosted Agents API](hosted-agents-api.md).
 
 BYOK is not one thing. Hosted delivery separates three provisioning lanes, and
 the Supervisor adds independent STT and supervisor-LLM credentials:

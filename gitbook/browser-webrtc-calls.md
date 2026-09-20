@@ -1,6 +1,6 @@
 # Browser WebRTC Calls
 
-Supafone Labs `0.4.10` exposes browser voice sessions directly through the
+Supafone Labs `0.6.1` exposes browser voice sessions directly through the
 Python and TypeScript SDKs. A WebRTC session connects a browser microphone to
 an owned Supafone voice agent without buying a phone number or creating a PSTN
 call.
@@ -9,7 +9,7 @@ call.
 
 | Path | Transport | Phone number required | Typical use |
 | --- | --- | --- | --- |
-| Browser WebRTC | Browser → Ultravox WebRTC → agent | No | In-browser testing, embedded voice intake |
+| Browser WebRTC | Browser → `ultravox` or authenticated `supafone_realtime` transport → agent | No | In-browser testing, embedded voice intake |
 | One-off PSTN | Carrier/Twilio → agent → destination phone | Yes | Call one person immediately |
 | Campaign PSTN | Campaign scheduler → carrier → recipients | Yes | Consented outbound sequences at scale |
 
@@ -41,7 +41,9 @@ console.log(started.browser_session.join_url);
 
 `startBrowserCall()` is an alias for browser-oriented codebases.
 
-The current provider adapter is Ultravox:
+For a native realtime Agent Factory agent, use `labs.agents.testCall(agentKey)` / `test_call(agent_key)`. The response has `transport: "supafone_realtime"` and a one-use WebSocket ticket. The selected model key is required; credentials never enter the browser. See [Native Realtime Agent Factory](realtime-agent-factory.md).
+
+The legacy managed browser adapter is Ultravox:
 
 ```ts
 import { UltravoxSession } from "ultravox-client";
@@ -103,8 +105,7 @@ adapters are introduced.
 
 - Do not embed a long-lived Supafone account token in a public website. Create
   the session on your server and return only the short-lived browser contract.
-- The current hosted browser adapter is Ultravox. Other realtime providers are
-  not yet exposed through this SDK method.
+- Native realtime browser sessions are available through the Agent Factory test-call route. They report `recording: false`, `supervisor: false`, and `transfer: false`; use managed Ultravox or an existing supervised stack when those features are required.
 - Pure WebRTC sessions cannot perform a native telephone cold/warm transfer.
   Use the Twilio Voice SDK or a PSTN call path when a human phone transfer is
   required.

@@ -3,6 +3,10 @@
 The builder and SDKs should make voice selection feel instant: list all voices,
 filter by provider, preview audio, then export the selected voice into code.
 
+## Model-native realtime voices
+
+Realtime model voices are not the same catalog as Cartesia/ElevenLabs/Inworld TTS voices. Use the model catalog and the `voice` field in [Native Realtime Agent Factory](realtime-agent-factory.md) for `marin`, Gemini voices such as `Puck`, `eve`, and the GPT Live voice set.
+
 ## Hosted Agent Voice Catalog
 
 Use the hosted-agent API when the voice belongs to the durable agent:

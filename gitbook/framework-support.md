@@ -15,11 +15,16 @@ This page distinguishes five different claims that should never be conflated:
 | Observation only | Supafone can normalize events, supervise, score, and report, but the provider exposes no universal live prompt-control channel |
 | Explicit host hook | The component exposes an event transport, but the developer's agent must decide how to apply it |
 
+## Direct Agent Factory realtime delivery
+
+The matrix below describes Supervisor adapters for existing stacks. It does not describe direct model hosting. The Agent Factory also has a native S2S transport for OpenAI, Google/Gemini, and xAI; that path is documented in [Native Realtime Agent Factory](realtime-agent-factory.md).
+
 ## Runtime matrix
 
 | Runtime | Support class | Supervisor delivery | Acceptance criterion |
 | --- | --- | --- | --- |
-| <a id="provider-supafone"></a>Supafone Agent Factory | Managed native control | Ultravox `user_text_message` with `urgency=later` | Managed call accepts the data message |
+| <a id="provider-supafone"></a>Supafone Agent Factory (managed) | Managed native control | Ultravox `user_text_message` with `urgency=later` | Managed call accepts the data message |
+| Native realtime Agent Factory | Direct S2S transport | Provider-native audio WebSocket for OpenAI, Google, or xAI | Authenticated browser/carrier session remains healthy |
 | <a id="provider-ultravox"></a>Ultravox | Native control | Deferred `user_text_message` | Send Data Message returns HTTP 204 |
 | <a id="provider-vapi"></a>Vapi | Native control | System `add-message` through the live call `controlUrl` | Control request succeeds and the message enters live context |
 | <a id="provider-retell"></a>Retell | Developer-owned context | System entry in the custom-LLM WebSocket context | Entry exists before the next response is emitted |

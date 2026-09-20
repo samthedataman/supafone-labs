@@ -145,6 +145,10 @@ Example request to an MCP client:
 The MCP server submits only the public preferences. It does not contain the
 hosted detection or call-transition implementation.
 
+## Native realtime boundary
+
+Native realtime agents select one model-native voice for the session. The language-routing preferences documented here apply to the managed Agent Factory/Ultravox path; they do not switch a native realtime model or voice mid-call.
+
 ## PSTN, campaigns, and WebRTC
 
 One Agent Factory configuration is reused across the managed call paths:

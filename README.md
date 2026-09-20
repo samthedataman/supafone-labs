@@ -16,6 +16,7 @@ through Python, TypeScript, REST, WebSocket, or MCP.
 
 [**Website**](https://labs.supafone.ai) ·
 [**Docs**](https://labs.supafone.ai/docs/) ·
+[**Native realtime guide**](gitbook/realtime-agent-factory.md) ·
 [**Workspace**](https://labs.supafone.ai/builder.html) ·
 [**Get a free API key**](https://labs.supafone.ai/console.html?mode=register) ·
 [**API reference**](https://api.labs.supafone.ai/docs)

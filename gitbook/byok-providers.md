@@ -82,9 +82,7 @@ curl https://api.supafone.ai/api/v1/labs/runtime \
   }'
 ```
 
-A blank `api_key` keeps the stored key, so you can re-save other fields. A
-non-`ultravox` provider returns **400 "coming soon"** — Ultravox is the only
-runtime today, managed or BYOK. `GET /api/v1/labs/runtime` returns the same
+A blank `api_key` keeps the stored key. Native realtime Agent Factory providers are now available through the same route: use `openai`, `google`/`gemini`, or `xai`/`grok` with the selected model key. Ultravox remains the managed default for the standard Agent Factory path. See [Native Realtime Agent Factory](realtime-agent-factory.md). `GET /api/v1/labs/runtime` returns the same
 status shape:
 
 ```json

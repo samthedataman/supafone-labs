@@ -6,6 +6,10 @@ supervisor beside the call. It reads transcripts, audio-derived state,
 tool outcomes, and account context, then returns a silent directive only when it
 can improve the call.
 
+## Native realtime delivery
+
+Supafone now has a direct speech-to-speech Agent Factory path for four catalog models. See [Native Realtime Agent Factory](realtime-agent-factory.md).
+
 ## Product Surfaces
 
 **Supafone Supervisor is the defining product surface.** It is the model-agnostic
