@@ -383,6 +383,32 @@ export interface LabsVoicePreference {
   premium?: boolean;
 }
 
+/** Direct speech-to-speech configuration for browser previews and carrier phone calls. */
+export interface LabsRealtimeSelection {
+  provider: "openai" | "google" | "xai";
+  model?: string;
+  voice?: string;
+}
+
+export interface LabsBrowserTestSession {
+  simulated: boolean;
+  call_id: string | null;
+  call_record_id?: string | null;
+  join_url: string | null;
+  stage: string;
+  browser_session: {
+    version: string;
+    available: boolean;
+    provider: string;
+    transport: "ultravox" | "supafone_realtime";
+    join_url?: string | null;
+    websocket_url?: string;
+    token?: string;
+    input_sample_rate?: number;
+    output_sample_rate?: number;
+  };
+}
+
 export interface LabsProviderKeys {
   /** Agent runtime/platform providers. */
   ultravox?: string;
@@ -445,6 +471,12 @@ export interface LabsProviderKeys {
   anthropic?: string;
   anthropicApiKey?: string;
   anthropic_api_key?: string;
+  google?: string;
+  googleApiKey?: string;
+  google_api_key?: string;
+  gemini?: string;
+  geminiApiKey?: string;
+  gemini_api_key?: string;
   openai?: string;
   openaiApiKey?: string;
   openai_api_key?: string;
@@ -994,6 +1026,7 @@ export interface CreateLabsAgentRequest {
   direction?: string;
   presetKey?: string;
   preset_key?: string;
+  realtime?: LabsRealtimeSelection;
   runtimeMode?: LabsRuntimeMode;
   runtime_mode?: LabsRuntimeMode;
   /** Defaults to Supafone's hosted planner; model credentials remain server-side. */
@@ -3419,6 +3452,15 @@ class LabsAgentsNamespace {
     return this.sm.requestSupafoneApi<ListLabsAgentsResponse>("GET", `/api/v1/labs/agents${suffix}`);
   }
 
+  /** Start a rate-limited authenticated browser preview for this hosted agent. */
+  testCall(agentKey: string, opts: GetLabsAgentOptions = {}): Promise<LabsBrowserTestSession> {
+    const query = opts.agencyId ? `?agency_id=${encodeURIComponent(opts.agencyId)}` : "";
+    return this.sm.requestSupafoneApi<LabsBrowserTestSession>(
+      "POST",
+      `/api/v1/labs/agents/${encodeURIComponent(agentKey)}/test-call${query}`,
+    );
+  }
+
   /** Fetch one durable agent by key. */
   get(agentKey: string, opts: GetLabsAgentOptions = {}): Promise<GetLabsAgentResponse> {
     const q = new URLSearchParams();
@@ -4342,6 +4384,7 @@ function labsAgentPayload(input: CreateLabsAgentRequest): Record<string, unknown
     direction: input.direction,
     preset_key: input.preset_key ?? input.presetKey,
     runtime_mode: input.runtime_mode ?? input.runtimeMode,
+    realtime: input.realtime,
     call_stages: callStagesPayload(input),
     stage_generation: input.stage_generation ?? input.stageGeneration,
     stage_count: input.stage_count ?? input.stageCount,
@@ -4510,6 +4553,8 @@ function callStagesPayload(
   if (explicit === false || auto === false) return false;
   if (explicit === "managed" || explicit === "template" || explicit === "off") return explicit;
   if (explicit === "oracle") return "managed";
+  // The S2S backend owns its validated intake → booking → confirmation flow.
+  if (input.realtime) return undefined;
   // Omitted means the private Supafone API generates and compiles the plan.
   return undefined;
 }
@@ -4699,6 +4744,10 @@ function providerKeysPayload(input: LabsProviderKeys): Record<string, unknown> {
     deepgram_api_key: input.deepgram_api_key ?? input.deepgramApiKey,
     anthropic: input.anthropic,
     anthropic_api_key: input.anthropic_api_key ?? input.anthropicApiKey,
+    google: input.google,
+    google_api_key: input.google_api_key ?? input.googleApiKey,
+    gemini: input.gemini,
+    gemini_api_key: input.gemini_api_key ?? input.geminiApiKey,
     openai: input.openai,
     openai_api_key: input.openai_api_key ?? input.openaiApiKey,
     xai: input.xai,

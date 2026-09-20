@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.6.1 - 2026-09-20
+
+- Add one Agent Factory `realtime` selection contract for OpenAI GPT Realtime,
+  OpenAI GPT Live, Google Gemini Live, and xAI Grok Voice.
+- Preserve the selected realtime model and voice for inbound/outbound hosted
+  agents without generating incompatible client-side stages.
+- Add authenticated browser preview helpers to both SDKs.
+- Add Google/Gemini provider-key aliases for the realtime factory path.
+
 ## 0.6.0 - 2026-09-01
 
 - Add a production CLI for agents, lifecycle, runtime, telephony, calls,

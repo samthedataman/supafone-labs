@@ -434,6 +434,45 @@ modes.
 your balance, usage, and an auditable log of every instruction your second
 mind whispered.
 
+## Native realtime Agent Factory models
+
+The hosted Agent Factory accepts one `realtime` selection for direct speech-to-
+speech browser previews and managed or BYO phone agents:
+
+| Provider | Model |
+| --- | --- |
+| OpenAI | `gpt-realtime-2.1` |
+| OpenAI | `gpt-live-1` |
+| Google | `gemini-3.1-flash-live-preview` |
+| xAI | `grok-voice-latest` |
+
+The selection is available from both the Python and TypeScript clients. The
+private API owns the default intake, booking, and confirmation stages, while
+explicit supported stages remain valid. A provider key and carrier credentials
+are still required for a live call.
+
+```ts
+const agent = await supafone.labs.agents.createInbound({
+  name: "Northline realtime intake",
+  realtime: {
+    provider: "google",
+    model: "gemini-3.1-flash-live-preview",
+    voice: "Puck",
+  },
+});
+```
+
+```python
+agent = supafone.labs.agents.create_outbound(
+    name="Northline realtime follow-up",
+    realtime={
+        "provider": "xai",
+        "model": "grok-voice-latest",
+        "voice": "eve",
+    },
+)
+```
+
 ## Hosted Supafone agents
 
 Use `supafone-labs` when you want Supafone to host the whole agent:

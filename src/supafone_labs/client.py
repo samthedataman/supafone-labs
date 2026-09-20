@@ -1517,6 +1517,18 @@ class LabsAgentsNamespace:
             _labs_agent_payload(data),
         )
 
+    def test_call(self, agent_key: str, *, agency_id: Optional[str] = None) -> Any:
+        """Start an authenticated, rate-limited browser preview for an agent."""
+        if not str(agent_key or "").strip():
+            raise SupafoneError("agent_key is required")
+        query = f"?agency_id={parse.quote(str(agency_id))}" if agency_id else ""
+        return self._client._request_supafone_api(
+            "POST",
+            f"/api/v1/labs/agents/{parse.quote(str(agent_key), safe='')}/test-call{query}",
+        )
+
+    testCall = test_call
+
     def plan(self, config: Optional[Mapping[str, Any]] = None, **kwargs: Any) -> Any:
         """Turn one description into the executable Supafone call-stage contract."""
         data = _merge(config, kwargs)
@@ -2517,6 +2529,7 @@ def _labs_agent_payload(data: Mapping[str, Any]) -> dict[str, Any]:
             "direction": data.get("direction"),
             "preset_key": _pick(data, "preset_key", "presetKey"),
             "runtime_mode": _pick(data, "runtime_mode", "runtimeMode"),
+            "realtime": data.get("realtime"),
             "call_stages": _call_stages_payload(data),
             "stage_generation": _pick(data, "stage_generation", "stageGeneration"),
             "stage_count": _pick(data, "stage_count", "stageCount"),
@@ -2652,6 +2665,10 @@ def _provider_keys_payload(data: Mapping[str, Any]) -> dict[str, Any]:
             "deepgram_api_key": _pick(data, "deepgram_api_key", "deepgramApiKey"),
             "anthropic": data.get("anthropic"),
             "anthropic_api_key": _pick(data, "anthropic_api_key", "anthropicApiKey"),
+            "google": data.get("google"),
+            "google_api_key": _pick(data, "google_api_key", "googleApiKey"),
+            "gemini": data.get("gemini"),
+            "gemini_api_key": _pick(data, "gemini_api_key", "geminiApiKey"),
             "openai": data.get("openai"),
             "openai_api_key": _pick(data, "openai_api_key", "openaiApiKey"),
             "xai": data.get("xai"),
@@ -3015,6 +3032,9 @@ def _call_stages_payload(data: Mapping[str, Any]) -> Any:
         return False
     if str(explicit or "").lower() in {"oracle", "template", "off"}:
         return str(explicit).lower()
+    if data.get("realtime"):
+        # The S2S backend owns its validated intake → booking → confirmation flow.
+        return None
     # Omitted means "generate on the private Supafone backend".  This keeps
     # the server-side Haiku credential private and makes the generated plan the
     # exact one compiled into the runtime.
