@@ -70,10 +70,10 @@ def test_public_docs_use_one_supervisor_name():
             assert label not in text, f"{path.relative_to(REPO_ROOT)}: {label}"
 
 
-def test_gitbook_is_problem_first_and_uses_the_real_logo():
+def test_gitbook_explains_harness_then_runtime_choices_and_uses_the_real_logo():
     landing = (REPO_ROOT / "gitbook" / "README.md").read_text(encoding="utf-8")
-    assert landing.index("## Why we built it") < landing.index("## The architecture")
-    assert landing.index("## The architecture") < landing.index("## Framework coverage")
+    assert landing.index("## Native realtime Agent Factory") < landing.index("## What the harness keeps together")
+    assert landing.index("## What the harness keeps together") < landing.index("## Choose the runtime for the job")
     assert '.gitbook/assets/supafone-logo.png' in landing
 
     source_logo = REPO_ROOT / "gitbook" / ".gitbook" / "assets" / "supafone-logo.png"

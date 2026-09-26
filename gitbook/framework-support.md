@@ -1,6 +1,14 @@
 # Framework Coverage
 
-Supafone Labs exposes **fourteen audited runtime integrations**. Every adapter
+Supafone Labs has a **native S2S harness** for direct speaking-model selection
+and a separate **Supafone Supervisor** integration surface. The native catalog
+contains `gpt-realtime-2.1`, `gpt-live-1`, `gemini-3.1-flash-live-preview`, and
+`grok-voice-latest`, with browser previews and Supafone-managed, Twilio, Telnyx,
+Plivo, and SIP phone adapters. Configured platform keys supply the model by
+default; account BYOK overrides are optional. See the
+[native guide](realtime-agent-factory.md) for readiness and feature limits.
+
+Supafone Supervisor exposes **fourteen audited runtime integrations**. Every adapter
 converts provider-specific events into one canonical call state. When a runtime
 has a supported control channel, the same abstract Supervisor directive is
 compiled back into that runtime's native message or developer-owned context.
@@ -24,7 +32,6 @@ The matrix below describes Supervisor adapters for existing stacks. It does not 
 | Runtime | Support class | Supervisor delivery | Acceptance criterion |
 | --- | --- | --- | --- |
 | <a id="provider-supafone"></a>Supafone Agent Factory (managed) | Managed native control | Ultravox `user_text_message` with `urgency=later` | Managed call accepts the data message |
-| Native realtime Agent Factory | Direct S2S transport | Provider-native audio WebSocket for OpenAI, Google, or xAI | Authenticated browser/carrier session remains healthy |
 | <a id="provider-ultravox"></a>Ultravox | Native control | Deferred `user_text_message` | Send Data Message returns HTTP 204 |
 | <a id="provider-vapi"></a>Vapi | Native control | System `add-message` through the live call `controlUrl` | Control request succeeds and the message enters live context |
 | <a id="provider-retell"></a>Retell | Developer-owned context | System entry in the custom-LLM WebSocket context | Entry exists before the next response is emitted |

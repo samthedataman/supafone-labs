@@ -1,223 +1,129 @@
 # Quickstart
 
+Create an Agent Factory agent, preview it in the browser, then switch its
+speech-to-speech model through the same Supafone harness.
+
+## 1. Install and authenticate
+
 ```bash
 pip install supafone-labs
-```
-
-## 1. Supercharge an agent (one line)
-
-```python
-import supafone_labs
-
-brain = supafone_labs.supercharge(my_agent)     # provider auto-detected
-```
-
-Runs with **no API key** using the built-in fake provider, so you can see it work
-immediately, then swap in a real provider via `ANTHROPIC_API_KEY`.
-
-## 1a. Native realtime Agent Factory
-
-For direct speech-to-speech, select a catalog model and keep the same agent
-contract across browser and phone delivery:
-
-```ts
-const agent = await supafone.labs.agents.createInbound({
-  agentKey: "northline-realtime",
-  name: "Northline realtime intake",
-  realtime: {
-    provider: "openai",
-    model: "gpt-realtime-2.1",
-    voice: "marin",
-  },
-  telephony: { mode: "supafone_managed", provider: "supafone" },
-});
-
-const preview = await supafone.labs.agents.testCall("northline-realtime");
-```
-
-The catalog also includes `gpt-live-1`, `gemini-3.1-flash-live-preview`, and
-`grok-voice-latest`. Connect the selected provider key before a live call; BYO
-Twilio, Telnyx, Plivo, and SIP use the same selection. See [Native Realtime
-Agent Factory](realtime-agent-factory.md) for the Python example, carrier
-setup, fixed stages, and feature boundaries.
-
-## 1b. Or create a hosted Supafone agent from REST, Python, TypeScript, or MCP
-
-If you want Supafone to host the agent, use the public REST API directly or a
-matching SDK/MCP client. This creates an Ultravox-backed Supafone agent with a
-Supafone-managed phone number, managed voices, multistage state, tools,
-recordings, transcripts, and optional Supafone Supervisor. You do not need
-Ultravox, Twilio, Cartesia, Inworld, ElevenLabs, or Deepgram keys in the default
-path.
-
-There are two main features:
-
-- **Agent Factory** creates a complete hosted agent with managed defaults, so
-  developers do not need their own agent-platform, telephony, TTS, STT, or LLM
-  keys to get started.
-- **Supafone Supervisor** attaches live supervision to a hosted or existing agent
-  and sends silent corrective directives only when `labs.enabled` is on.
-
-Think of this as the full agent-building framework path: describe the job,
-review the generated prompts and executable stages when needed, choose a voice
-and tools, and create a durable agent profile that syncs to the normal Supafone
-account.
-
-```bash
 npm i supafone-labs
 export SUPAFONE_TOKEN=sl_live_...
 ```
 
+[Create a Supafone key](https://labs.supafone.ai/console.html?mode=register).
+One `sl_` key authenticates Labs Cloud and the hosted-agent API when your
+Supafone product account uses the same email. See [API keys](https://labs.supafone.ai/docs/api-keys-and-auth/)
+for account linking and scoped `sf_` keys.
+
+## 2. Check the selected model's readiness
+
+```bash
+curl 'https://api.supafone.ai/api/v1/labs/runtime?provider=openai' \
+  -H "Authorization: Bearer $SUPAFONE_TOKEN"
+```
+
+Use the configured Supafone platform key by default. An existing account BYOK
+key overrides it for the selected provider. Status reports `source: platform`,
+`account`, `none`, or `invalid`; a missing key requires setup before a live
+call. You only need to supply an OpenAI, Google, or xAI key when choosing BYOK
+or when the platform has no key for that provider. Provider access still needs
+a live preview test.
+
+## 3. Create a native S2S agent
+
+TypeScript:
+
 ```ts
 import { Supafone } from "supafone-labs";
 
-const supafone = new Supafone({
-  apiKey: process.env.SUPAFONE_TOKEN!,
+const supafone = new Supafone({ apiKey: process.env.SUPAFONE_TOKEN! });
+const agent = await supafone.labs.agents.createInbound({
+  agentKey: "northline-intake",
+  name: "Northline intake",
+  description: "Understand the request and book the right next step.",
+  realtime: { provider: "openai", model: "gpt-realtime-2.1", voice: "marin" },
+  telephony: { mode: "supafone_managed", provider: "supafone" },
 });
-
-const agent = await supafone.labs.agents.createInboundWithNumber({
-  agentKey: "medivoice-intake",
-  name: "MediVoice intake",
-  assistantName: "Maya",
-  businessName: "MediVoice",
-  description: "Answer new inquiries, capture the facts that matter, and book or route the next step.",
-  websiteUrl: "https://medivoice.org",
-  number: { search: { areaCode: "787" } },
-  voice: { provider: "cartesia", voiceId: "Jacqueline" },
-  labs: { enabled: true, model: "gemma" },
-  tools: {
-    callRouting: true,
-    scheduling: true,
-    sms: true,
-    email: true,
-    firmKnowledge: true,
-    voicemail: true,
-  },
-});
-
-console.log(agent.agent.agent_key, agent.call_plan?.call_stages);
+const preview = await supafone.labs.agents.testCall("northline-intake");
+console.log(preview.browser_session);
 ```
 
-REST uses the same contract; no TypeScript runtime is required:
-
-```bash
-curl https://api.supafone.ai/api/v1/labs/agent-plans \
-  -X POST \
-  -H "Authorization: Bearer $SUPAFONE_TOKEN" \
-  -H "Content-Type: application/json" \
-  -d '{"description":"Answer new inquiries and book the right next step","direction":"inbound","stage_count":5}'
-```
-
-Python uses `supafone.generate_call_stages(...)` and
-`supafone.labs.agents.create_inbound(...)`; MCP exposes
-`generate_call_stages` and the hosted-agent creation tools.
-
-For outbound sales or speed-to-lead workflows, use the matching helper:
-
-```ts
-const salesAgent = await supafone.labs.agents.createOutboundWithNumber({
-  agentKey: "medivoice-sales",
-  name: "MediVoice sales team",
-  assistantName: "Maya",
-  description: "Call warm, consented leads, understand fit, and book the next step without pressure.",
-  websiteUrl: "https://medivoice.org",
-  number: { search: { areaCode: "787" } },
-  labs: { enabled: true, model: "gemma" },
-});
-```
-
-Teams that already own provider accounts can configure BYOK later. Keep the
-hosted-delivery lanes separate: agent/provider stack, telephony, and TTS.
-Supervisor STT and supervisor-LLM credentials remain independent.
-
-For an Agent Factory agent that can continue one call across approved
-languages and matching voices, see
-[Live language and voice routing](live-language-voice-routing.md).
-
-```ts
-await supafone.labs.telephony.configure({
-  mode: "byok",
-  provider: "twilio",
-  credentials: {
-    accountSid: process.env.TWILIO_ACCOUNT_SID!,
-    authToken: process.env.TWILIO_AUTH_TOKEN!,
-    fromNumber: "+14155550123",
-  },
-});
-```
-
-```ts
-await supafone.labs.agents.createOutbound({
-  agentKey: "byok-speed-to-lead",
-  name: "BYOK speed to lead",
-  byok: {
-    agentProvider: { provider: "ultravox", apiKey: process.env.ULTRAVOX_API_KEY },
-    telephony: {
-      mode: "byok",
-      provider: "telnyx",
-      credentials: { apiKey: process.env.TELNYX_API_KEY }
-    },
-    tts: { provider: "cartesia", apiKey: process.env.CARTESIA_API_KEY }
-  },
-  labs: { enabled: true, mode: "byok", managedInfrastructure: false }
-});
-```
-
-To verify the full hosted-agent path, run the smoke test:
-
-```bash
-cd supafone-labs
-SUPAFONE_TOKEN=sl_live_... \
-SUPAFONE_API_BASE_URL=https://api.supafone.ai \
-npx tsx examples/smoke-hosted-agent.ts
-```
-
-It discovers capabilities, presets, and voices, creates a web intake agent,
-fetches it back, confirms `runtime.telephony.mode` is `supafone_managed` and the
-runtime is managed (`runtime.managed === true`, no developer Ultravox key
-required), and prints the widget snippet.
-
-Use `supafone.labs.voices.list()` to show available voice choices, and
-`supafone.labs.presets.list()` to show the stage presets before creating the
-agent.
-
-## 2. Give it a live data feed
-
-The Supervisor is only as useful as the evidence it can see. Snap in context
-sources:
+Python:
 
 ```python
-feed = supafone_labs.Feed(
-    context=[
-        supafone_labs.CallerHistory(db),       # who is this, prior calls
-        supafone_labs.Knowledge(vectorstore),  # firm/product knowledge (RAG)
-        supafone_labs.CRM(crm_client),         # case / lead data
-    ],
-    guardrails=["don't quote fees", "no legal advice"],
-)
+import os
+from supafone_labs import Supafone
 
-brain = supafone_labs.supercharge(my_agent, feed=feed, scenario="legal_intake")
+supafone = Supafone(api_key=os.environ["SUPAFONE_TOKEN"])
+agent = supafone.labs.agents.create_inbound({
+    "agentKey": "northline-intake",
+    "name": "Northline intake",
+    "description": "Understand the request and book the right next step.",
+    "realtime": {"provider": "openai", "model": "gpt-realtime-2.1", "voice": "marin"},
+    "telephony": {"mode": "supafone_managed", "provider": "supafone"},
+})
+preview = supafone.labs.agents.test_call("northline-intake")
+print(preview["browser_session"])
 ```
 
-## 3. Own the loop (webhook / realtime)
+`testCall` creates a session ticket; it does not play audio by itself. Open the
+agent's browser preview in the dashboard, or connect your audio client using
+the [native browser transport contract](realtime-agent-factory.md#browser-preview).
+Provider keys remain on the server. Creating a browser preview does not buy a
+number or place a phone call.
+
+## 4. Switch the speaking model
+
+```ts
+await supafone.labs.agents.update("northline-intake", {
+  realtime: { provider: "google", model: "gemini-3.1-flash-live-preview", voice: "Puck" },
+});
+const nextPreview = await supafone.labs.agents.testCall("northline-intake");
+```
 
 ```python
-sm = supafone_labs.SupafoneLabs(provider="gpt_realtime", feed=feed)
-
-async def on_event(raw_event):
-    inject = await sm.observe(raw_event)   # -> silent instruction to send back, or None
-    if inject:
-        await my_agent.send_system(inject)
+supafone.labs.agents.update("northline-intake", {
+    "realtime": {"provider": "xai", "model": "grok-voice-latest", "voice": "eve"},
+})
+next_preview = supafone.labs.agents.test_call("northline-intake")
 ```
 
-## 4. Let it learn
+OpenAI `gpt-live-1` is also available with `marin`. Check the new provider's
+readiness first. The new selection applies to the next session; the harness
+keeps the agent configuration, supported tools, fixed three stages, and phone
+configuration. Voices and model behavior remain provider-specific.
 
-Every recorded call becomes training data. Run gradient descent on your prompts from the
-replay corpus:
+## 5. Connect a phone transport
+
+Choose Supafone-managed phone, Twilio, Telnyx, Plivo, or SIP. Managed phone
+uses the platform's configured carrier infrastructure and an approved number.
+BYO carriers use the account's own credentials and caller ID. Verify inbound
+webhooks or outbound routing before testing a real call. Follow the
+[carrier setup guide](realtime-agent-factory.md#phone-calls-and-carrier-selection).
+
+Native S2S supports intake → booking → confirmation and allowed server tools.
+It does not currently support recording, Supervisor coaching, human transfer,
+DTMF navigation, public widgets, or live language/voice profile switching.
+
+## Managed compatibility Agent Factory Agent
+
+Omitting `realtime` keeps the existing managed Ultravox runtime. Use that path
+when you need its broader planner, compatible voice catalog, recording,
+Supervisor, transfer, or widget features. See [Agent Factory](https://labs.supafone.ai/docs/agent-factory/)
+and [Hosted Agent Builder](https://labs.supafone.ai/docs/hosted-agent-builder/).
+
+## Supervise an Existing Familiar Framework
+
+Supafone Supervisor separately observes supported existing agent stacks:
 
 ```python
-from supafone_labs import get_optimizer
+import supafone_labs
 
-optimizer = get_optimizer("textgrad")
-improved = optimizer.optimize(program, dataset, steps=10)   # prompts that win more
+brain = supafone_labs.supercharge(my_agent)
+result = await brain.observe(raw_platform_event)
 ```
+
+Use the [framework coverage matrix](https://labs.supafone.ai/docs/framework-support/) to determine whether
+your adapter can send guidance or only observe. This integration does not
+turn on Supervisor coaching in the native S2S harness.

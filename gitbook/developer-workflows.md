@@ -1,17 +1,16 @@
 # Developer Workflows
 
-Supafone Labs has two first-class delivery paths. Use the native realtime Agent
-Factory when the speaking model should be swappable, or use Supafone
-Supervisor when the team already runs another agent stack and wants a common
-control and evidence layer.
+**Dashboard:** open [Supafone agents](https://app.supafone.ai/app/agents),
+select your agent, and use its native realtime model controls. The older
+[Labs workspace](https://labs.supafone.ai/builder.html) is the managed Ultravox
+compatibility builder and links to these S2S controls.
 
-## Native realtime workflow
+Build a durable agent with Agent Factory, then choose its speech-to-speech
+model through Supafone's S2S harness. The harness reuses the same prompt,
+supported tools, fixed stages, and browser/carrier contracts when you switch
+among supported models.
 
-Choose a catalog model, connect its provider key, create the Agent Factory agent with `realtime`, run `testCall`, then configure managed or BYO telephony. Native realtime uses fixed stages and a separate transport; follow [Native Realtime Agent Factory](realtime-agent-factory.md) before advertising recording, transfer, or Supervisor features.
-
-The current native catalog contains four swappable speaking models. Each is
-available for browser previews and phone calls through Supafone-managed
-transport, BYO Twilio, BYO Telnyx, BYO Plivo, or BYO SIP:
+## Choose the speaking model
 
 | Provider | Model | Default voice |
 | --- | --- | --- |
@@ -20,306 +19,140 @@ transport, BYO Twilio, BYO Telnyx, BYO Plivo, or BYO SIP:
 | Google | `gemini-3.1-flash-live-preview` | `Puck` |
 | xAI | `grok-voice-latest` | `eve` |
 
-## Supervise an existing agent
+Every catalog model has browser and phone adapters for Supafone-managed phone,
+BYO Twilio, BYO Telnyx, BYO Plivo, and BYO SIP. Discover the current choices
+through `supafone.labs.capabilities()`; catalog support is distinct from your
+workspace's credential and carrier readiness.
 
-Use this path when the developer already has an agent running on Ultravox,
-Vapi, Retell, ElevenLabs, OpenAI Realtime, Grok, Bland, LiveKit, Pipecat,
-Twilio media streams, SIP, or a custom stack.
+## Start with managed provider keys
 
-```python
-import supafone_labs
+Authenticate with your Supafone API key. The selected model uses a configured
+Supafone platform key unless your account has supplied an encrypted BYOK key
+for that provider. Read `GET /api/v1/labs/runtime?provider=openai` (or `google`,
+`xai`) to check the source and status before calling. Customers do not need to
+paste a provider key when the platform supplies one.
 
-brain = supafone_labs.supercharge(my_agent)
-```
+`source: platform` means a server credential exists. `source: account` means
+an account key overrides it. `none` or `invalid` means setup is required.
+Readiness does not prove that a key has model access; run a real preview after
+selecting it. Keep model credentials separate from your Supafone application
+key and from carrier credentials. See [Managed keys and BYOK](byok-providers.md).
 
-The framework watches empathy and operational patterns across turns—intent,
-urgency, emotion, language, trust, workflow progress, tool outcomes, and call
-state—then emits a silent directive only when the live agent needs help. The
-caller does not hear the directive. If the Supervisor is disabled, out of balance,
-or times out, the call continues without intervention.
-
-## Create a native realtime agent
-
-Use this path when the speaking model should be a first-class, swappable part
-of the agent. Supafone creates the agent, phone number, voice, fixed stages,
-logs, browser test session, and optional supervision around the selected S2S
-model.
-
-This path should feel like Stripe Checkout for voice agents: one Supafone API
-key first, working agent first, and only the selected model provider key required
-for the native speaking lane. Phone credentials stay managed by Supafone unless
-the user chooses a BYO carrier.
+## Create and preview
 
 ```ts
 import { Supafone } from "supafone-labs";
 
 const supafone = new Supafone({ apiKey: process.env.SUPAFONE_TOKEN! });
-
-const agent = await supafone.labs.agents.createInboundWithNumber({
+const agent = await supafone.labs.agents.createInbound({
   agentKey: "northline-intake",
   name: "Northline intake",
   assistantName: "Maya",
-  description: "Answer new inquiries, understand the request, and book the right next step.",
-  websiteUrl: "https://northline.example",
+  description: "Answer inquiries, capture the request, and book the next step.",
   realtime: { provider: "openai", model: "gpt-realtime-2.1", voice: "marin" },
-  number: { search: { areaCode: "415" } },
+  telephony: { mode: "supafone_managed", provider: "supafone" },
 });
+const preview = await supafone.labs.agents.testCall("northline-intake");
 ```
 
-Python has the matching native-agent helpers:
-
 ```python
+import os
 from supafone_labs import Supafone
 
-supafone = Supafone(api_key="sl_live_...")  # one key; supervision is on by default
-
-agent = supafone.labs.agents.create_inbound_with_number({
+supafone = Supafone(api_key=os.environ["SUPAFONE_TOKEN"])
+agent = supafone.labs.agents.create_inbound({
     "agentKey": "northline-intake",
     "name": "Northline intake",
     "assistantName": "Maya",
-    "description": "Answer new inquiries, understand the request, and book the right next step.",
-    "websiteUrl": "https://northline.example",
+    "description": "Answer inquiries, capture the request, and book the next step.",
     "realtime": {"provider": "openai", "model": "gpt-realtime-2.1", "voice": "marin"},
-    "number": {"search": {"areaCode": "415"}},
+    "telephony": {"mode": "supafone_managed", "provider": "supafone"},
 })
+preview = supafone.labs.agents.test_call("northline-intake")
 ```
 
-## What This Removes From Daily Development
+The returned browser session has a one-use ticket and sample rates. Use the
+dashboard preview or a compatible audio client to speak to the agent;
+`testCall` alone creates the session. No provider secret is returned.
 
-### One voice catalog instead of provider-specific integrations
-
-The Python and TypeScript SDKs expose one normalized catalog across Cartesia,
-Inworld, ElevenLabs, and Ultravox. Developers can search by language, provider,
-model, gender, accent, voice type, configured status, or free text without
-maintaining separate provider response types or voice-ID spreadsheets.
+## Switch an existing agent
 
 ```ts
-const matches = await supafone.labs.voices.recommend({
-  description: "warm Puerto Rican Spanish patient-support voice",
-  language: "es-PR",
-  configuredOnly: true,
-});
-```
-
-The catalog separates three facts that providers commonly blur together:
-
-- the language native to the individual speaker;
-- the languages supported by the selected TTS model;
-- the intersection the managed Ultravox runtime can actually use.
-
-This makes an incompatible selection a provisioning error instead of a failed
-customer call. Direct voice selection remains available when the developer
-already knows the exact provider voice ID.
-
-### Configure a fixed language once
-
-Agent Factory accepts one preferred BCP-47 language and uses it as the default
-voice-compatibility filter:
-
-```ts
-const agent = await supafone.labs.agents.createInbound({
-  name: "Spanish intake",
-  preferredLanguage: "es-MX",
-  greeting: "Gracias por llamar. ¿Cómo puedo ayudarle?",
-  voicePreference: {
-    description: "warm female patient-support voice",
-    configuredOnly: true,
-  },
+await supafone.labs.agents.update("northline-intake", {
+  realtime: { provider: "google", model: "gemini-3.1-flash-live-preview", voice: "Puck" },
 });
 ```
 
 ```python
-agent = supafone.labs.agents.create_inbound({
-    "name": "Spanish intake",
-    "preferred_language": "es-MX",
-    "greeting": "Gracias por llamar. ¿Cómo puedo ayudarle?",
-    "voice_preference": {
-        "description": "warm female patient-support voice",
-        "configured_only": True,
-    },
+supafone.labs.agents.update("northline-intake", {
+    "realtime": {"provider": "xai", "model": "grok-voice-latest", "voice": "eve"},
 })
 ```
 
-The locale is applied to the initial PSTN or WebRTC call and every later call
-stage. It is fixed for the full call. This option does **not** install a
-language-switch tool, detect accents, or change voices mid-call.
+A model change takes effect on a new session. Keep your supported native
+workflow, then compare model behavior using the same tasks and tools. Select
+a voice valid for the new model. This is configuration reuse, not a promise of
+identical speech, timing, tool decisions, or seamless mid-call model handoff.
 
-The fixed-language marker is additive and Agent-Factory-specific. Existing
-agents and agents made in a manual builder keep their historical payloads when
-the option is omitted.
+## Move from browser to phone
 
-### Route language and voice during one call
+Keep the `realtime` selection and configure the phone lane. Supafone-managed
+phone uses approved managed infrastructure; BYO Twilio, Telnyx, Plivo, and SIP
+use their own account credentials and routing. Browser success does not prove
+carrier readiness. Test caller ID, webhook signatures, inbound routing, and
+outbound behavior for the selected carrier. Follow the
+[native carrier guide](realtime-agent-factory.md#phone-calls-and-carrier-selection).
 
-Live routing is a separate, explicit Agent Factory option:
+## Understand the native feature boundary
 
-```ts
-const agent = await supafone.labs.agents.createInbound({
-  name: "Puerto Rico intake",
-  languageVoiceRouting: true,
-  routingLanguages: ["es-PR", "en-US", "vi-VN"],
-});
+Native agents use fixed intake → booking → confirmation stages and allowed
+knowledge, lead capture, scheduling, SMS/email, and custom tools. Supafone runs
+the tools server-side with agent and account authority.
+
+The native transport currently has no recording, Supervisor coaching, human
+transfer, specialist-team handoff, DTMF navigation, public widget, or live language/voice profile
+switching. The large managed TTS catalog does not replace native model voices.
+Use the [native guide](realtime-agent-factory.md#feature-boundaries) as the
+feature contract.
+
+## Use the broader hosted feature set
+
+Omitting `realtime` keeps the managed Ultravox compatibility runtime. This is
+the path for the full hosted planner, compatible TTS voices, recording,
+Supervisor attachment, transfer, widgets, and opt-in
+[live language/voice routing](live-language-voice-routing.md).
+These capabilities should not be inferred from native S2S model support.
+
+[Agent Factory](agent-factory.md), [custom tools](custom-tools.md), and
+[campaigns as code](outbound-call-campaigns.md) describe their own setup and
+runtime boundaries.
+
+## Supervise an existing agent
+
+Supafone Supervisor is a separate offering for a supported agent you already
+run. It observes events and proposes bounded guidance; delivery capability
+varies by adapter.
+
+```python
+import supafone_labs
+
+brain = supafone_labs.supercharge(my_agent)
+result = await brain.observe(raw_platform_event)
 ```
 
-The first language owns the automatically translated greeting. A later
-language change keeps the stage, tools, and collected facts and activates that
-profile's compatible voice. Existing and manual-builder agents remain
-unchanged. Read [Live Language and Voice Routing](live-language-voice-routing.md).
-
-### Make the supervisor output an application contract
-
-Supafone Supervisor can return a typed, inspectable decision instead of an unstructured
-coaching sentence:
-
-```ts
-const directive = await supafone.whisperStructured(transcript, {
-  directiveContract: {
-    confidenceThreshold: 0.8,
-    languageMode: "caller",
-    empathyDirective: {
-      enabled: true,
-      instructions: "Use one short acknowledgement; do not over-apologize.",
-    },
-    tacticalDirective: {
-      enabled: true,
-      instructions: "Choose one next operational action.",
-    },
-    operatorGuardrails: [
-      "Do not claim a booking, transfer, or delivery until its tool confirms it.",
-    ],
-  },
-});
-```
-
-Developers can enable or disable fields, constrain directive kinds, set a
-confidence gate, add standing guardrails, and transform or suppress the final
-directive before delivery. Facts, empathy, tactics, and policy stay separate,
-which makes the supervisor output easier to log, test, audit, and replay.
-
-See [Programmable Supervisor Directives](programmable-supervisor-directives.md).
-
-### Reuse the same integration across clients
-
-The same agent configuration works from Python services, TypeScript servers,
-React applications, scripts, and exported campaign configurations. Provider
-identity stays in normalized selection objects instead of leaking throughout
-business code. A consulting team can therefore change the industry prompt,
-tools, voice preference, number, and branding without rebuilding telephony,
-voice discovery, supervision, or validation for every client.
-
-### Debug failures before and after a call
-
-- Provisioning responses contain the selected provider, voice ID, model,
-  matching score, and reasons.
-- Structured Supafone Supervisor output records facts, directives, language, kind,
-  confidence, and guardrails independently.
-- Invalid language/model/runtime combinations fail before dialing.
-- Supervisor timeouts or suppressed low-confidence directives leave the live call
-  unchanged.
-
-These behaviors reduce provider-specific glue code while preserving explicit
-failure boundaries. See [Dynamic Voice Catalog and Selection](voice-catalog-and-selection.md),
-[Agent Factory](agent-factory.md), and [live supervision](supafone-supervisor.md).
-
-## Which One Should the UI Lead With?
-
-Lead with the Native Realtime Agent Factory when the user wants to swap the
-speaking model. The builder should make this path visible first:
-
-1. Choose one of the four catalog models: OpenAI GPT Realtime 2.1, OpenAI GPT
-   Live 1, Google Gemini Live 3.1, or xAI Grok Voice.
-2. Connect the selected provider key and choose its voice.
-3. Choose Supafone-managed phone transport, BYO Twilio, BYO Telnyx, BYO Plivo,
-   or BYO SIP.
-4. Run `testCall` to verify the browser session before provisioning.
-5. Create the agent and number, then export the exact TypeScript, Python, REST,
-   MCP, or JSON configuration.
-
-Keep Supafone Supervisor as a separate compatibility lane for teams that
-already run Ultravox, Vapi, Retell, ElevenLabs, OpenAI Realtime, Grok, Bland,
-LiveKit, Pipecat, Twilio media streams, SIP, or another agent stack. The two
-lanes share account authentication and documentation, but the native lane owns
-the speaking model and fixed intake → booking → confirmation stages.
-
-Provider credentials stay scoped to the selected lane. Native realtime needs
-the selected model provider key; phone credentials can remain Supafone-managed
-or be supplied for the chosen BYO carrier. Supervisor STT and supervisor-LLM
-credentials remain independent.
-
-| Lane | Examples |
-| --- | --- |
-| Native realtime models | `gpt-realtime-2.1`, `gpt-live-1`, `gemini-3.1-flash-live-preview`, `grok-voice-latest` |
-| Native phone transports | Supafone-managed, Twilio, Telnyx, Plivo, SIP |
-| Supervisor compatibility | Ultravox, Vapi, Retell, ElevenLabs, OpenAI Realtime, Grok, and custom stacks |
+Check [framework coverage](framework-support.md) and
+[programmable directives](programmable-supervisor-directives.md). The presence
+of a Supervisor adapter for a provider does not mean Supervisor is enabled in
+that provider's native Agent Factory transport.
 
 ## Key Routing
 
 | Work | Key | Base URL |
 | --- | --- | --- |
-| Agent Factory, numbers, hosted voices | `sl_live_...` (or scoped `sf_live_...`) | `https://api.supafone.ai/api/v1/labs` |
+| Agent Factory, model readiness, numbers, hosted voices | `sl_live_...` or scoped `sf_live_...` | `https://api.supafone.ai/api/v1/labs` |
 | Supervisor, TTS previews, STT, usage, logs, QA | `sl_live_...` | `https://api.labs.supafone.ai` |
-| Campaigns, dialing, calls | `sl_live_...` (or account JWT) | `https://api.supafone.ai` |
+| Campaigns, dialing, calls | `sl_live_...` or account JWT | `https://api.supafone.ai` |
 
-Since 0.4.4, one `sl_` key authenticates on **both** APIs
-([one-key auth](api-keys-and-auth.md)): both SDK constructors cross-fill every
-credential lane from a lone `sl_` key, and `SUPAFONE_TOKEN=sl_live_...` is
-enough for the MCP server end to end. Scoped `sf_` keys remain supported for
-hosted-agent-only deployments.
-
-## Campaigns as Code
-
-Outbound campaigns are fully drivable from a YAML/JSON config — including
-`branding:` and `intake_form:` blocks:
-
-```yaml
-slug: quote-follow-up
-name: Quote follow-up
-goal: book
-agent: northline-outbound
-branding:
-  url: https://northline.example   # scanned on apply; explicit values win
-intake_form:
-  description: Roofing quote follow-up intake
-  industry: home_services
-recipients:
-  - {name: Jane Doe, phone: "+15551234567", consent: yes}
-```
-
-Endpoints (product API, account JWT or `sl_` key):
-
-```http
-POST /api/v1/campaigns/config/validate
-POST /api/v1/campaigns/config/apply
-POST /api/v1/campaigns/config/generate
-GET  /api/v1/campaigns/{campaign_id}/config
-```
-
-SDK methods: `campaigns.validate_config` / `apply_config` / `export_config` /
-`generate_config` (TS: `validateConfig` / `applyConfig` / `exportConfig` /
-`generateConfig`). The same flow is exposed as MCP tools
-(`generate_campaign_config`, `apply_campaign_config`,
-`export_campaign_config`) — see [MCP Server](mcp-server.md).
-
-Branding and intake generation are also available standalone:
-
-```http
-POST /api/v1/agents/brand-scan                 # {url} → colors, logo, OG data
-POST /api/v1/agents/generate-intake            # description → intake form
-POST /api/v1/agents/{agent_id}/generate-intake # generate + apply to an agent
-```
-
-(SDK: `scan_brand` / `scanBrand`, `generate_intake_form` /
-`generateIntakeForm`.)
-
-## Export Contract
-
-Every builder-created agent should be exportable as:
-
-- TypeScript SDK code,
-- Python SDK code,
-- raw REST/curl,
-- MCP tool calls,
-- JSON configuration.
-
-The export should contain the exact choices from the UI, including direction,
-voice, number strategy, `labs.enabled`, `labs.mode`, BYOK providers, tools, and
-stage preset, and the exact generated or edited call plan.
+One linked `sl_` key can authenticate both APIs. See [API keys and auth](api-keys-and-auth.md).
+Exports should contain the selected `realtime` provider/model/voice and phone
+configuration, never resolved provider secrets.

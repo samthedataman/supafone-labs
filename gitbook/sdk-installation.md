@@ -1,11 +1,20 @@
 # SDK Installation
 
+Python and TypeScript expose the same hosted S2S harness: create an Agent
+Factory agent with `realtime: { provider, model, voice }`, preview it, and
+update the selection for the next session. Start with your Supafone API key;
+configured platform model keys are used unless the account supplies BYOK.
+The SDK sends the configuration to Supafone's server; installing the package
+does not itself host the model or provision provider credentials.
+
+[Create and switch an S2S agent](quickstart.md) · [Runtime limits](realtime-agent-factory.md#feature-boundaries)
+
 Supafone Labs publishes a Python package and an unscoped TypeScript package.
-The current release is **0.6.1** for both
+The current release is **0.6.2** for both
 [PyPI](https://pypi.org/project/supafone-labs/) and
 [npm](https://www.npmjs.com/package/supafone-labs).
 
-The 0.6.1 release includes native realtime Agent Factory selection in both SDKs. Install from [PyPI](https://pypi.org/project/supafone-labs/0.6.1/) or [npm](https://www.npmjs.com/package/supafone-labs/v/0.6.1), then follow [Native Realtime Agent Factory](realtime-agent-factory.md).
+The 0.6.2 release includes native realtime Agent Factory selection in both SDKs. Install from [PyPI](https://pypi.org/project/supafone-labs/0.6.2/) or [npm](https://www.npmjs.com/package/supafone-labs/v/0.6.2), then follow [Native Realtime Agent Factory](realtime-agent-factory.md).
 
 ## Python
 
@@ -19,13 +28,21 @@ Recommended full install for hosted cloud, HTTP, STT, and server helpers:
 pip install "supafone-labs[all]"
 ```
 
-Minimal usage:
+Native S2S usage:
 
 ```python
-import supafone_labs
+import os
+from supafone_labs import Supafone
 
-brain = supafone_labs.supercharge(my_agent)
+sf = Supafone(api_key=os.environ["SUPAFONE_TOKEN"])
+agent = sf.labs.agents.create_inbound({
+    "agentKey": "intake",
+    "name": "Intake",
+    "realtime": {"provider": "openai", "model": "gpt-realtime-2.1", "voice": "marin"},
+})
 ```
+
+### Separate Supervisor integration
 
 Explicit usage:
 
@@ -50,7 +67,8 @@ If no Labs key is present, use BYO provider keys such as `ANTHROPIC_API_KEY`,
 
 ### Supervisor provider and controls
 
-`labs.enabled: true` attaches the model-agnostic supervisor. A Supafone
+On the managed compatibility runtime, `labs.enabled: true` attaches the
+model-agnostic Supervisor. Native S2S does not currently attach it. A Supafone
 `sl_...` key can use a managed Supervisor model; BYOK can use Claude, OpenAI,
 Gemini, OpenRouter, Groq, or Cerebras. The speaking agent and Supervisor model
 are independent.

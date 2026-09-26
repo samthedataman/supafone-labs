@@ -11,7 +11,22 @@ pip install "supafone-labs[all]"
 npm i supafone-labs
 ```
 
-## One-Line Framework
+## Native realtime parity
+
+| Capability | TypeScript | Python |
+| --- | --- | --- |
+| Select a native S2S model | `realtime: { provider, model, voice }` | `realtime={"provider": ..., "model": ..., "voice": ...}` |
+| Browser preview | `labs.agents.testCall(agentKey)` | `labs.agents.test_call(agent_key)` / `testCall()` |
+| Connect provider key | `labs.runtime.configure({ provider, credentials })` | `labs.runtime.configure({"provider": ..., "credentials": ...})` |
+
+Both SDKs preserve the same catalog values and return `transport: "supafone_realtime"` for native browser sessions. See [Native Realtime Agent Factory](realtime-agent-factory.md).
+
+The native S2S harness uses configured Supafone platform model keys unless an
+account BYOK key overrides them. Both SDKs send the same provider/model/voice
+selection to the hosted API. Native stages are fixed; the broader planner
+examples below apply to the managed Ultravox compatibility runtime.
+
+## Separate Supervisor integration
 
 Python:
 
@@ -31,7 +46,7 @@ const supafone = new Supafone({
 });
 ```
 
-## Hosted Agent Factory
+## Managed compatibility Agent Factory
 
 TypeScript:
 
@@ -70,16 +85,6 @@ agent = supafone.labs.agents.createInboundWithNumber({
     "labs": {"enabled": True},
 })
 ```
-
-## Native realtime parity
-
-| Capability | TypeScript | Python |
-| --- | --- | --- |
-| Select a native S2S model | `realtime: { provider, model, voice }` | `realtime={"provider": ..., "model": ..., "voice": ...}` |
-| Browser preview | `labs.agents.testCall(agentKey)` | `labs.agents.test_call(agent_key)` / `testCall()` |
-| Connect provider key | `labs.runtime.configure({ provider, credentials })` | `labs.runtime.configure({"provider": ..., "credentials": ...})` |
-
-Both SDKs preserve the same catalog values and return `transport: "supafone_realtime"` for native browser sessions. See [Native Realtime Agent Factory](realtime-agent-factory.md).
 
 ## One Contract, Four Entry Points
 

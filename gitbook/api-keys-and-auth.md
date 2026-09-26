@@ -1,5 +1,17 @@
 # API Keys and Authentication
 
+## Supafone authentication and S2S model credentials
+
+Your Supafone API key authenticates your app to Agent Factory. It is different
+from the server-side OpenAI, Google, or xAI key used by the selected speaking
+model. Supafone uses its configured platform key unless the account has an
+encrypted BYOK override for that provider. Customers need no separate vendor
+key when managed credentials are available.
+
+Use `GET /api/v1/labs/runtime?provider=openai` (or `google`, `xai`) to inspect
+credential source and readiness without exposing the secret. Model access and
+carrier routing still need live verification. See [Native S2S credentials](realtime-agent-factory.md#managed-credentials-and-optional-byok).
+
 **One key does everything.** A single `sl_live_...` Labs key authenticates Labs
 Cloud, the whole Supafone product API, the MCP server, and both SDKs — as long
 as an app.supafone.ai account exists with the **same email** that owns the key.
@@ -11,7 +23,7 @@ One key covers both surfaces:
 
 | Key | Base URL | Used for |
 | --- | --- | --- |
-| `sl_live_...` | `https://api.labs.supafone.ai` **and** `https://api.supafone.ai` | Everything: Labs Cloud Supervisor, TTS, STT, logs, usage, builder, QA, optimizer — plus the whole product API (campaigns, calls, agents) via one-key auth |
+| `sl_live_...` | `https://api.labs.supafone.ai` **and** `https://api.supafone.ai` | Everything: Labs Cloud oracle, TTS, STT, logs, usage, builder, QA, optimizer — plus the whole product API (campaigns, calls, agents) via one-key auth |
 | `sf_live_...` (legacy) | `https://api.supafone.ai/api/v1/labs` | Optional scoped key for hosted-agent-only use — the `sl_` key already covers this surface |
 
 ## One Key, Both APIs

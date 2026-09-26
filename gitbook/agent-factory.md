@@ -1,46 +1,71 @@
 # Agent Factory
 
-Agent Factory is the shortest path from “this business needs an AI caller” to
-a working, observable agent. Describe the job in the language you would use to
-train a new employee; Supafone assembles the prompts, call stages, runtime,
-voice, tools, logs, and optional phone number.
+Agent Factory creates a durable Supafone voice agent from a job description.
+Its S2S harness connects the selected speaking model to the agent's prompt,
+supported tools, stages, and browser or phone transport. You can change the
+model without rebuilding the surrounding native agent integration.
 
-The main promise: a developer can launch with one Supafone key. They do not
-need to own Ultravox, Retell, Vapi, Twilio, Telnyx, Cartesia, ElevenLabs,
-Inworld, Deepgram, OpenAI, Anthropic, or xAI accounts before the first working
-agent exists.
+## Choose an S2S option
 
-### What your customer receives
+| Provider | Model | Default voice |
+| --- | --- | --- |
+| OpenAI | `gpt-realtime-2.1` | `marin` |
+| OpenAI | `gpt-live-1` | `marin` |
+| Google | `gemini-3.1-flash-live-preview` | `Puck` |
+| xAI | `grok-voice-latest` | `eve` |
 
-- an inbound receptionist, outbound caller, web agent, or campaign agent;
-- a real staged conversation instead of one fragile mega-prompt;
-- editable prompts, voices, tools, escalation rules, and business knowledge;
-- transcripts, recordings, call status, QA, and a signed-in dashboard;
-- a managed first-run path and BYOK controls when their infrastructure is
-  ready; and
-- Supafone Supervisor attached by default, so the agent can be observed
-  and corrected rather than merely launched.
+All four catalog models support browser previews and the same five phone
+families: Supafone-managed, Twilio, Telnyx, Plivo, and SIP. Model availability
+and carrier readiness depend on the deployment's configuration.
 
-### What the developer no longer rebuilds
+## Create a native agent
 
-- model-key plumbing in the browser;
-- prompt generation and stage validation;
-- provider-specific voice and telephony payloads;
-- call-state transitions and tool-truth rules;
-- number assignment, webhook wiring, transcript storage, and dashboard links;
-- separate SDK and MCP implementations for the same action.
+```ts
+import { Supafone } from "supafone-labs";
 
-See [Custom Tools](custom-tools.md) for executable HTTPS actions and
-[SMTP and Email](smtp-and-email.md) for a verified per-agent email sender.
+const supafone = new Supafone({ apiKey: process.env.SUPAFONE_TOKEN! });
+const agent = await supafone.labs.agents.createInbound({
+  agentKey: "northline-intake",
+  name: "Northline intake",
+  description: "Understand the request and book the right next step.",
+  realtime: { provider: "openai", model: "gpt-realtime-2.1", voice: "marin" },
+  telephony: { mode: "supafone_managed", provider: "supafone" },
+});
+const preview = await supafone.labs.agents.testCall("northline-intake");
+```
 
-The generated plan remains plain JSON. Your application can preview, edit,
-approve, diff, and version it before it reaches a caller.
+Start with one Supafone API key. The selected model uses a configured platform
+key by default; an encrypted account BYOK key overrides it. Check the model's
+runtime status and test a preview before dialing. Keep provider keys on the
+server. Managed phone and BYO carriers have separate readiness checks.
 
-## Native realtime choice
+## Keep the workflow when you switch
 
-For direct speech-to-speech browser or phone calls, add a `realtime` selection. The selected provider key and carrier credentials are required, the model-native voice is used, and the runtime installs a fixed intake → booking → confirmation contract. Recording, Supervisor coaching, transfer, DTMF navigation, and public widgets are not part of this transport today. See [Native Realtime Agent Factory](realtime-agent-factory.md).
+```ts
+await supafone.labs.agents.update("northline-intake", {
+  realtime: { provider: "xai", model: "grok-voice-latest", voice: "eve" },
+});
+```
 
-## Default Happy Path
+The next session uses the new model. The agent identity, instructions,
+supported tools, fixed intake → booking → confirmation stages, and phone
+configuration remain together. Use a voice supported by the selected model.
+The native harness does not support arbitrary planner stages, Supervisor
+coaching, recording, human transfer, specialist-team handoff, DTMF, public widgets, or live
+language/voice profile switching today.
+
+The [native S2S guide](realtime-agent-factory.md) contains Python examples,
+credential status, browser audio, and carrier setup. The
+[developer workflow](developer-workflows.md) covers creation and switching.
+
+## Choose the broader managed runtime when needed
+
+Omitting `realtime` retains the managed Ultravox compatibility runtime. The
+rest of this page describes that runtime's generated planner, compatible TTS
+voices, Supervisor attachment, widgets, and language-routing features. These
+are distinct from the native S2S feature set above.
+
+## Managed compatibility workflow
 
 Start with the Supafone API key and hide provider keys until the user asks for
 advanced control.
@@ -71,7 +96,7 @@ console.log(agent.call_plan?.summary);
 console.log(agent.call_plan?.call_stages); // the exact stages now running
 ```
 
-### Optional live language and voice routing
+### Managed compatibility language and voice routing
 
 Live routing is an Agent Factory opt-in. It is **off by default**, so existing
 agents and manually built product agents keep their current language and voice

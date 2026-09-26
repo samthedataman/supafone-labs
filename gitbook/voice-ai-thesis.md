@@ -1,4 +1,4 @@
-+# The Voice AI Thesis
+# The Voice AI Thesis
 
 Voice AI has enough models. What it lacks is a production system.
 
@@ -35,7 +35,7 @@ Coding-agent systems made multi-agent work practical by standardizing tools, con
 A voice-agent swarm is not several agents talking over one another. It is a set of specialized agents operating around one live conversation:
 
 1. **Live agent** speaks with the caller and executes approved tools.
-2. **Supervisor** observes off the audio hot path and injects silent corrections only when needed.
+2. **Supafone Supervisor** observes off the audio hot path and injects silent corrections only when needed.
 3. **Synthetic caller** attacks the agent with repeatable scenarios before customers do.
 4. **Judge** scores the finished call against explicit assertions and an objective.
 5. **Classifier** turns the transcript, tool outcomes, and artifacts into structured post-call data.
@@ -48,31 +48,24 @@ The developer should be able to ask a coding agent:
 
 The coding agent should complete that workflow through MCP tools or the Supafone SDK, with dangerous actions still requiring explicit authorization.
 
-## One Supervisor, Two Honest Lanes
+## A shared S2S harness and a separate Supervisor
 
-The model-agnostic supervisor is the stable product. Supafone supports two
-ways to receive it.
+Agent Factory creates the agent. The native S2S harness connects its prompt,
+supported tools, fixed stages, model credentials, and browser or phone delivery.
+Choose OpenAI GPT Realtime 2.1, GPT Live 1, Gemini Live 3.1, or Grok Voice and
+reuse the same supported native agent contract for a new session. Configured
+Supafone platform keys supply each model by default; account BYOK overrides
+are optional. See [the native guide](realtime-agent-factory.md).
 
-### Native realtime Agent Factory and Bring Your Stack
+Supafone Supervisor separately observes existing supported agent stacks and
+compiles guidance according to each adapter's capabilities. It is not currently
+attached to the native S2S transport.
 
-Keep the runtime and carrier you already use, or select a native realtime model
-from the Agent Factory and keep the same carrier contract. Supafone Supervisor normalizes
-provider events, maintains empathy and operational state across turns, and
-compiles corrections back into provider-native control actions.
-
-The target stack may use Vapi with Twilio, OpenAI Realtime with Telnyx, Grok
-with SIP, LiveKit with SignalWire, or another combination. Supafone does not
-pretend to re-host every vendor. The stable boundary is:
-
-- an SDK adapter for supervision and tool contracts,
-- PSTN for real black-box testing of any authorized phone agent,
-- canonical logs, reports, objectives, and artifacts above both.
-
-### Managed compatibility delivery
-
-Use Supafone-managed defaults to create a complete hosted agent, assign or buy a phone number, configure a voice, enable tools, attach live supervision, and return deployable artifacts. This is the compatibility lane for teams that want Supafone to host the speaking agent.
-
-This is the shortest path from an idea to a working voice agent.
+The managed Ultravox compatibility path remains available when `realtime` is
+omitted. It supports the broader hosted planner and compatible recording,
+Supervisor, transfer, widget, and language-routing features. The production
+capabilities below describe the broader product vision and these existing
+surfaces; they are not a claim that every capability works on native S2S.
 
 ## The Built-In Production Surface
 
@@ -89,7 +82,7 @@ A voice framework should include the operational pieces developers otherwise reb
 
 Calls should move through explicit stages such as greeting, consent, discovery, qualification, action, confirmation, and close. Stages make the live agent testable and prevent a model from skipping required steps.
 
-Deterministic policies should govern consent, claims, tool verification, transfers, and recovery even when the model or Supervisor is unavailable.
+Deterministic policies should govern consent, claims, tool verification, transfers, and recovery even when the model or supervisor is unavailable.
 
 ### Knowledge and tools
 
@@ -118,7 +111,7 @@ Every production call should produce useful artifacts:
 - a live and final transcript,
 - recording metadata and retained audio when consent permits,
 - tool calls and verified results,
-- Supervisor interventions,
+- supervisor interventions,
 - stage transitions,
 - provider and latency metadata,
 - post-call classification and objective score.
@@ -134,7 +127,7 @@ The safe loop is controlled and inspectable:
 ```text
 objective
   -> live calls
-  -> silent Supervisor corrections
+  -> silent supervisor corrections
   -> transcripts + tool outcomes + recordings
   -> post-call classification
   -> SSR grade distribution
@@ -142,7 +135,7 @@ objective
   -> versioned A/B measurement
 ```
 
-The live Supervisor is timeout-bounded and off the audio hot path. If it fails or has nothing useful to add, the call continues.
+The live supervisor is timeout-bounded and off the audio hot path. If it fails or has nothing useful to add, the call continues.
 
 The post-call optimizer works from completed evidence. It proposes a short, versioned standing directive that targets repeated failure patterns. A human or an authorized workflow can review the change before it becomes the next production version.
 
@@ -179,7 +172,7 @@ With one Supafone key, an authorized coding agent can:
 - provision phone numbers,
 - test an agent by phone,
 - inspect usage and logs,
-- tail live Supervisor activity,
+- tail live supervision activity,
 - run QA,
 - manage campaigns,
 - place authorized calls,
@@ -202,7 +195,7 @@ A voice platform that "just works" must:
 3. require authorization before real calls,
 4. require consent before recording or outreach,
 5. preserve a deterministic state and policy layer,
-6. degrade safely when a model, provider, or Supervisor fails,
+6. degrade safely when a model, provider, or supervisor fails,
 7. retain transcripts, recordings, and tool evidence according to policy,
 8. make every automated improvement versioned and measurable,
 9. support provider-native adapters without locking the developer into one runtime,
@@ -214,4 +207,4 @@ The winning voice platform will not be the one with the longest model list. It w
 
 Developers should spend their time defining the caller experience, objective, tools, and safety policies. The framework should handle provisioning, phone infrastructure, stages, knowledge, supervision, testing, artifacts, campaigns, classification, and improvement.
 
-That is the Supafone Labs thesis: a provider-neutral, agent-native operating system for voice AI, where a team of live agents, Watchers, testers, judges, and optimizers can be created and operated as easily as coding agents are today.
+That is the Supafone Labs thesis: a provider-neutral, agent-native operating system for voice AI, where live agents, supervisors, testers, judges, and optimizers can be created and operated as easily as coding agents are today.

@@ -402,8 +402,8 @@ export interface LabsBrowserTestSession {
     provider: string;
     transport: "ultravox" | "supafone_realtime";
     join_url?: string | null;
-    websocket_url?: string;
-    token?: string;
+    websocket_url?: string | null;
+    token?: string | null;
     input_sample_rate?: number;
     output_sample_rate?: number;
   };
@@ -1123,7 +1123,10 @@ export interface LabsAgentReadiness {
   [extra: string]: unknown;
 }
 
-export type UpdateLabsAgentRequest = Partial<CreateLabsAgentRequest>;
+export type UpdateLabsAgentRequest = Omit<Partial<CreateLabsAgentRequest>, "realtime"> & {
+  /** Select another native model, or null to return to the default Ultravox runtime. */
+  realtime?: LabsRealtimeSelection | null;
+};
 
 export interface LabsAgentLifecycleResponse {
   success?: boolean;
@@ -4351,7 +4354,9 @@ function labsAgentMetadataPayload(input: CreateLabsAgentRequest): Record<string,
 }
 
 function labsAgentUpdatePayload(input: UpdateLabsAgentRequest): Record<string, unknown> {
-  return labsAgentPayload(input as CreateLabsAgentRequest);
+  const payload = labsAgentPayload(input as CreateLabsAgentRequest);
+  if (input.realtime === null) payload.realtime = null;
+  return payload;
 }
 
 function campaignSettingsPayload(

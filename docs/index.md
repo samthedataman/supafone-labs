@@ -4,107 +4,81 @@
 
 # Supafone Labs
 
-**Production infrastructure for voice agents that need to work after the demo.**
+**One speech-to-speech harness. Build an agent once, then choose its speaking model.**
 
-## The problems we built it to solve
+Supafone's S2S harness is the shared runtime around a live speaking model: the
+agent prompt, supported tools, conversation stages, server-side credentials,
+and browser or phone connection. Agent Factory creates the durable agent that
+runs inside that harness. Change its `realtime` selection to use another
+supported model while keeping the same agent and phone configuration.
 
-Voice agents are distributed systems: a realtime model, telephony, TTS, STT,
-tools, retrieval, state, recordings, compliance, and post-call workflows must
-behave like one product. The failure usually occurs between those layers.
-
-| Problem | Innovation in the package |
-| --- | --- |
-| The speaking model must supervise itself | Supafone Supervisor runs a separate, bounded supervision loop |
-| Provider events and controls are incompatible | Fourteen audited adapters normalize one canonical runtime |
-| Tool claims outrun tool results | Deterministic truth and consent state preserve verified outcomes |
-| Every customer requires another architecture | Agent Factory creates editable stages, tools, voices, numbers, and artifacts |
-| Testing is manual and subjective | Adversarial QA and SSR grading produce repeatable evidence |
-| Call data is scattered across vendors | Durable activity APIs expose calls, plans, recordings, transcripts, and Supervisor events |
+[Build your first S2S agent](quickstart.md) ·
+[Open Agent Factory](https://app.supafone.ai/app/agents) ·
+[Install Python or TypeScript](https://labs.supafone.ai/docs/sdk-installation/) ·
+[Get a Supafone API key](https://labs.supafone.ai/console.html?mode=register)
 
 ## Native realtime Agent Factory
 
-The hosted Agent Factory supports provider-native speech-to-speech for browser
-previews and phone calls. Choose `gpt-realtime-2.1`, `gpt-live-1`,
-`gemini-3.1-flash-live-preview`, or `grok-voice-latest` with the same
-`{provider, model, voice}` shape in Python, TypeScript, REST, or the dashboard.
-The selection carries through Supafone-managed telephony, BYO Twilio, Telnyx,
-Plivo, and SIP. Read the [native realtime Agent Factory guide](realtime-agent-factory.md)
-for provider-key setup, the carrier matrix, browser transport, fixed stages,
-and current feature boundaries.
+| Speaking provider | Supported model | Default voice |
+| --- | --- | --- |
+| OpenAI | `gpt-realtime-2.1` | `marin` |
+| OpenAI | `gpt-live-1` | `marin` |
+| Google | `gemini-3.1-flash-live-preview` | `Puck` |
+| xAI | `grok-voice-latest` | `eve` |
 
-See the complete [framework coverage matrix](providers.md) for the exact
-support boundary of every runtime.
+Each model has an adapter for authenticated browser previews and phone calls
+through **Supafone-managed phone, Twilio, Telnyx, Plivo, or SIP**. The catalog
+reports supported integrations; workspace credentials, model access, carrier
+setup, and a live test determine whether a particular deployment is ready.
 
-```python
-import supafone_labs
+Start with your Supafone API key. For the selected model, Supafone uses its
+platform provider key when configured; you do not need to paste your own vendor
+key. An encrypted account BYOK key overrides the platform key for that provider.
+Check the runtime status before starting a call. A configured key alone does
+not prove provider permissions or call quality.
 
-brain = supafone_labs.supercharge(my_agent)
-```
+## What the harness keeps together
 
-Supafone Labs is the developer framework behind Supafone. You can create a
-hosted Supafone agent from code with Supafone-managed phone numbers, managed
-voices, built-in stages, tools, transcripts, recordings, web widgets, and
-Supafone Supervisor call coaching. Or you can attach the same Labs layer to the voice
-stack you already run.
+| Layer | Your choice | Supafone's job |
+| --- | --- | --- |
+| Agent | Name, instructions, business knowledge, supported tools | Save one account-scoped agent and enforce tool authority |
+| Stages | Intake → booking → confirmation | Preserve the fixed native stage contract and validate transitions |
+| Speaking model | OpenAI, Google, or xAI catalog selection | Translate audio, model events, and tool calls through its adapter |
+| Credentials | Managed platform key or optional BYOK | Keep secrets on the server and return masked readiness |
+| Delivery | Browser, managed phone, or a supported BYO carrier | Connect the same agent through the selected transport |
+| Client | Python, TypeScript, REST, or dashboard | Use the same hosted agent API |
 
-The speaking agent stays on the realtime path. Supafone's supervisor observes
-off that path, issues guidance only when evidence clears the configured gate,
-and becomes a no-op when unavailable or uncertain.
+A switch takes effect on a new session. Select a voice offered by the new model;
+voices, latency, and model behavior are provider-specific. The harness does not
+make every feature identical across providers.
 
-Its canonical packet maps directly to a human supervisor's work: interpersonal
-guidance, one operational next move, observed evidence, policy/tool-truth
-boundaries, language choice, intervention confidence, and guidance category.
-See [Programmable Supervisor Directives](https://github.com/samthedataman/supafone-labs/blob/main/gitbook/programmable-supervisor-directives.md).
+## Choose the runtime for the job
 
-## One package, two main features
+| Path | Use it for | Current boundary |
+| --- | --- | --- |
+| **Native S2S Agent Factory** | Choose the speaking model and reuse supported stages/tools across browser and phone | Fixed three stages; no native recording, Supervisor coaching, human transfer, DTMF, or public widget |
+| **Managed compatibility Agent Factory** | Existing Ultravox-backed agents and workflows needing the broader hosted feature set | Used when `realtime` is omitted; managed or BYOK Ultravox |
+| **Supafone Supervisor** | Add independent supervision to an existing supported agent stack | Adapter capability varies; separate from the native S2S transport |
 
-Supafone Labs gives you two product pillars:
+The native harness supports knowledge lookup, lead capture, scheduling,
+SMS/email, and configured custom tools through the server's allowed tools.
+[Read the full feature boundaries](realtime-agent-factory.md#feature-boundaries)
+before choosing the runtime for a customer workflow. Live language/voice routing
+and the 1,600+ TTS voice catalog belong to the managed compatibility path;
+native S2S uses each model's own voice list.
 
-- **Agent Factory** -- create a durable phone/web/campaign agent with
-  `supafone-labs` and helpers such as
-  `supafone.labs.agents.createInboundWithNumber()`. Supafone manages the phone
-  number, agent/provider stack, TTS/STT/LLM defaults, multistage state machine,
-  tools, recordings, transcripts, widget, usage, and Supafone Supervisor. No
-  developer vendor account is required in the default path.
-- **Supafone Supervisor** -- keep the voice stack you already run, then
-  let Supafone Labs supervise and coach the live call. Fourteen audited runtime
-  adapters normalize events; twelve expose native or developer-owned guidance
-  paths, while Bland is observation-only and Cartesia Line requires an explicit
-  host hook. See [providers.md](providers.md) and the
-  [GitBook framework matrix](https://github.com/samthedataman/supafone-labs/blob/main/gitbook/framework-support.md).
+## Start building
 
-BYOK is optional. Hosted delivery keeps agent-runtime, telephony, and TTS
-credentials independent; the Supervisor also supports separate STT and supervisor
-model credentials. Choose managed Supafone models with no additional key, or
-bring Anthropic/Claude, OpenAI, Gemini, OpenRouter, Groq, or Cerebras. Every
-domain can be mixed with Supafone-managed defaults. See
-[Managed and BYOK Supervisor Models](supervisor-models.md) for complete Python,
-TypeScript, REST, and CLI examples.
+1. [Quickstart](quickstart.md): create, preview, and switch an S2S agent.
+2. [Agent Factory](https://labs.supafone.ai/docs/agent-factory/): understand the agent and runtime choices.
+3. [Native S2S guide](realtime-agent-factory.md): model, credential, browser, and carrier contracts.
+4. [Developer workflows](https://labs.supafone.ai/docs/developer-workflows/): repeat the workflow across your agents.
+5. [Managed keys and BYOK](https://labs.supafone.ai/docs/byok-providers/): choose who supplies each credential.
+6. [Framework coverage](https://labs.supafone.ai/docs/framework-support/): native model support versus Supervisor adapters.
 
-You can also run the deterministic open-source runtime and adapters locally
-with your own keys.
+## Cost comparison
 
-`pip install supafone-labs` gives you both:
-
-- **`supafone_labs.runtime`** — the deterministic, provider-agnostic voice **runtime** (the
-  body). Canonical events, call state, truth/consent/watchdog policies, replay, and
-  silent injection compiled to every provider. No LLM.
-- **`supafone_labs`** — the independent **Supervisor** + self-optimizing prompt
-  engine on top of the runtime (the reasoning layer).
-
-> The split is degrade-safe: if supervision is slow, unavailable, or uncertain,
-> the call keeps running on the deterministic runtime without waiting.
-
-## Next
-
-- [Quickstart](quickstart.md) — supercharge an agent in 60 seconds.
-- [Supervisor models](supervisor-models.md) — managed, Claude, OpenAI, Gemini,
-  OpenRouter, Groq, and Cerebras configurations.
-- [Hosted Agents API](hosted-agents-api.md) — create Supafone-hosted agents from
-  code with managed voices, built-in stages, tools, widget snippets, and
-  Supafone Supervisor.
-- [Live language and voice routing](live-language-voice-routing.md) — opt-in
-  same-call language changes with a matching voice and translated primary greeting.
-- [Providers & frameworks](providers.md) — Ultravox, Vapi, Retell, Pipecat,
-  GPT-Realtime, Grok, LiveKit, ElevenLabs, Deepgram, Cartesia, Inworld, and the generic
-  adapter.
+See [Pricing and Credits](https://labs.supafone.ai/docs/pricing-and-credits/) for current managed-runtime
+billing and credit behavior. BYOK usage is billed by the selected provider.
+Do not assume that every model, carrier, or native S2S feature has the same
+billing or inclusions as the managed compatibility stack.

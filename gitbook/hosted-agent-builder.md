@@ -1,7 +1,15 @@
 # Hosted Agent Builder
 
-The hosted agent builder creates complete Supafone agents with managed voices,
-stages, tools, artifacts, widget sync, and Supafone Supervisor attached.
+**Dashboard:** open [Supafone agents](https://app.supafone.ai/app/agents),
+select your agent, and use its native realtime model controls. The older
+[Labs workspace](https://labs.supafone.ai/builder.html) is the managed Ultravox
+compatibility builder and links to these S2S controls.
+
+The hosted Agent Factory builder creates agents for Supafone's S2S harness.
+Choose the speaking model, its native voice, and a browser or phone transport;
+Supafone retains the agent prompt, supported tools, and fixed native stages.
+The managed Ultravox compatibility runtime separately provides the broader
+planner, compatible TTS voices, recording, widgets, and Supervisor attachment.
 
 There are two builder modes:
 
@@ -37,11 +45,23 @@ transcription, PII redaction, retention days, and consent announcement.
 
 ## Native realtime builder path
 
-The builder can select OpenAI GPT Realtime 2.1, GPT Live 1, Gemini Live 3.1, or Grok Voice. Show provider-key and carrier readiness before launch. Native realtime agents use the authenticated `supafone_realtime` browser transport and fixed intake → booking → confirmation stages; the normal hosted planner and Supervisor attachment do not apply.
+The builder can select OpenAI GPT Realtime 2.1, GPT Live 1, Gemini Live 3.1, or
+Grok Voice. Use the selected model's configured Supafone platform key by default;
+an account BYOK key overrides it. Show credential source and model/carrier
+readiness before launch, and surface missing setup without requiring BYOK
+when a platform key exists.
+
+Native agents use the authenticated `supafone_realtime` browser transport and
+fixed intake → booking → confirmation stages. Model switching applies to new
+sessions. Recording, Supervisor coaching, transfer, DTMF, public widgets, and
+live language/voice profile switching are not available on this transport.
 
 See [Native Realtime Agent Factory](realtime-agent-factory.md) for the complete request and readiness contract.
 
-## Programmatic Hosted Agent Builder
+## Programmatic managed compatibility builder
+
+These examples omit `realtime` and use the existing Ultravox runtime. For
+native S2S creation and switching, follow the [quickstart](quickstart.md).
 
 ```ts
 import { Supafone } from "supafone-labs";

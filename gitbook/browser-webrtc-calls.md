@@ -1,6 +1,6 @@
 # Browser WebRTC Calls
 
-Supafone Labs `0.6.1` exposes browser voice sessions directly through the
+Supafone Labs `0.6.2` exposes browser voice sessions directly through the
 Python and TypeScript SDKs. A WebRTC session connects a browser microphone to
 an owned Supafone voice agent without buying a phone number or creating a PSTN
 call.
