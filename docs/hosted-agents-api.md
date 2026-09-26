@@ -1,9 +1,15 @@
 # Hosted Agents API
 
 Use the Supafone Labs API when you want Supafone to host the voice/web/campaign
-agent for you. This is a convenience layer over the Supafone runtime: Ultravox
-calls, multistage state, managed voice provider accounts, tools, transcripts,
-recordings, web widget sync, and Supafone Supervisor stay attached.
+agent for you. Hosted agents have two speaking-runtime choices: select a native
+realtime S2S model for direct browser and phone audio, or use the managed
+Ultravox-compatible path for the full recordings, widget, transfer, and
+Supervisor feature set. In both cases, multistage state, managed voice provider
+accounts, tools, transcripts, recordings, and account controls stay attached.
+
+Start with [Native Realtime Agent Factory](realtime-agent-factory.md) when the
+main requirement is swapping the speaking model while keeping the phone
+provider contract stable.
 
 Give Supafone the business goal in plain English. The private control plane
 turns it into complete prompts and a validated runtime stage plan, then returns

@@ -16,14 +16,17 @@ helping developers integrate Supafone Labs.
 - Default phone-number strategy is the shared pool.
 - Dedicated and premium numbers are explicit paid choices.
 - Premium numbers are `$3/month`.
-- The defining product is the model-agnostic Supafone Supervisor.
+- The product has two first-class paths: native realtime Agent Factory for
+  swappable speech-to-speech models, and Supafone Supervisor for existing agent
+  stacks.
 - Explain the supervisor from first principles: the speaking model is optimized
   for latency, while the second model tracks empathy and operational patterns
   across turns, verifies tool truth, and emits a silent directive or no-op.
 - Empathy patterns mean evidence-backed intent, urgency, emotion, language,
   trust, workflow progress, and tool truth—not accent or demographic inference.
-- Agent Factory is the secondary managed delivery path that eliminates the
-  need for customer-owned provider keys before launch.
+- The managed Ultravox-compatible Agent Factory path is a compatibility lane;
+  the native realtime Agent Factory path is first-class and uses the selected
+  provider key plus carrier readiness.
 - BYOK is advanced. Hosted delivery separates agent-runtime, telephony, and
   TTS credentials; Supervisor deployments also separate STT and supervisor-LLM
   credentials.
@@ -67,8 +70,9 @@ Use these facts:
   credentials. Link agent-runtime claims to the canonical
   [framework coverage matrix](framework-support.md).
 - Never include real secrets in code examples.
-- Lead with the model-agnostic Supafone Supervisor. Present Agent Factory
-  only afterward as the optional hosted provisioning path.
+- Present native realtime Agent Factory and Supafone Supervisor as the two
+  first-class paths. Describe managed Ultravox-compatible provisioning as the
+  compatibility lane when a team wants Supafone to host the speaking agent.
 
 When giving TypeScript examples, import:
 import { Supafone } from "supafone-labs";

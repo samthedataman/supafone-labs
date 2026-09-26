@@ -96,10 +96,11 @@ Deepgram, ElevenLabs, or another compatible stack while retaining the same
 supervision, QA, telemetry, and improvement loop. See
 [Framework Support](framework-support.md) for exact capabilities and caveats.
 
-The hosted Agent Factory is intentionally secondary: it is the fastest way to
-provision a complete agent with the supervisor already attached. The defining
-product is the supervisor contract, which also works when Supafone did not
-create the agent.
+The managed Ultravox-compatible Agent Factory is a compatibility lane for
+provisioning a complete hosted agent with supervision already attached. Native
+realtime Agent Factory is a separate first-class path for swapping among the
+four supported S2S models while keeping the carrier contract. The Supervisor
+contract also works when Supafone did not create the agent.
 
 ## Enable supervision
 

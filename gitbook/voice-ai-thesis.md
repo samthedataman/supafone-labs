@@ -53,9 +53,10 @@ The coding agent should complete that workflow through MCP tools or the Supafone
 The model-agnostic supervisor is the stable product. Supafone supports two
 ways to receive it.
 
-### Bring Your Stack — primary
+### Native realtime Agent Factory and Bring Your Stack
 
-Keep the runtime and carrier you already use. The Supafone Supervisor normalizes
+Keep the runtime and carrier you already use, or select a native realtime model
+from the Agent Factory and keep the same carrier contract. Supafone Supervisor normalizes
 provider events, maintains empathy and operational state across turns, and
 compiles corrections back into provider-native control actions.
 
@@ -67,9 +68,9 @@ pretend to re-host every vendor. The stable boundary is:
 - PSTN for real black-box testing of any authorized phone agent,
 - canonical logs, reports, objectives, and artifacts above both.
 
-### Agent Factory — secondary
+### Managed compatibility delivery
 
-Use Supafone-managed defaults to create a complete hosted agent, assign or buy a phone number, configure a voice, enable tools, attach the Supervisor, and return deployable artifacts.
+Use Supafone-managed defaults to create a complete hosted agent, assign or buy a phone number, configure a voice, enable tools, attach live supervision, and return deployable artifacts. This is the compatibility lane for teams that want Supafone to host the speaking agent.
 
 This is the shortest path from an idea to a working voice agent.
 

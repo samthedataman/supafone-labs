@@ -24,6 +24,8 @@
 * [Supervisor Models: Managed and BYOK](supervisor-models.md)
 * [Programmable Supervisor Directives](programmable-supervisor-directives.md)
 * [Framework Coverage](framework-support.md)
+* [Generated Provider Contracts](provider-contracts.md)
+* [Oracle Models and Controls](oracle-models-and-controls.md)
 * [Provider-Agnostic Runtime](provider-agnostic-framework.md)
 * [BYOK Providers](byok-providers.md)
 * [LLMs and Agent Prompts](llms-ai-agent-prompt.md)

@@ -1,5 +1,14 @@
 # Hosted Agents REST API
 
+Hosted agents have two speaking-runtime choices: select a native realtime S2S
+model for direct browser and phone audio, or use the managed Ultravox-compatible
+path for the full recordings, widget, transfer, and Supervisor feature set. In
+both cases, the API keeps multistage state, managed voice provider accounts,
+tools, transcripts, recordings, and account controls together. Start with
+[Native Realtime Agent Factory](realtime-agent-factory.md) when the main
+requirement is swapping the speaking model while keeping the phone provider
+contract stable.
+
 The hosted-agent REST API creates and manages complete Supafone agents. Use it
 directly from any language or let the Python SDK, TypeScript SDK, and MCP server
 wrap the same endpoints. TypeScript is optional.
@@ -427,6 +436,7 @@ Supported BYOK provider labels include `twilio`, `telnyx`, `plivo`, and `sip`.
 Secrets are encrypted at rest. All read responses are masked; the API never
 returns stored auth tokens or provider API keys.
 
+<a id="runtime-managed-vs-byok-ultravox"></a>
 ## Runtime: managed Ultravox or native realtime
 
 The agent runtime runs on Ultravox. By default it uses Supafone's managed

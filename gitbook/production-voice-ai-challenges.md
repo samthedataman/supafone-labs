@@ -9,12 +9,13 @@ Supafone treats those as control-plane problems. The realtime agent stays on
 the low-latency speaking path. Supafone Supervisor and the shared runtime handle
 supervision, continuity, policy, telemetry, and recovery beside the call.
 
-The core product is the model-agnostic supervisor, not the hosted Agent
-Factory. Its first-principles advantage is pattern memory: it treats empathy as
-evidence-backed changes in intent, urgency, emotion, language, trust, workflow
-progress, and tool truth across turns. Agent Factory is the secondary path for
-teams that also want Supafone to provision the speaking agent and surrounding
-infrastructure.
+Supafone offers two first-class paths: native realtime Agent Factory for
+swappable speech-to-speech models, and Supafone Supervisor for teams that
+already run an agent stack. The managed Ultravox-compatible Agent Factory is a
+compatibility lane for teams that also want Supafone to provision the speaking
+agent and surrounding infrastructure. The Supervisor's advantage is pattern
+memory: it treats empathy as evidence-backed changes in intent, urgency,
+emotion, language, trust, workflow progress, and tool truth across turns.
 
 ## The day-to-day challenge map
 

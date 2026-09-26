@@ -274,20 +274,22 @@ the call is, tool claims require real tool confirmation, outbound opt-outs are
 explicit, and the safe template keeps creation available if the hosted planner
 is temporarily unavailable.
 
-## The core product: a model-agnostic supervisor
+## Two first-class delivery paths
 
-Supafone Labs is built around one defining capability:
+Supafone Labs gives developers two complementary runtime choices:
 
-1. **Primary — Supafone Supervisor**: attach live supervision to a hosted agent
+1. **Native realtime Agent Factory**: choose one of four provider-native S2S
+   models, keep the same Agent Factory contract, and run it through Supafone,
+   Twilio, Telnyx, Plivo, or SIP phone delivery.
+2. **Supafone Supervisor**: attach live supervision to a hosted agent
    or an agent you already run. It watches empathy and
    operational patterns across turns—intent, urgency, emotion, language,
    workflow progress, tool truth, and outcomes—then sends a silent corrective
    directive through the provider's native control channel only when it can
    improve the call.
-2. **Secondary — Agent Factory delivery path**: create complete inbound,
+3. **Managed compatibility Agent Factory**: create complete inbound,
    outbound, web, and campaign agents from one Supafone API key with the same
-   supervisor already attached. This managed path removes provisioning work;
-   it does not define or constrain the Supervisor framework.
+   managed provider layer and optional supervisor already attached.
 
 The supervisor is model agnostic by construction. Provider adapters normalize
 each stack into one call-state contract and compile one abstract directive back
@@ -309,6 +311,7 @@ separate:
 Those lanes can be mixed. A team can use Supafone-managed telephony with BYOK
 TTS, or BYOK Twilio/Telnyx with the managed supervisor, or bring the full
 stack and only use Supafone for self-healing supervision and logs.
+See the [BYOK provider details](gitbook/byok-providers.md) for the complete credential and transport matrix.
 
 ## Why this exists
 
@@ -447,10 +450,12 @@ speech browser previews and managed or BYO phone agents:
 | Google | `gemini-3.1-flash-live-preview` |
 | xAI | `grok-voice-latest` |
 
-The selection is available from both the Python and TypeScript clients. The
-private API owns the default intake, booking, and confirmation stages, while
-explicit supported stages remain valid. A provider key and carrier credentials
-are still required for a live call.
+The selection is available from both the Python and TypeScript clients and from
+the developer builder. Every model exposes the same five phone transports:
+Supafone-managed, BYO Twilio, BYO Telnyx, BYO Plivo, and BYO SIP. The native path
+installs a fixed intake → booking → confirmation contract; arbitrary planner
+stages are not used. A provider key and carrier credentials are required for a
+live call.
 
 ```ts
 const agent = await supafone.labs.agents.createInbound({
@@ -694,7 +699,7 @@ const ws = new WebSocket(`${API.replace("https","wss")}/v1/stt/live` +
 </details>
 
 Full reference with every endpoint, WebSocket framing, and error shapes:
-[**docs**](https://labs.supafone.ai/docs.html) · interactive
+[**docs**](https://labs.supafone.ai/docs/) · interactive
 [OpenAPI](https://api.labs.supafone.ai/docs).
 
 ## Pricing
@@ -744,7 +749,7 @@ test matrix, while the
 and adjacent TTS, STT, telephony, LLM, prompt, and SDK layers. Telephony is
 transport-agnostic: Twilio, Telnyx, SignalWire, Vonage, Plivo, LiveKit SIP,
 Jambonz, FreeSWITCH/Asterisk, and SIPREC forks all feed the same tap
-([SIP matrix](https://labs.supafone.ai/docs.html#sip)).
+([SIP matrix](https://labs.supafone.ai/docs/#sip)).
 
 Runnable integrations for every permutation live in [`examples/`](examples/).
 

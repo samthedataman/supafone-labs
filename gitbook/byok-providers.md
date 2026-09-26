@@ -28,7 +28,7 @@ Supafone.
 
 Do not collapse BYOK into one generic "provider keys" bucket. Hosted delivery
 has three independent provisioning lanes; Supervisor deployments add independent
-STT and supervisor-LLM credentials:
+STT and supervisor-LLM credentials. These are five independent credential lanes:
 
 | Lane | What it means | Common providers |
 | --- | --- | --- |
@@ -36,20 +36,29 @@ STT and supervisor-LLM credentials:
 | Telephony | The carrier, trunk, SIP, and phone-network layer | Twilio, Telnyx, Plivo, SignalWire, SIP/custom trunks |
 | TTS | The voice-rendering provider | Cartesia, ElevenLabs, Inworld, Deepgram, custom TTS |
 | STT | The transcript and language-authority provider | Deepgram or provider-native streams |
-| Supervisor model | The model that forms Supervisor directives | Supafone managed, Claude, OpenAI, Gemini, OpenRouter, Groq, Cerebras |
+| Supervisor LLM | The model that forms Supervisor directives | Supafone managed, Claude, OpenAI, Gemini, OpenRouter, Groq, Cerebras |
+
+These independent lanes do not imply fourteen hosted runtime choices. They describe the adapter and credential boundaries around a speaking runtime.
 
 Each domain can be managed by Supafone or brought by the customer. For example,
 a customer can bring Telnyx telephony and Cartesia TTS while still using
 Supafone's managed supervisor, or bring an entire Ultravox stack and use Supafone
 only for self-healing directives and logs.
 
-## Native / BYOK Ultravox Runtime
+## Managed compatibility and native S2S runtime
 
-The hosted-agent **runtime** — where Supafone actually places and monitors the
-call — runs on Ultravox. By default it uses Supafone's managed platform key
-(managed billing). You can instead run agents on your **own** Ultravox account:
-your key, your billing. The agent is then both **placed and monitored** on your
-key, and `runtime_mode` becomes `"byok"`. Managed remains the default.
+Hosted Agent Factory has two direct speaking-runtime lanes. The managed
+Ultravox-compatible lane supplies the full recording, Supervisor, transfer,
+DTMF, widget, and arbitrary planner feature set. The native realtime lane lets
+you swap among the four catalog S2S models while keeping the browser and phone
+provider contract stable. Both lanes keep telephony and credentials server-side.
+
+### Managed Ultravox-compatible runtime
+
+The hosted-agent **managed compatibility runtime** uses Supafone's platform
+key by default (managed billing). You can instead run agents on your **own**
+Ultravox account: your key, your billing. The agent is then both **placed and
+monitored** on your key, and `runtime_mode` becomes `"byok"`.
 
 Two ways to connect it:
 
@@ -96,10 +105,21 @@ status shape:
 }
 ```
 
-This runtime lane is distinct from the supervisor provider keys below: those bring
+This compatibility lane is distinct from native realtime and from the supervisor provider keys below: those bring
 your own STT/LLM/TTS for supervision, while this runs the agent itself on your
 Ultravox account. See [Hosted Agents API](hosted-agents-api.md) for the full
 create/runtime contract and the runtime block returned on agent create.
+
+### Native realtime Agent Factory
+
+Native realtime uses `realtime: { provider, model, voice }` with
+`gpt-realtime-2.1`, `gpt-live-1`, `gemini-3.1-flash-live-preview`, or
+`grok-voice-latest`. Connect the selected OpenAI, Google, or xAI key through
+`PUT /api/v1/labs/runtime`, then use Supafone-managed, Twilio, Telnyx, Plivo,
+or SIP phone transport. The native path has fixed intake → booking →
+confirmation stages and does not currently provide recording, Supervisor
+coaching, transfer, DTMF, or public widgets. See [Native Realtime Agent
+Factory](realtime-agent-factory.md).
 
 ## BYOK Supervisor Providers
 

@@ -23,7 +23,14 @@ behave like one product. The failure usually occurs between those layers.
 
 ## Native realtime Agent Factory
 
-The hosted Agent Factory now supports provider-native speech-to-speech for browser previews and phone calls. Read the [native realtime Agent Factory guide](realtime-agent-factory.md) for the four-model catalog, provider-key setup, carrier matrix, browser transport, fixed stages, and current feature boundaries.
+The hosted Agent Factory supports provider-native speech-to-speech for browser
+previews and phone calls. Choose `gpt-realtime-2.1`, `gpt-live-1`,
+`gemini-3.1-flash-live-preview`, or `grok-voice-latest` with the same
+`{provider, model, voice}` shape in Python, TypeScript, REST, or the dashboard.
+The selection carries through Supafone-managed telephony, BYO Twilio, Telnyx,
+Plivo, and SIP. Read the [native realtime Agent Factory guide](realtime-agent-factory.md)
+for provider-key setup, the carrier matrix, browser transport, fixed stages,
+and current feature boundaries.
 
 See the complete [framework coverage matrix](providers.md) for the exact
 support boundary of every runtime.
