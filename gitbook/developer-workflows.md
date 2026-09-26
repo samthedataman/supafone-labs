@@ -9,6 +9,17 @@ control and evidence layer.
 
 Choose a catalog model, connect its provider key, create the Agent Factory agent with `realtime`, run `testCall`, then configure managed or BYO telephony. Native realtime uses fixed stages and a separate transport; follow [Native Realtime Agent Factory](realtime-agent-factory.md) before advertising recording, transfer, or Supervisor features.
 
+The current native catalog contains four swappable speaking models. Each is
+available for browser previews and phone calls through Supafone-managed
+transport, BYO Twilio, BYO Telnyx, BYO Plivo, or BYO SIP:
+
+| Provider | Model | Default voice |
+| --- | --- | --- |
+| OpenAI | `gpt-realtime-2.1` | `marin` |
+| OpenAI | `gpt-live-1` | `marin` |
+| Google | `gemini-3.1-flash-live-preview` | `Puck` |
+| xAI | `grok-voice-latest` | `eve` |
+
 ## Supervise an existing agent
 
 Use this path when the developer already has an agent running on Ultravox,
@@ -27,14 +38,17 @@ state—then emits a silent directive only when the live agent needs help. The
 caller does not hear the directive. If the Supervisor is disabled, out of balance,
 or times out, the call continues without intervention.
 
-## Create a hosted agent
+## Create a native realtime agent
 
-Use this path when the developer wants Supafone to create the agent, phone
-number, voice, stages, logs, widget, and optional supervision.
+Use this path when the speaking model should be a first-class, swappable part
+of the agent. Supafone creates the agent, phone number, voice, fixed stages,
+logs, browser test session, and optional supervision around the selected S2S
+model.
 
 This path should feel like Stripe Checkout for voice agents: one Supafone API
-key first, working agent first, provider credentials only when the user chooses
-advanced BYOK.
+key first, working agent first, and only the selected model provider key required
+for the native speaking lane. Phone credentials stay managed by Supafone unless
+the user chooses a BYO carrier.
 
 ```ts
 import { Supafone } from "supafone-labs";
@@ -47,12 +61,12 @@ const agent = await supafone.labs.agents.createInboundWithNumber({
   assistantName: "Maya",
   description: "Answer new inquiries, understand the request, and book the right next step.",
   websiteUrl: "https://northline.example",
+  realtime: { provider: "openai", model: "gpt-realtime-2.1", voice: "marin" },
   number: { search: { areaCode: "415" } },
-  labs: { enabled: true, model: "gemma" },
 });
 ```
 
-Python has the matching hosted-agent helpers:
+Python has the matching native-agent helpers:
 
 ```python
 from supafone_labs import Supafone
@@ -65,8 +79,8 @@ agent = supafone.labs.agents.create_inbound_with_number({
     "assistantName": "Maya",
     "description": "Answer new inquiries, understand the request, and book the right next step.",
     "websiteUrl": "https://northline.example",
+    "realtime": {"provider": "openai", "model": "gpt-realtime-2.1", "voice": "marin"},
     "number": {"search": {"areaCode": "415"}},
-    "labs": {"enabled": True, "model": "gemma"},
 })
 ```
 
@@ -208,36 +222,34 @@ failure boundaries. See [Dynamic Voice Catalog and Selection](voice-catalog-and-
 
 ## Which One Should the UI Lead With?
 
-Show native realtime Agent Factory and Supafone Supervisor as the two first
-choices. Inside the hosted builder, lead with the one `sl_` Labs key because
-that is the lowest-friction provisioning path—it authenticates every surface:
+Lead with the Native Realtime Agent Factory when the user wants to swap the
+speaking model. The builder should make this path visible first:
 
-1. Paste your `sl_live_...` key (as `SUPAFONE_LABS_API_KEY` / `SUPAFONE_TOKEN`).
-2. Choose inbound or outbound.
-3. Describe the agent.
-4. Review the generated prompts and 3–8 stage plan when approval matters.
-5. Pick a voice and preview it.
-6. Keep Supafone-managed providers or open advanced BYOK.
-7. Create the agent and number.
-8. Stream logs.
-9. Export REST, TypeScript, Python, MCP, or JSON.
+1. Choose one of the four catalog models: OpenAI GPT Realtime 2.1, OpenAI GPT
+   Live 1, Google Gemini Live 3.1, or xAI Grok Voice.
+2. Connect the selected provider key and choose its voice.
+3. Choose Supafone-managed phone transport, BYO Twilio, BYO Telnyx, BYO Plivo,
+   or BYO SIP.
+4. Run `testCall` to verify the browser session before provisioning.
+5. Create the agent and number, then export the exact TypeScript, Python, REST,
+   MCP, or JSON configuration.
 
-The BYOK panel should be advanced. Developers should not need Twilio, Telnyx,
-Plivo, SignalWire, SIP, Ultravox, Retell, Vapi, Bland, LiveKit, Pipecat,
-Cartesia, Inworld, ElevenLabs, Deepgram, OpenAI, Anthropic, or xAI keys to
-launch the default agent.
+Keep Supafone Supervisor as a separate compatibility lane for teams that
+already run Ultravox, Vapi, Retell, ElevenLabs, OpenAI Realtime, Grok, Bland,
+LiveKit, Pipecat, Twilio media streams, SIP, or another agent stack. The two
+lanes share account authentication and documentation, but the native lane owns
+the speaking model and fixed intake → booking → confirmation stages.
 
-When BYOK is selected, keep hosted-delivery credentials separate and link the
-agent-runtime control to the canonical matrix:
+Provider credentials stay scoped to the selected lane. Native realtime needs
+the selected model provider key; phone credentials can remain Supafone-managed
+or be supplied for the chosen BYO carrier. Supervisor STT and supervisor-LLM
+credentials remain independent.
 
 | Lane | Examples |
 | --- | --- |
-| Agent/provider stack | [Fourteen audited runtime adapters](framework-support.md) |
-| Telephony | Twilio, Telnyx, Plivo, SignalWire, SIP/custom trunks |
-| TTS | Cartesia, ElevenLabs, Inworld, Deepgram, custom TTS |
-
-Supervisor STT and supervisor-LLM credentials remain independent from these
-hosted-delivery controls. See [BYOK providers](byok-providers.md).
+| Native realtime models | `gpt-realtime-2.1`, `gpt-live-1`, `gemini-3.1-flash-live-preview`, `grok-voice-latest` |
+| Native phone transports | Supafone-managed, Twilio, Telnyx, Plivo, SIP |
+| Supervisor compatibility | Ultravox, Vapi, Retell, ElevenLabs, OpenAI Realtime, Grok, and custom stacks |
 
 ## Key Routing
 
