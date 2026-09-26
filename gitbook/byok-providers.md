@@ -4,7 +4,17 @@ BYOK means "bring your own keys." It is powerful, but it should not be the
 default path. The default path is Supafone-managed infrastructure with one
 Supafone key.
 
-## Managed First
+## Native S2S managed keys first
+
+The Supafone S2S harness resolves each speaking provider independently. A saved,
+encrypted account key overrides Supafone's configured platform key; otherwise
+the platform key is used. Check `GET /api/v1/labs/runtime?provider=openai` (or
+`google`, `xai`) for `source` and readiness. You do not need your own vendor key
+when Supafone has configured that provider. No credential is returned to the
+browser. A credential being present does not verify model permissions or live
+call quality.
+
+## Managed compatibility defaults
 
 ```json
 {
@@ -114,8 +124,9 @@ create/runtime contract and the runtime block returned on agent create.
 
 Native realtime uses `realtime: { provider, model, voice }` with
 `gpt-realtime-2.1`, `gpt-live-1`, `gemini-3.1-flash-live-preview`, or
-`grok-voice-latest`. Connect the selected OpenAI, Google, or xAI key through
-`PUT /api/v1/labs/runtime`, then use Supafone-managed, Twilio, Telnyx, Plivo,
+`grok-voice-latest`. Use a configured platform key or optionally connect an
+OpenAI, Google, or xAI account key through `PUT /api/v1/labs/runtime`, then use
+Supafone-managed, Twilio, Telnyx, Plivo,
 or SIP phone transport. The native path has fixed intake → booking →
 confirmation stages and does not currently provide recording, Supervisor
 coaching, transfer, DTMF, or public widgets. See [Native Realtime Agent

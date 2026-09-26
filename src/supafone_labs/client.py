@@ -1667,7 +1667,10 @@ class LabsAgentsNamespace:
         return self._client._request_supafone_api(
             "PATCH",
             f"/api/v1/labs/agents/{parse.quote(agent_key)}{suffix}",
-            _labs_agent_update_payload(_merge(config, kwargs)),
+            _labs_agent_update_payload({
+                **_merge(config, kwargs),
+                **({"realtime": kwargs["realtime"]} if "realtime" in kwargs else {}),
+            }),
         )
 
     def sync_knowledge(
@@ -2586,6 +2589,8 @@ def _labs_agent_update_payload(data: Mapping[str, Any]) -> dict[str, Any]:
     payload = _labs_agent_payload(data) or {}
     if "website_url" in data or "websiteUrl" in data:
         payload["website_url"] = _pick(data, "website_url", "websiteUrl")
+    if "realtime" in data:
+        payload["realtime"] = data["realtime"]
     return payload
 
 

@@ -1,82 +1,56 @@
 # Product Overview
 
-Supafone Labs is built around a simple architecture: the live voice agent keeps
-talking inside the realtime latency budget, while Supafone runs an independent
-supervisor beside the call. It reads transcripts, audio-derived state,
-tool outcomes, and account context, then returns a silent directive only when it
-can improve the call.
+Supafone Labs gives developers a shared **speech-to-speech (S2S) harness** and
+an **Agent Factory**. The harness connects the speaking model to the agent's
+prompt, allowed tools, stages, credentials, and audio transport. Agent Factory
+creates and manages the agent configuration used by that harness.
 
-## Native realtime delivery
+## Build once, choose the model
 
-Supafone now has a direct speech-to-speech Agent Factory path for four catalog models. See [Native Realtime Agent Factory](realtime-agent-factory.md).
+Create an agent with a `realtime: { provider, model, voice }` selection. The
+native catalog includes OpenAI `gpt-realtime-2.1`, OpenAI `gpt-live-1`, Google
+`gemini-3.1-flash-live-preview`, and xAI `grok-voice-latest`.
 
-## Product Surfaces
+The same agent can use authenticated browser previews, Supafone-managed phone,
+BYO Twilio, BYO Telnyx, BYO Plivo, or BYO SIP. Update the selection before a new
+session to compare another model. Your agent identity, instructions, supported
+tools, fixed intake → booking → confirmation stages, and carrier configuration
+stay together; choose a model-compatible voice with each switch.
 
-**Supafone Supervisor is the defining product surface.** It is the model-agnostic
-supervisor contract that observes empathy and operational patterns across
-turns, verifies tool truth and workflow progress, and emits a silent native
-directive only when intervention is useful.
+## Managed keys first
 
-**Labs Cloud** is hosted at `https://api.labs.supafone.ai` with an `sl_live_...`
-key. This path runs the Supervisor, hosted TTS/STT, live multilingual
-transcription, logs, usage, QA, optimizer, and the managed side of Voice
-Supervisor.
+Your Supafone key authenticates your application. Supafone then resolves the
+selected speaking model's credential on the server: an encrypted account BYOK
+key, if supplied, otherwise a configured platform key. A platform key means
+customers can use the model without creating their own provider account.
 
-**Open-source SDK runtime** lives in the Python package `supafone-labs` and can
-supervise an existing stack. It includes the canonical call-state contract,
-deterministic runtime policies, provider adapters, replay, telemetry, and
-local or hosted supervisor-model modes.
+Read the selected provider's runtime status before launch. Missing credentials
+are reported as setup required. A catalog entry and a configured credential do
+not establish model entitlement or successful live calls. Carrier readiness is
+checked separately from model readiness.
 
-**Hosted Supafone agents** are created through the Supafone hosted-agent API at
-`https://api.supafone.ai/api/v1/labs` with your `sl_live_...` key (one-key
-auth) or a scoped `sf_live_...` key. This path is
-for complete agents: inbound receptionists, outbound sales agents, web agents,
-campaign agents, generated executable call plans, managed numbers, presets,
-tools, artifacts, and Supafone Supervisor.
-This is the Agent Factory path: choose either the direct native realtime
-runtime, where you swap among four S2S models and keep the carrier contract, or
-the managed Ultravox-compatible runtime, where Supafone supplies the operational
-provider layer. The supervisor also works when Supafone did not create the
-agent.
+## Three product surfaces
 
-## Core Concepts
-
-- **Supafone Supervisor**: the live supervision layer that observes a
-  hosted or BYOK agent and emits silent corrections.
-- **Empathy pattern state**: cross-turn intent, urgency, emotion, language,
-  trust, progress, and tool truth used to decide whether a nudge is warranted.
-- **Runtime**: canonical call events, state, policies, and provider adapters.
-- **Supervisor model**: managed or BYOK reasoning model that proposes a
-  directive; deterministic gates decide whether it is delivered.
-- **Whisper**: a silent directive injected into the agent's native control
-  channel. The caller never hears it.
-- **Supervisor**: Supafone Supervisor live supervision attached to a hosted or BYO agent.
-- **Standing directive**: a persistent coaching preamble improved from
-  post-call outcomes.
-- **Agent Factory**: the hosted-agent creation path that turns one
-  job description into validated prompts and a 3–8 stage runtime, then adds
-  managed platform, telephony, TTS/STT/LLM, numbers, tools, and logs.
-- **Number strategy**: shared pool by default, dedicated/premium only by
-  explicit choice.
-
-## Supported Build Paths
-
-| Path | Best for | Package/API |
+| Surface | Purpose | Runtime boundary |
 | --- | --- | --- |
-| Hosted inbound agent | Intake, reception, support | `supafone.labs.agents.createInboundWithNumber()` |
-| Hosted outbound agent | Sales, speed-to-lead, campaigns | `supafone.labs.agents.createOutboundWithNumber()` |
-| Web agent | Website widget and web intake | `POST /api/v1/labs/agents` |
-| Bring your stack | Teams already on a voice platform | Python `supafone_labs.supercharge()` |
-| Local runtime | Testing adapters and policies offline | Python runtime modules |
+| Native realtime Agent Factory | Build and switch S2S agents through the hosted API and dashboard | Four catalog models, fixed native stages, supported server tools, browser and phone |
+| Managed compatibility Agent Factory | Continue existing Ultravox-backed hosted workflows | Selected when `realtime` is omitted; includes the broader planner and compatible recording, transfer, widgets, and supervision features |
+| Supafone Supervisor | Observe and coach agents you already run | Separate SDK/runtime with provider-specific guidance and observation capabilities |
 
-## Production Defaults
+Supafone Supervisor is an independent product surface. It is not currently
+attached to the native S2S transport. The managed compatibility path and
+supported external stacks can use it as documented in the
+[framework matrix](framework-support.md).
 
-- Hosted agents default to Supafone-managed provider accounts.
-- BYOK is optional and split into independent agent-runtime, telephony, TTS,
-  STT, and supervisor-model lanes. The audited providers and exact support
-  depth are maintained in the [framework coverage matrix](framework-support.md).
-- Labs Cloud requests are billed against a minute balance.
-- The supervisor is timeout-bounded and degrade-safe: if it cannot produce a useful
-  directive quickly, it stays silent.
-- Real phone-number purchases, dedicated number reservations, and premium
-  numbers are never assumed. They should be explicit user/admin actions.
+## API and SDK surfaces
+
+Use Python, TypeScript, REST, or the dashboard with the same hosted agent
+contract. Hosted agents and model readiness live at
+`https://api.supafone.ai/api/v1/labs`; Labs Cloud supervision, QA, TTS/STT,
+usage, and logs live at `https://api.labs.supafone.ai`. One `sl_live_...` key
+can authenticate both APIs with the linked account; scoped `sf_live_...` keys
+remain available for hosted-agent-only integrations.
+
+[Start the quickstart](quickstart.md), read the
+[native runtime limits](realtime-agent-factory.md#feature-boundaries), or see
+[Agent Factory](agent-factory.md) for a complete creation workflow.

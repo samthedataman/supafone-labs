@@ -1,9 +1,14 @@
 # Native realtime Agent Factory
 
-Supafone's Agent Factory can run a provider-native speech-to-speech (S2S)
-model directly for browser previews and phone calls. This is a separate runtime
-from the managed Ultravox path and from Supafone Supervisor, which observes and
-coaches an existing agent off the audio path.
+Supafone's S2S harness connects a provider-native speech-to-speech model to
+one agent's prompt, supported tools, fixed stages, and browser or phone audio.
+Agent Factory creates that durable agent; its `realtime` selection chooses
+the speaking model. Updating the selection reuses the native agent contract
+for the next session. Model voices and behavior remain provider-specific.
+
+The native transport is separate from the managed Ultravox compatibility path
+and from Supafone Supervisor, which observes and coaches existing supported
+agent stacks. Omitting `realtime` keeps the managed compatibility runtime.
 
 Use this guide when the speaking model itself should own the live audio loop.
 Use [Supafone Supervisor](supafone-supervisor.md) when you want to keep another
@@ -34,9 +39,10 @@ transport for these phone providers:
 - BYO Plivo (`byo_plivo`)
 - BYO SIP (`byo_sip`)
 
-A catalog entry means an adapter exists. A workspace still needs the selected
-model key, a reachable public application URL, and carrier credentials before a
-live call can be placed.
+A catalog entry means an adapter exists. The selected model needs a configured
+Supafone platform key or an account BYOK key. Phone delivery also needs a
+reachable public application URL and managed or BYO carrier setup. Catalog
+presence alone does not verify model access or a successful live call.
 
 ## Create a native realtime agent
 
@@ -74,7 +80,7 @@ Python:
 ```python
 from supafone_labs import Supafone
 
-supafone = Supafone(api_key="sf_live_...")
+supafone = Supafone(api_key="sl_live_...")
 agent = supafone.labs.agents.create_outbound({
     "agentKey": "northline-realtime-follow-up",
     "name": "Northline realtime follow-up",
@@ -93,10 +99,21 @@ confirmation. The hosted call planner is skipped because provider-native audio
 sessions cannot safely accept arbitrary client-generated stage payloads. The
 selected model, voice, and tools remain account-scoped and durable.
 
-## Connect model credentials
+## Managed credentials and optional BYOK
 
-Connect the selected provider before starting a live call. Credentials are
-stored encrypted and status responses are masked.
+Use your Supafone application key to create agents. For each selected model,
+the server uses the account's encrypted provider key when present; otherwise
+it uses Supafone's configured platform key. Customers do not need their own
+provider account when that platform key is available. Keys never belong in
+the agent's `realtime` selection or browser code.
+
+Check `GET /api/v1/labs/runtime?provider=google` (or `openai`, `xai`). Status
+reports `configured`, `connected`, and `source`: `account` for BYOK, `platform`
+for managed credentials, `none` for missing configuration, and `invalid` for
+an unreadable saved key. `connected` means a credential resolves, not that a
+provider has accepted a live connection. Verify model access with a preview.
+
+To override the platform key with your own provider account, configure BYOK:
 
 ```bash
 curl "$SUPAFONE_API_BASE_URL/api/v1/labs/runtime" \
@@ -115,7 +132,7 @@ Gemini or Google API key. Environment fallback names are `OPENAI_API_KEY`,
 configured to supply them. Do not put a key inside `realtime` or log it in a
 client payload.
 
-The same endpoint is available through both SDKs:
+Optional BYOK configuration is also available through both SDKs:
 
 ```ts
 await supafone.labs.runtime.configure({
@@ -125,6 +142,8 @@ await supafone.labs.runtime.configure({
 ```
 
 ```python
+import os
+
 supafone.labs.runtime.configure({
     "provider": "xai",
     "credentials": {"api_key": os.environ["XAI_API_KEY"]},
@@ -164,16 +183,18 @@ approved managed number. Use BYO telephony when the customer owns the carrier
 account:
 
 ```ts
-await supafone.labs.agents.update("northline-realtime", {
-  telephony: {
-    mode: "byok",
-    provider: "twilio", // "telnyx", "plivo", or "sip"
-    credentials: {
-      // carrier-specific fields are stored by the private product API
-    },
+await supafone.labs.telephony.configure({
+  mode: "byok",
+  provider: "twilio", // "telnyx", "plivo", or "sip"
+  credentials: {
+    // Supply the required fields for the selected carrier on your server.
   },
 });
 ```
+
+This configures the account's phone provider and can affect agents using that
+account's carrier settings. It is not a per-agent model update. Check existing
+number assignments and routing before changing a shared carrier configuration.
 
 The carrier audio adapter converts media to mono PCM16 and returns model audio
 at the catalog's output rate. For outbound calls, verify the caller ID, carrier
@@ -202,7 +223,9 @@ for carrier-specific infrastructure.
 | Operation | Route |
 | --- | --- |
 | Discover models | `GET /api/v1/agents/catalog` or `GET /api/v1/labs/capabilities` |
-| Create/update agent | `POST /api/v1/labs/agents`, `PUT /api/v1/agents/{agent_id}` |
+| Create agent | `POST /api/v1/labs/agents` |
+| Update via SDK/REST | `PATCH /api/v1/labs/agents/{agent_key}` |
+| Update via product dashboard | `PUT /api/v1/agents/{agent_id}` |
 | Connect provider key | `GET|PUT /api/v1/labs/runtime` |
 | Browser preview | `POST /api/v1/labs/agents/{agent_key}/test-call` |
 | Browser audio | `WS /api/v1/realtime/connect` |
@@ -237,7 +260,8 @@ Native realtime is intentionally explicit. Current runtime responses report:
 - fixed intake → booking → confirmation stages: supported;
 - provider-native tools and account-scoped agent configuration: supported;
 - recording, Supafone Supervisor coaching, human transfer, DTMF navigation, and
-  public web widgets: not implemented on this transport;
+  specialist-team handoff, public web widgets, and live language/voice profile switching: not implemented
+  on this transport;
 - live carrier quality, regional reachability, and model access: require a
   deployment test with real credentials.
 

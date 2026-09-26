@@ -43,3 +43,20 @@ def test_realtime_test_call_uses_authenticated_agent_route():
     assert calls == [
         ("POST", "/api/v1/labs/agents/demo%2Fone/test-call?agency_id=acct-1", None)
     ]
+
+
+def test_realtime_switch_and_reset_preserve_explicit_selection():
+    calls = []
+
+    def transport(method, path, payload):
+        calls.append((method, path, payload))
+        return {"success": True}
+
+    client = Supafone(api_key="sf_test", transport=transport)
+    selection = {"provider": "xai", "model": "grok-voice-latest", "voice": "eve"}
+    client.labs.agents.update("demo", realtime=selection)
+    client.labs.agents.update("demo", realtime=None)
+    client.labs.agents.update("demo", name="Renamed")
+    assert calls[0] == ("PATCH", "/api/v1/labs/agents/demo", {"realtime": selection})
+    assert calls[1] == ("PATCH", "/api/v1/labs/agents/demo", {"realtime": None})
+    assert "realtime" not in calls[2][2]

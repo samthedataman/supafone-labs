@@ -49,3 +49,18 @@ test("testCall uses the authenticated agent route", async (t) => {
   assert.equal(log[0].method, "POST");
   assert.match(log[0].url, /\/api\/v1\/labs\/agents\/demo%2Fone\/test-call\?agency_id=acct-1$/);
 });
+
+
+test("update sends explicit native switch and null reset without changing other edits", async (t) => {
+  const log = [];
+  t.mock.method(globalThis, "fetch", mockFetch(log));
+  const client = new Supafone({ apiKey: "sf_test" });
+  const realtime = { provider: "google", model: "gemini-3.1-flash-live-preview", voice: "Puck" };
+  await client.labs.agents.update("demo", { realtime });
+  await client.labs.agents.update("demo", { realtime: null });
+  await client.labs.agents.update("demo", { name: "Renamed" });
+  assert.equal(log[0].method, "PATCH");
+  assert.deepEqual(log[0].body, { realtime });
+  assert.deepEqual(log[1].body, { realtime: null });
+  assert.equal("realtime" in log[2].body, false);
+});

@@ -4,9 +4,9 @@
 
 # Supafone Labs
 
-**Production infrastructure for voice agents that need to work after the
-demo.** Supervise an existing agent or provision the complete calling stack
-through Python, TypeScript, REST, WebSocket, or MCP.
+**One speech-to-speech harness. Build an agent once, then choose its speaking
+model.** Agent Factory connects supported S2S models to shared prompts, tools,
+stages, and browser/phone delivery through Python, TypeScript, and REST.
 
 [![CI](https://github.com/samthedataman/supafone-labs/actions/workflows/ci.yml/badge.svg)](https://github.com/samthedataman/supafone-labs/actions/workflows/ci.yml)
 [![PyPI](https://img.shields.io/pypi/v/supafone-labs)](https://pypi.org/project/supafone-labs/)
@@ -25,72 +25,52 @@ through Python, TypeScript, REST, WebSocket, or MCP.
 
 ---
 
-## The so what
+## Start here: the S2S harness
 
-**A normal voice framework helps an agent speak. Supafone helps developers
-build, test, operate, supervise, and improve the entire voice product.**
+Agent Factory creates the agent; the harness runs its selected speaking model
+with supported tools and fixed intake → booking → confirmation stages.
+Choose OpenAI `gpt-realtime-2.1` or `gpt-live-1`, Google
+`gemini-3.1-flash-live-preview`, or xAI `grok-voice-latest`. Keep the same
+agent configuration across authenticated browser previews, Supafone-managed
+phone, Twilio, Telnyx, Plivo, and SIP.
 
-One API key connects phone and WebRTC delivery, managed voices, grounded
-knowledge, verified tools, SMTP email, live supervision, recordings,
-transcripts, and QA. Use the hosted Agent Factory or keep an existing OpenAI
-Realtime, Gemini, Grok, Ultravox, Vapi, Retell, LiveKit, or compatible stack.
+Use one Supafone application key. A configured platform key supplies the
+selected model unless the account has an encrypted BYOK override. Check the
+provider's runtime status before launch; catalog support and key presence do
+not establish model access or successful carrier calls.
 
-| What developers need | What ships in Supafone |
-| --- | --- |
-| Delivery | Managed phone provisioning, PSTN calls, and browser WebRTC testing |
-| Speech | Search and preview 1,600+ normalized Cartesia, ElevenLabs, Inworld, Deepgram, and Ultravox voices |
-| Grounding and actions | Website/document knowledge, retrieval and reranking, verified tools, and SMTP email |
-| Complex calls | Multi-stage flows, IVR navigation, language-aware voice profiles, handoffs, and campaigns as code |
-| Supervision and QA | Off-path Supafone Supervisor, tool-truth guardrails, recordings, transcripts, logs, and call evidence |
-| Developer surfaces | Python, TypeScript, REST, WebSocket, and MCP over the same hosted contracts |
+```ts
+import { Supafone } from "supafone-labs";
 
-Supafone Cloud is **$0.10 per connected minute** for the standard managed call
-stack, including managed models, compatible voices, telephony, transcripts,
-Supafone Supervisor, and QA. By comparison, published rates such as Vapi's
-$0.05 platform fee, Deepgram Voice Agent's $0.075 standard rate, and
-ElevenAgents' $0.08 additional-call rate leave other provider or carrier costs
-separate. See the [full bundled-cost comparison](gitbook/README.md#cost-comparison)
-before comparing headline rates.
+const sf = new Supafone({ apiKey: process.env.SUPAFONE_TOKEN! });
+await sf.labs.agents.createInbound({
+  agentKey: "intake",
+  name: "Intake",
+  realtime: { provider: "openai", model: "gpt-realtime-2.1", voice: "marin" },
+});
+await sf.labs.agents.update("intake", {
+  realtime: { provider: "xai", model: "grok-voice-latest", voice: "eve" },
+});
+```
 
-The $0.10 pays for the production path, not only an orchestration request:
-carrier connection, compatible model and voice runtime, call artifacts,
-Supervisor inference, and QA share one meter. It also replaces the engineering
-work of securing, integrating, and reconciling several vendor accounts. BYOK
-remains available when a team already has preferred provider economics.
+Model changes apply to new sessions. Native S2S currently excludes recording,
+Supervisor coaching, human transfer, DTMF, public widgets, and live
+language/voice profile switching. Omitting `realtime` preserves the managed
+Ultravox compatibility runtime and its broader hosted feature set.
 
-## Why we built it
+[Quickstart](gitbook/quickstart.md) · [Native runtime contract](gitbook/realtime-agent-factory.md) ·
+[Managed keys and BYOK](gitbook/byok-providers.md) · [Framework coverage](gitbook/framework-support.md)
 
-A voice demo can be assembled in an afternoon. Production requires a realtime
-agent, telephony, TTS, STT, tools, retrieval, state, recordings, compliance,
-monitoring, and post-call workflows to behave like one system. Each provider
-uses different events and controls, while the speaking model is still expected
-to supervise itself during the conversation.
+## Supafone Supervisor: supervise an existing stack
 
-Supafone Labs turns those failures into reusable package primitives:
-
-| Production problem | Package innovation |
-| --- | --- |
-| The agent cannot reliably notice its own mistakes | Supafone Supervisor runs beside the call off the audio hot path |
-| Every provider exposes different live events | Fourteen audited runtime adapters normalize one canonical call state |
-| Provider controls are incompatible | One abstract directive compiles into native control, developer-owned context, observation, or a safe no-op |
-| Prompts claim actions that tools never completed | Truth state and guardrail policies require verified outcomes |
-| Every customer requires another agent architecture | Agent Factory generates editable stages, tools, voices, numbers, and artifacts |
-| Testing is manual role-play | Adversarial QA and SSR grading measure regressions and Supervisor lift |
-| Calls and decisions disappear across dashboards | Durable activity APIs retain calls, recordings, transcripts, plans, and Supervisor events |
-| Phone, WebRTC, campaigns, and messaging become separate products | One SDK and account model expose the operational stack |
-
-Read the [problem-first product overview](gitbook/README.md) or inspect the
-[complete framework coverage matrix](gitbook/framework-support.md).
-
-## Start here: Supafone Supervisor
-
-The Supervisor is the core of Supafone Labs: a second AI runs beside the realtime
+Supafone Supervisor is a separate offering: a second AI runs beside the realtime
 agent, observes the live conversation off the latency-critical audio path, and
 silently corrects the agent when it detects tool failures, unsafe claims,
 language changes, missed intent, or a broken workflow. If the Supervisor has
 nothing useful to add—or cannot respond in time—the call continues unchanged.
 
-It is enabled by default in both SDKs:
+The managed compatibility runtime can use it through both SDKs. It is not
+currently attached to the native S2S transport:
 
 ```python
 from supafone_labs import Supafone
@@ -274,22 +254,14 @@ the call is, tool claims require real tool confirmation, outbound opt-outs are
 explicit, and the safe template keeps creation available if the hosted planner
 is temporarily unavailable.
 
-## Two first-class delivery paths
+## S2S Agent Factory and Supafone Supervisor
 
-Supafone Labs gives developers two complementary runtime choices:
-
-1. **Native realtime Agent Factory**: choose one of four provider-native S2S
-   models, keep the same Agent Factory contract, and run it through Supafone,
-   Twilio, Telnyx, Plivo, or SIP phone delivery.
-2. **Supafone Supervisor**: attach live supervision to a hosted agent
-   or an agent you already run. It watches empathy and
-   operational patterns across turns—intent, urgency, emotion, language,
-   workflow progress, tool truth, and outcomes—then sends a silent corrective
-   directive through the provider's native control channel only when it can
-   improve the call.
-3. **Managed compatibility Agent Factory**: create complete inbound,
-   outbound, web, and campaign agents from one Supafone API key with the same
-   managed provider layer and optional supervisor already attached.
+The native Agent Factory creates an agent for the shared S2S harness. Choose
+its speaking model while retaining the supported tools, fixed stages, and
+browser or carrier transport. Supafone Supervisor is a separate offering for
+observing and coaching compatible existing stacks; native S2S does not
+currently attach it. The managed Ultravox compatibility runtime keeps its
+broader hosted features and optional Supervisor attachment.
 
 The supervisor is model agnostic by construction. Provider adapters normalize
 each stack into one call-state contract and compile one abstract directive back
@@ -451,11 +423,11 @@ speech browser previews and managed or BYO phone agents:
 | xAI | `grok-voice-latest` |
 
 The selection is available from both the Python and TypeScript clients and from
-the developer builder. Every model exposes the same five phone transports:
+the [Supafone agent dashboard](https://app.supafone.ai/app/agents). Every model exposes the same five phone transports:
 Supafone-managed, BYO Twilio, BYO Telnyx, BYO Plivo, and BYO SIP. The native path
 installs a fixed intake → booking → confirmation contract; arbitrary planner
-stages are not used. A provider key and carrier credentials are required for a
-live call.
+stages are not used. A configured platform model key or account BYOK key,
+plus managed or BYO carrier readiness, is required for a live call.
 
 ```ts
 const agent = await supafone.labs.agents.createInbound({
@@ -731,7 +703,7 @@ engines each get the injection channel they actually have:
 | Vapi | agent platform | system `add-message` via live-call `controlUrl` |
 | OpenAI Realtime · Inworld Realtime | realtime S2S | system `conversation.item.create` |
 | xAI Grok | realtime S2S | per-response `response.create.instructions` |
-| Gemini Live | realtime S2S | `clientContent` user turn (system is invalid mid-session) |
+| Gemini Live | observation adapter | Ordinary `clientContent` user context; no hidden mid-call guidance |
 | Retell | custom-LLM WS | system entry in your owned LLM context |
 | ElevenLabs Agents | agent platform | `contextual_update` |
 | Deepgram Voice Agent | agent platform | `UpdatePrompt` |

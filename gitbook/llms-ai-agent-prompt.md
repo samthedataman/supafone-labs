@@ -26,7 +26,7 @@ helping developers integrate Supafone Labs.
   trust, workflow progress, and tool truth—not accent or demographic inference.
 - The managed Ultravox-compatible Agent Factory path is a compatibility lane;
   the native realtime Agent Factory path is first-class and uses the selected
-  provider key plus carrier readiness.
+  configured platform key or account BYOK override, plus carrier readiness.
 - BYOK is advanced. Hosted delivery separates agent-runtime, telephony, and
   TTS credentials; Supervisor deployments also separate STT and supervisor-LLM
   credentials.
@@ -35,10 +35,13 @@ helping developers integrate Supafone Labs.
 
 - Catalog models: `gpt-realtime-2.1`, `gpt-live-1`, `gemini-3.1-flash-live-preview`, and `grok-voice-latest`.
 - Providers: `openai`, `google`/`gemini`, and `xai`/`grok`.
-- Direct S2S calls require the selected provider key and carrier readiness.
+- The S2S harness connects one agent prompt, supported tools, fixed stages, and audio transport to its selected speaking model.
+- Native model credentials resolve server-side: account BYOK overrides a configured platform key. Customers need no vendor key when managed credentials exist.
+- Check runtime status per selected provider; credential presence does not establish model entitlement or live-call quality. Phone calls also need carrier readiness.
+- Changing realtime applies to new sessions; it is not a mid-call model handoff.
 - Phone transports: Supafone-managed, BYO Twilio, BYO Telnyx, BYO Plivo, and BYO SIP.
 - Browser preview uses `labs.agents.testCall()` / `test_call()` and `transport: "supafone_realtime"`.
-- Native realtime agents use fixed intake → booking → confirmation stages and do not currently expose recording, Supervisor coaching, transfer, DTMF navigation, or public widgets.
+- Native realtime agents use fixed intake → booking → confirmation stages and do not currently expose recording, Supervisor coaching, transfer, DTMF navigation, public widgets, or live language/voice profile switching.
 - The standard managed Agent Factory/Ultravox path and the native realtime path are separate choices.
 
 ## Do Not Confuse These
@@ -72,7 +75,7 @@ Use these facts:
 - Never include real secrets in code examples.
 - Present native realtime Agent Factory and Supafone Supervisor as the two
   first-class paths. Describe managed Ultravox-compatible provisioning as the
-  compatibility lane when a team wants Supafone to host the speaking agent.
+  compatibility lane for its broader hosted features; native S2S agents are also hosted by Supafone.
 
 When giving TypeScript examples, import:
 import { Supafone } from "supafone-labs";

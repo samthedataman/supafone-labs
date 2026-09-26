@@ -53,7 +53,7 @@ def test_package_metadata_stays_on_published_release():
     pyproject = (ROOT / "pyproject.toml").read_text(encoding="utf-8")
     package = json.loads((ROOT / "sdk-ts" / "package.json").read_text(encoding="utf-8"))
     lock = json.loads((ROOT / "sdk-ts" / "package-lock.json").read_text(encoding="utf-8"))
-    assert re.search(r'^version = "0\.6\.1"$', pyproject, flags=re.MULTILINE)
-    assert package["version"] == "0.6.1"
-    assert lock["version"] == "0.6.1"
-    assert lock["packages"][""]["version"] == "0.6.1"
+    assert re.search(r'^version = "0\.6\.2"$', pyproject, flags=re.MULTILINE)
+    assert package["version"] == "0.6.2"
+    assert lock["version"] == "0.6.2"
+    assert lock["packages"][""]["version"] == "0.6.2"

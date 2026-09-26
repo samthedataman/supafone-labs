@@ -76,7 +76,7 @@ from supafone_labs.types import (
     directive_to_decision,
 )
 
-__version__ = "0.6.1"
+__version__ = "0.6.2"
 
 __all__ = [
     # facade

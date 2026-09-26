@@ -3,6 +3,18 @@
 Supafone Labs exists because production voice agents fail at system boundaries,
 not because developers need another prompt wrapper.
 
+## Change the speaking model without rebuilding the agent
+
+The S2S harness keeps a native agent's prompt, supported tools, fixed stages,
+server-side model credentials, and browser or phone transport together. Agent
+Factory creates that agent, then a `realtime` selection chooses OpenAI, Google,
+or xAI. Configured platform keys make BYOK optional. Model changes apply to new
+sessions, with a voice valid for the selected model.
+
+See [native model support and limits](realtime-agent-factory.md). The broader
+capabilities below include Supafone Supervisor and the managed compatibility
+runtime; they are not all available in the native S2S transport.
+
 ## Problems we repeatedly encountered
 
 | Problem | Failure in production | Innovation in the package |
@@ -21,7 +33,7 @@ not because developers need another prompt wrapper.
 ## The design response
 
 ```text
-Production call problem
+production call problem
   -> canonical event
   -> deterministic call state
   -> Supafone Supervisor belief and directive
@@ -29,8 +41,7 @@ Production call problem
   -> provider-aware compiler
   -> native action or safe no-op
 
-Deterministic call state
-  -> replay, QA, telemetry, and optimization
+The same call state also feeds replay, QA, telemetry, and optimization.
 ```
 
 The architecture follows four rules:
