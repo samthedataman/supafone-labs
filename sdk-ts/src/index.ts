@@ -1,3 +1,6 @@
+export { SupafoneS2S, UltravoxS2S, OpenAIS2S, GeminiS2S, GrokS2S, HydraS2S } from "./s2s.js";
+export type { S2SProviderName, S2SModelOptions, S2SOptions } from "./s2s.js";
+
 /**
  * Supafone Labs — the agent framework behind Supafone.
  *
@@ -385,7 +388,7 @@ export interface LabsVoicePreference {
 
 /** Direct speech-to-speech configuration for browser previews and carrier phone calls. */
 export interface LabsRealtimeSelection {
-  provider: "openai" | "google" | "xai";
+  provider: "openai" | "google" | "xai" | "smallest";
   model?: string;
   voice?: string;
 }
@@ -406,6 +409,17 @@ export interface LabsBrowserTestSession {
     token?: string | null;
     input_sample_rate?: number;
     output_sample_rate?: number;
+    capabilities?: {
+      stages?: boolean;
+      tools?: boolean;
+      transcripts?: boolean;
+      recording?: boolean;
+      supervisor?: boolean;
+      transfer?: boolean;
+      mutable_instructions?: boolean;
+      stage_update_mode?: string;
+      languages?: string[];
+    };
   };
 }
 
@@ -483,6 +497,9 @@ export interface LabsProviderKeys {
   xai?: string;
   xaiApiKey?: string;
   xai_api_key?: string;
+  smallest?: string;
+  smallestApiKey?: string;
+  smallest_api_key?: string;
   [extra: string]: unknown;
 }
 
@@ -3343,7 +3360,7 @@ class LabsBillingNamespace {
 class LabsAgentsNamespace {
   constructor(private sm: SupafoneLabs) {}
 
-  /** Spawn a durable hosted Supafone agent backed by Ultravox and Supafone-managed providers. */
+  /** Create a hosted Supafone agent with the default Ultravox runtime or a selected native S2S model. */
   create(input: CreateLabsAgentRequest): Promise<CreateLabsAgentResponse> {
     return this.sm.requestSupafoneApi<CreateLabsAgentResponse>(
       "POST",
@@ -4757,6 +4774,8 @@ function providerKeysPayload(input: LabsProviderKeys): Record<string, unknown> {
     openai_api_key: input.openai_api_key ?? input.openaiApiKey,
     xai: input.xai,
     xai_api_key: input.xai_api_key ?? input.xaiApiKey,
+    smallest: input.smallest,
+    smallest_api_key: input.smallest_api_key ?? input.smallestApiKey,
   });
 }
 

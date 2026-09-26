@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "supafone-labs"
-version = "0.6.2"
+version = "0.6.3"
 description = "Build voice agents with one speech-to-speech harness and swappable models."
 readme = "README.md"
 license = "MIT"

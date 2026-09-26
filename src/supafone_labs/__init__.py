@@ -76,9 +76,26 @@ from supafone_labs.types import (
     directive_to_decision,
 )
 
-__version__ = "0.6.2"
+from supafone_labs.s2s import (
+    GeminiS2S,
+    GrokS2S,
+    HydraS2S,
+    OpenAIS2S,
+    S2SProviderName,
+    SupafoneS2S,
+    UltravoxS2S,
+)
+
+__version__ = "0.6.3"
 
 __all__ = [
+    "SupafoneS2S",
+    "UltravoxS2S",
+    "OpenAIS2S",
+    "GeminiS2S",
+    "GrokS2S",
+    "HydraS2S",
+    "S2SProviderName",
     # facade
     "supercharge",
     "attach",

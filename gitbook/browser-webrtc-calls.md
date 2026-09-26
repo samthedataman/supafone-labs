@@ -1,6 +1,6 @@
 # Browser WebRTC Calls
 
-Supafone Labs `0.6.2` exposes browser voice sessions directly through the
+Supafone Labs `0.6.3` exposes browser voice sessions directly through the
 Python and TypeScript SDKs. A WebRTC session connects a browser microphone to
 an owned Supafone voice agent without buying a phone number or creating a PSTN
 call.
@@ -41,7 +41,7 @@ console.log(started.browser_session.join_url);
 
 `startBrowserCall()` is an alias for browser-oriented codebases.
 
-For a native realtime Agent Factory agent, use `labs.agents.testCall(agentKey)` / `test_call(agent_key)`. The response has `transport: "supafone_realtime"` and a one-use WebSocket ticket. The selected model key is required; credentials never enter the browser. See [Native Realtime Agent Factory](realtime-agent-factory.md).
+For a native realtime Agent Factory agent, use `labs.agents.testCall(agentKey)` / `test_call(agent_key)`. The response has `transport: "supafone_realtime"` and a one-use WebSocket ticket. A configured platform model key or optional account override is required; credentials never enter the browser. Hydra browser sessions carry audio and tools but no native transcripts. See [Native Realtime Agent Factory](realtime-agent-factory.md).
 
 The legacy managed browser adapter is Ultravox:
 
@@ -118,7 +118,7 @@ adapters are introduced.
 
 ## Multilingual browser sessions
 
-A WebRTC session inherits an Agent Factory agent's optional language/voice
+On the managed Ultravox runtime, a WebRTC session inherits an Agent Factory agent's optional language/voice
 routing profiles. It starts with the translated primary greeting and can
 continue in another configured language and voice without changing the browser
 session or losing call-stage context. WebRTC does not need Twilio for this

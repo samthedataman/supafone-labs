@@ -7,11 +7,13 @@ not because developers need another prompt wrapper.
 
 The S2S harness keeps a native agent's prompt, supported tools, fixed stages,
 server-side model credentials, and browser or phone transport together. Agent
-Factory creates that agent, then a `realtime` selection chooses OpenAI, Google,
-or xAI. Configured platform keys make BYOK optional. Model changes apply to new
+Factory creates that agent, then the shared `SupafoneS2S` provider classes
+choose Ultravox, OpenAI, Gemini, Grok, or Smallest AI Hydra. The native catalog
+has six model choices; Ultravox retains its default managed runtime. Configured platform keys make BYOK optional. Model changes apply to new
 sessions, with a voice valid for the selected model.
 
-See [native model support and limits](realtime-agent-factory.md). The broader
+See the [shared interface](unified-s2s.md) and [native model support and limits](realtime-agent-factory.md).
+Hydra has no native transcripts and keeps its persona and voice fixed per session. The broader
 capabilities below include Supafone Supervisor and the managed compatibility
 runtime; they are not all available in the native S2S transport.
 

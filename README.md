@@ -16,8 +16,8 @@ stages, and browser/phone delivery through Python, TypeScript, and REST.
 
 [**Website**](https://labs.supafone.ai) ·
 [**Docs**](https://labs.supafone.ai/docs/) ·
-[**Native realtime guide**](gitbook/realtime-agent-factory.md) ·
-[**Workspace**](https://labs.supafone.ai/builder.html) ·
+[**Shared S2S interface**](gitbook/unified-s2s.md) ·
+[**Agent Factory**](https://app.supafone.ai/app/agents) ·
 [**Get a free API key**](https://labs.supafone.ai/console.html?mode=register) ·
 [**API reference**](https://api.labs.supafone.ai/docs)
 
@@ -28,11 +28,12 @@ stages, and browser/phone delivery through Python, TypeScript, and REST.
 ## Start here: the S2S harness
 
 Agent Factory creates the agent; the harness runs its selected speaking model
-with supported tools and fixed intake → booking → confirmation stages.
-Choose OpenAI `gpt-realtime-2.1` or `gpt-live-1`, Google
-`gemini-3.1-flash-live-preview`, or xAI `grok-voice-latest`. Keep the same
-agent configuration across authenticated browser previews, Supafone-managed
-phone, Twilio, Telnyx, Plivo, and SIP.
+with supported tools, stages, and browser or phone delivery. The exported
+`SupafoneS2S` superclass gives Python and TypeScript one interface for five
+provider families: **Ultravox, OpenAI, Gemini, Grok, and Smallest AI Hydra**.
+Ultravox remains the default. The native catalog adds six choices: OpenAI
+`gpt-realtime-2.1` and `gpt-live-1`, Google `gemini-3.1-flash-live-preview`,
+xAI `grok-voice-latest`, and Smallest AI `hydra-v1.0` and `hydra-v1.1`.
 
 Use one Supafone application key. A configured platform key supplies the
 selected model unless the account has an encrypted BYOK override. Check the
@@ -40,24 +41,37 @@ provider's runtime status before launch; catalog support and key presence do
 not establish model access or successful carrier calls.
 
 ```ts
-import { Supafone } from "supafone-labs";
+import { Supafone, HydraS2S, OpenAIS2S } from "supafone-labs";
 
 const sf = new Supafone({ apiKey: process.env.SUPAFONE_TOKEN! });
-await sf.labs.agents.createInbound({
+const hydra = new HydraS2S(sf, { model: "hydra-v1.1", voice: "maya" });
+await hydra.create({
   agentKey: "intake",
   name: "Intake",
-  realtime: { provider: "openai", model: "gpt-realtime-2.1", voice: "marin" },
+  description: "Understand the request and book the right next step.",
 });
-await sf.labs.agents.update("intake", {
-  realtime: { provider: "xai", model: "grok-voice-latest", voice: "eve" },
-});
+
+// Switch the same agent for its next call, then preview the saved selection.
+const openai = new OpenAIS2S(sf, { model: "gpt-realtime-2.1", voice: "marin" });
+await openai.apply("intake");
+const preview = await openai.testCall("intake");
 ```
 
-Model changes apply to new sessions. Native S2S currently excludes recording,
-Supervisor coaching, human transfer, DTMF, public widgets, and live
-language/voice profile switching. Omitting `realtime` preserves the managed
-Ultravox compatibility runtime and its broader hosted feature set.
+`create`, `apply`, and `testCall` (Python `test_call`) work across all five
+provider classes. Preview does not apply a selection automatically. Switching
+keeps the agent and its phone assignment; native-to-native switches retain
+supported tools and fixed intake → booking → confirmation stages. Moving from
+Ultravox to native S2S uses that fixed stage contract. Phone delivery supports
+Supafone-managed, Twilio, Telnyx, Plivo, and SIP with separate carrier setup.
 
+Capabilities differ by runtime. Hydra has no native transcripts and cannot
+change persona or voice mid-session. Native S2S currently excludes recording,
+Supervisor coaching, human transfer, specialist-team handoff, DTMF, public
+widgets, and live language/voice profile switching. `UltravoxS2S` selects the
+managed default and its broader compatible hosted features; omitting
+`realtime` on creation also preserves that default.
+
+[Shared Python and TypeScript interface](gitbook/unified-s2s.md) ·
 [Quickstart](gitbook/quickstart.md) · [Native runtime contract](gitbook/realtime-agent-factory.md) ·
 [Managed keys and BYOK](gitbook/byok-providers.md) · [Framework coverage](gitbook/framework-support.md)
 
@@ -140,7 +154,7 @@ const agent = await supafone.labs.agents.createInbound({
 ```
 
 Keys are encrypted before storage and never returned. The complete
-[managed/BYOK guide](docs/supervisor-models.md) includes Claude, OpenAI, Gemini,
+[managed/BYOK guide](gitbook/supervisor-models.md) includes Claude, OpenAI, Gemini,
 OpenRouter, Groq, and Cerebras examples for Python, TypeScript, REST, and CLI.
 
 Already running Vapi, Retell, Ultravox, OpenAI Realtime, LiveKit, Pipecat, or
@@ -222,7 +236,7 @@ agent = supafone.labs.agents.create_outbound({
 The same contract covers Supafone-managed, Twilio, Telnyx, Plivo,
 SignalWire, and SIP/BYOC transports. Adapter capabilities are checked
 fail-closed; a carrier name alone never implies that DTMF navigation is ready.
-See [Outbound IVR Call Mode](docs/outbound-ivr-call-mode.md).
+See [Outbound IVR Call Mode](gitbook/outbound-ivr-call-mode.md).
 
 The TypeScript package is also the canonical client for the Supafone hosted
 agent API at `https://api.supafone.ai/api/v1/labs`. The default path buys and
@@ -421,6 +435,8 @@ speech browser previews and managed or BYO phone agents:
 | OpenAI | `gpt-live-1` |
 | Google | `gemini-3.1-flash-live-preview` |
 | xAI | `grok-voice-latest` |
+| Smallest AI | `hydra-v1.0` |
+| Smallest AI | `hydra-v1.1` |
 
 The selection is available from both the Python and TypeScript clients and from
 the [Supafone agent dashboard](https://app.supafone.ai/app/agents). Every model exposes the same five phone transports:

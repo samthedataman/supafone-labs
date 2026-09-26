@@ -2,8 +2,9 @@
 
 Supafone Labs has a **native S2S harness** for direct speaking-model selection
 and a separate **Supafone Supervisor** integration surface. The native catalog
-contains `gpt-realtime-2.1`, `gpt-live-1`, `gemini-3.1-flash-live-preview`, and
-`grok-voice-latest`, with browser previews and Supafone-managed, Twilio, Telnyx,
+contains `gpt-realtime-2.1`, `gpt-live-1`, `gemini-3.1-flash-live-preview`,
+`grok-voice-latest`, `hydra-v1.0`, and `hydra-v1.1`, with browser previews and
+Supafone-managed, Twilio, Telnyx,
 Plivo, and SIP phone adapters. Configured platform keys supply the model by
 default; account BYOK overrides are optional. See the
 [native guide](realtime-agent-factory.md) for readiness and feature limits.
@@ -23,9 +24,19 @@ This page distinguishes five different claims that should never be conflated:
 | Observation only | Supafone can normalize events, supervise, score, and report, but the provider exposes no universal live prompt-control channel |
 | Explicit host hook | The component exposes an event transport, but the developer's agent must decide how to apply it |
 
+## Five speaking-provider families
+
+The shared `SupafoneS2S` API covers Ultravox, OpenAI, Gemini, Grok, and Hydra.
+Ultravox uses the default managed runtime. The six native choices use the
+common S2S relay with explicit capabilities, including Hydra's lack of native
+transcript events. These five speaking families are distinct from the five
+phone transports and from the fourteen Supervisor adapters below.
+
+[Shared interface and provider classes](unified-s2s.md)
+
 ## Direct Agent Factory realtime delivery
 
-The matrix below describes Supervisor adapters for existing stacks. It does not describe direct model hosting. The Agent Factory also has a native S2S transport for OpenAI, Google/Gemini, and xAI; that path is documented in [Native Realtime Agent Factory](realtime-agent-factory.md).
+The matrix below describes Supervisor adapters for existing stacks. It does not describe direct model hosting. The Agent Factory also has a native S2S transport for OpenAI, Google/Gemini, xAI, and Smallest AI/Hydra; that path is documented in [Native Realtime Agent Factory](realtime-agent-factory.md).
 
 ## Runtime matrix
 
@@ -84,7 +95,9 @@ It does **not** mean Supafone hosts every provider account automatically.
 
 ## Transcript and language authority
 
-Supafone selects exactly one transcript authority per call:
+For supported transcript-producing Supervisor integrations, Supafone selects
+one transcript authority per call. Native Hydra supplies no transcript events
+and this native adapter does not add a separate transcription service:
 
 - Provider transcript for a supported monolingual stream.
 - Deepgram live tap when multilingual language authority is required and raw

@@ -1,5 +1,14 @@
 # SDK Installation
 
+## One superclass, five providers
+
+Import `SupafoneS2S` and its provider classes: `UltravoxS2S`, `OpenAIS2S`,
+`GeminiS2S`, `GrokS2S`, and `HydraS2S`. Each offers `create`, `apply`, and
+`testCall` (Python `test_call`) through the same hosted agent contract.
+`apply` changes the next call on the existing agent; preview always uses the
+saved configuration. [See complete Python and TypeScript examples](unified-s2s.md).
+
+
 Python and TypeScript expose the same hosted S2S harness: create an Agent
 Factory agent with `realtime: { provider, model, voice }`, preview it, and
 update the selection for the next session. Start with your Supafone API key;
@@ -10,11 +19,11 @@ does not itself host the model or provision provider credentials.
 [Create and switch an S2S agent](quickstart.md) · [Runtime limits](realtime-agent-factory.md#feature-boundaries)
 
 Supafone Labs publishes a Python package and an unscoped TypeScript package.
-The current release is **0.6.2** for both
+The current release is **0.6.3** for both
 [PyPI](https://pypi.org/project/supafone-labs/) and
 [npm](https://www.npmjs.com/package/supafone-labs).
 
-The 0.6.2 release includes native realtime Agent Factory selection in both SDKs. Install from [PyPI](https://pypi.org/project/supafone-labs/0.6.2/) or [npm](https://www.npmjs.com/package/supafone-labs/v/0.6.2), then follow [Native Realtime Agent Factory](realtime-agent-factory.md).
+The 0.6.3 release adds the shared `SupafoneS2S` superclass and all five provider classes, including Hydra, in both SDKs. Install from [PyPI](https://pypi.org/project/supafone-labs/0.6.3/) or [npm](https://www.npmjs.com/package/supafone-labs/v/0.6.3), then follow [Native Realtime Agent Factory](realtime-agent-factory.md).
 
 ## Python
 
@@ -32,14 +41,11 @@ Native S2S usage:
 
 ```python
 import os
-from supafone_labs import Supafone
+from supafone_labs import Supafone, HydraS2S
 
 sf = Supafone(api_key=os.environ["SUPAFONE_TOKEN"])
-agent = sf.labs.agents.create_inbound({
-    "agentKey": "intake",
-    "name": "Intake",
-    "realtime": {"provider": "openai", "model": "gpt-realtime-2.1", "voice": "marin"},
-})
+engine = HydraS2S(sf, model="hydra-v1.1", voice="maya")
+agent = engine.create(agentKey="intake", name="Intake")
 ```
 
 ### Separate Supervisor integration

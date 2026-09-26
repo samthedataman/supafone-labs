@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="assets/supafone-logo.png" alt="Supafone" width="104" height="104" />
+  <img src="../gitbook/.gitbook/assets/supafone-logo.png" alt="Supafone" width="104" height="104" />
 </p>
 
 # Supafone Labs
@@ -17,6 +17,19 @@ supported model while keeping the same agent and phone configuration.
 [Install Python or TypeScript](https://labs.supafone.ai/docs/sdk-installation/) ·
 [Get a Supafone API key](https://labs.supafone.ai/console.html?mode=register)
 
+## Shared S2S interface
+
+Use the same `SupafoneS2S` interface for **Ultravox, OpenAI, Gemini, Grok,
+and Smallest AI Hydra**. Provider subclasses supply the selection while Agent
+Factory keeps the agent and phone identity. Ultravox stays the default; the
+native catalog offers six model choices. See [the common interface](unified-s2s.md)
+for the class contract and switching examples.
+
+Model changes apply to new calls, not a live-call handoff. Capabilities remain
+provider-specific: Hydra has no native transcripts and cannot change its
+persona or voice mid-session. Check credentials and test the selected provider
+before a customer call.
+
 ## Native realtime Agent Factory
 
 | Speaking provider | Supported model | Default voice |
@@ -25,6 +38,8 @@ supported model while keeping the same agent and phone configuration.
 | OpenAI | `gpt-live-1` | `marin` |
 | Google | `gemini-3.1-flash-live-preview` | `Puck` |
 | xAI | `grok-voice-latest` | `eve` |
+| Smallest AI | `hydra-v1.0` | `sterling` |
+| Smallest AI | `hydra-v1.1` | `maya` |
 
 Each model has an adapter for authenticated browser previews and phone calls
 through **Supafone-managed phone, Twilio, Telnyx, Plivo, or SIP**. The catalog
@@ -43,7 +58,7 @@ not prove provider permissions or call quality.
 | --- | --- | --- |
 | Agent | Name, instructions, business knowledge, supported tools | Save one account-scoped agent and enforce tool authority |
 | Stages | Intake → booking → confirmation | Preserve the fixed native stage contract and validate transitions |
-| Speaking model | OpenAI, Google, or xAI catalog selection | Translate audio, model events, and tool calls through its adapter |
+| Speaking model | OpenAI, Google, xAI, or Smallest AI catalog selection | Translate audio, model events, and tool calls through its adapter |
 | Credentials | Managed platform key or optional BYOK | Keep secrets on the server and return masked readiness |
 | Delivery | Browser, managed phone, or a supported BYO carrier | Connect the same agent through the selected transport |
 | Client | Python, TypeScript, REST, or dashboard | Use the same hosted agent API |
@@ -56,7 +71,7 @@ make every feature identical across providers.
 
 | Path | Use it for | Current boundary |
 | --- | --- | --- |
-| **Native S2S Agent Factory** | Choose the speaking model and reuse supported stages/tools across browser and phone | Fixed three stages; no native recording, Supervisor coaching, human transfer, DTMF, or public widget |
+| **Native S2S Agent Factory** | Choose the speaking model and reuse supported stages/tools across browser and phone | Fixed three stages; no native recording, Supervisor coaching, human transfer, specialist-team handoff, DTMF, or public widget |
 | **Managed compatibility Agent Factory** | Existing Ultravox-backed agents and workflows needing the broader hosted feature set | Used when `realtime` is omitted; managed or BYOK Ultravox |
 | **Supafone Supervisor** | Add independent supervision to an existing supported agent stack | Adapter capability varies; separate from the native S2S transport |
 

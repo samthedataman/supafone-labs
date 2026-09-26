@@ -9,10 +9,16 @@ Supafone key.
 The Supafone S2S harness resolves each speaking provider independently. A saved,
 encrypted account key overrides Supafone's configured platform key; otherwise
 the platform key is used. Check `GET /api/v1/labs/runtime?provider=openai` (or
-`google`, `xai`) for `source` and readiness. You do not need your own vendor key
+`google`, `xai`, `smallest`) for `source` and readiness. You do not need your own vendor key
 when Supafone has configured that provider. No credential is returned to the
 browser. A credential being present does not verify model permissions or live
 call quality.
+
+Managed model keys are configured on the server: `OPENAI_API_KEY`,
+`GEMINI_API_KEY`/`GOOGLE_API_KEY`, `XAI_API_KEY`, and `SMALLEST_API_KEY` for
+Hydra. An application using `HydraS2S` only needs its Supafone key when the
+platform supplies the Smallest credential. To override it, configure provider
+`smallest` through `labs.runtime.configure` with an account key.
 
 ## Managed compatibility defaults
 
@@ -60,7 +66,7 @@ only for self-healing directives and logs.
 Hosted Agent Factory has two direct speaking-runtime lanes. The managed
 Ultravox-compatible lane supplies the full recording, Supervisor, transfer,
 DTMF, widget, and arbitrary planner feature set. The native realtime lane lets
-you swap among the four catalog S2S models while keeping the browser and phone
+you swap among the six native catalog S2S models while keeping the browser and phone
 provider contract stable. Both lanes keep telephony and credentials server-side.
 
 ### Managed Ultravox-compatible runtime
@@ -101,7 +107,7 @@ curl https://api.supafone.ai/api/v1/labs/runtime \
   }'
 ```
 
-A blank `api_key` keeps the stored key. Native realtime Agent Factory providers are now available through the same route: use `openai`, `google`/`gemini`, or `xai`/`grok` with the selected model key. Ultravox remains the managed default for the standard Agent Factory path. See [Native Realtime Agent Factory](realtime-agent-factory.md). `GET /api/v1/labs/runtime` returns the same
+A blank `api_key` keeps the stored key. Native realtime Agent Factory providers are now available through the same route: use `openai`, `google`/`gemini`, `xai`/`grok`, or `smallest` with the selected model key. Ultravox remains the managed default for the standard Agent Factory path. See [Native Realtime Agent Factory](realtime-agent-factory.md). `GET /api/v1/labs/runtime` returns the same
 status shape:
 
 ```json
@@ -123,9 +129,9 @@ create/runtime contract and the runtime block returned on agent create.
 ### Native realtime Agent Factory
 
 Native realtime uses `realtime: { provider, model, voice }` with
-`gpt-realtime-2.1`, `gpt-live-1`, `gemini-3.1-flash-live-preview`, or
-`grok-voice-latest`. Use a configured platform key or optionally connect an
-OpenAI, Google, or xAI account key through `PUT /api/v1/labs/runtime`, then use
+`gpt-realtime-2.1`, `gpt-live-1`, `gemini-3.1-flash-live-preview`, `grok-voice-latest`,
+`hydra-v1.0`, or `hydra-v1.1`, `hydra-v1.0`, and `hydra-v1.1`. Use a configured platform key or optionally connect an
+OpenAI, Google, xAI, or Smallest AI account key through `PUT /api/v1/labs/runtime`, then use
 Supafone-managed, Twilio, Telnyx, Plivo,
 or SIP phone transport. The native path has fixed intake → booking →
 confirmation stages and does not currently provide recording, Supervisor

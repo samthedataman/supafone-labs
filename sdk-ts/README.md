@@ -90,31 +90,62 @@ needs that vendor's key — free/trial tiers exist for all except OpenAI Realtim
 [gitbook/framework-support.md](../gitbook/framework-support.md). *(The npm
 package-page copy updates on the next release.)*
 
-## Native realtime Agent Factory
+## One S2S interface, five providers
 
-Version 0.6.1 can create direct speech-to-speech browser and phone agents with
-`realtime: { provider, model, voice }`. Supported entries are OpenAI GPT
-Realtime 2.1, GPT Live 1, Google Gemini Live 3.1, and xAI Grok Voice. Each
-entry keeps the same Supafone-managed, Twilio, Telnyx, Plivo, or SIP phone
-transport. Use `labs.agents.testCall(agentKey)` for an authenticated browser
-preview. Provider keys and carrier credentials are required for live calls; see
-the [full guide](../gitbook/realtime-agent-factory.md).
+Version 0.6.3 exports `SupafoneS2S`, the shared parent of `UltravoxS2S`,
+`OpenAIS2S`, `GeminiS2S`, `GrokS2S`, and `HydraS2S`. These classes use
+Supafone's hosted Agent Factory. Supafone handles the audio adapter, tools,
+stages, and supported phone transport behind one API.
 
-| Provider | Model | Default voice |
+```ts
+import { Supafone, HydraS2S, OpenAIS2S, UltravoxS2S } from "supafone-labs";
+
+const client = new Supafone({ apiKey: process.env.SUPAFONE_API_KEY! });
+const hydra = new HydraS2S(client, { model: "hydra-v1.1", voice: "maya" });
+const created = await hydra.create({
+  name: "Intake", goal: "Collect the caller's details and book a consultation",
+  telephony: { mode: "supafone_managed", provider: "supafone" },
+});
+const agentKey = created.agent.agent_key!;
+await hydra.testCall(agentKey);
+
+// Switch the same agent for its next call, preserving its assigned number.
+await new OpenAIS2S(client, { model: "gpt-realtime-2.1", voice: "marin" }).apply(agentKey);
+// Return to the existing default Ultravox runtime.
+await new UltravoxS2S(client).apply(agentKey);
+```
+
+`apply` saves a selection for subsequent calls. `testCall` previews the saved
+agent and does not implicitly switch providers. The same constructors and
+`create`, `apply`, and `test_call` methods are available in Python.
+
+| Provider family | Selection | Default voice |
 | --- | --- | --- |
+| Ultravox | Default hosted runtime (`realtime: null` resets it) | Agent voice settings |
 | OpenAI | `gpt-realtime-2.1` | `marin` |
 | OpenAI | `gpt-live-1` | `marin` |
 | Google | `gemini-3.1-flash-live-preview` | `Puck` |
 | xAI | `grok-voice-latest` | `eve` |
+| Smallest AI | `hydra-v1.1` | `maya` |
+| Smallest AI | `hydra-v1.0` | `sterling` |
 
-```ts
-const agent = await supafone.labs.agents.createInbound({
-  name: "Realtime intake",
-  realtime: { provider: "openai", model: "gpt-realtime-2.1", voice: "marin" },
-});
-const preview = await supafone.labs.agents.testCall(agent.agent.agent_key!);
-```
+The existing `realtime: { provider, model, voice }` API remains supported.
+Native models use the fixed intake → booking → confirmation flow. The phone
+paths are Supafone-managed numbers, BYO Twilio, Telnyx, Plivo, and SIP through
+LiveKit. Carrier provisioning and credentials still determine call readiness.
 
+Supafone's configured server-side provider keys are used by default. An
+existing encrypted account key takes priority; customers do not need to add a
+provider key when Supafone has one configured. Missing keys produce an
+unavailable preview instead of a live provider call.
+
+Hydra supports English audio and tools, without transcript events or mutable
+mid-session persona/voice. Supafone supplies its fixed stages at session start
+and advances the stage using tool results. Hydra 1.1 uses 16 kHz input / 24 kHz
+output; 1.0 uses 16 kHz / 48 kHz and a different voice roster. Native sessions
+do not claim Ultravox's recording, Supervisor, transfer, or agent-team parity.
+See the [unified S2S guide](https://labs.supafone.ai/docs/unified-s2s/) and
+[capability matrix](https://labs.supafone.ai/docs/realtime-agent-factory/).
 ## Spawn a hosted Supafone agent
 
 Use the same package to create finished Supafone agents from code. This hits the

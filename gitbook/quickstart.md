@@ -24,52 +24,53 @@ for account linking and scoped `sf_` keys.
 ## 2. Check the selected model's readiness
 
 ```bash
-curl 'https://api.supafone.ai/api/v1/labs/runtime?provider=openai' \
+curl 'https://api.supafone.ai/api/v1/labs/runtime?provider=smallest' \
   -H "Authorization: Bearer $SUPAFONE_TOKEN"
 ```
 
 Use the configured Supafone platform key by default. An existing account BYOK
 key overrides it for the selected provider. Status reports `source: platform`,
 `account`, `none`, or `invalid`; a missing key requires setup before a live
-call. You only need to supply an OpenAI, Google, or xAI key when choosing BYOK
+call. You only need to supply an OpenAI, Google, xAI, or Smallest AI key when choosing BYOK
 or when the platform has no key for that provider. Provider access still needs
 a live preview test.
 
 ## 3. Create a native S2S agent
 
+All five speaking families use the shared `SupafoneS2S` interface. Start with
+Hydra here, or choose `OpenAIS2S`, `GeminiS2S`, `GrokS2S`, or the default
+`UltravoxS2S`. The provider object creates an ordinary Agent Factory agent.
+See [the shared interface](unified-s2s.md) for the complete contract.
+
 TypeScript:
 
 ```ts
-import { Supafone } from "supafone-labs";
+import { Supafone, HydraS2S } from "supafone-labs";
 
 const supafone = new Supafone({ apiKey: process.env.SUPAFONE_TOKEN! });
-const agent = await supafone.labs.agents.createInbound({
+const engine = new HydraS2S(supafone, { model: "hydra-v1.1", voice: "maya" });
+const agent = await engine.create({
   agentKey: "northline-intake",
   name: "Northline intake",
   description: "Understand the request and book the right next step.",
-  realtime: { provider: "openai", model: "gpt-realtime-2.1", voice: "marin" },
-  telephony: { mode: "supafone_managed", provider: "supafone" },
 });
-const preview = await supafone.labs.agents.testCall("northline-intake");
-console.log(preview.browser_session);
+const preview = await engine.testCall("northline-intake");
 ```
 
 Python:
 
 ```python
 import os
-from supafone_labs import Supafone
+from supafone_labs import Supafone, HydraS2S
 
 supafone = Supafone(api_key=os.environ["SUPAFONE_TOKEN"])
-agent = supafone.labs.agents.create_inbound({
-    "agentKey": "northline-intake",
-    "name": "Northline intake",
-    "description": "Understand the request and book the right next step.",
-    "realtime": {"provider": "openai", "model": "gpt-realtime-2.1", "voice": "marin"},
-    "telephony": {"mode": "supafone_managed", "provider": "supafone"},
-})
-preview = supafone.labs.agents.test_call("northline-intake")
-print(preview["browser_session"])
+engine = HydraS2S(supafone, model="hydra-v1.1", voice="maya")
+agent = engine.create(
+    agentKey="northline-intake",
+    name="Northline intake",
+    description="Understand the request and book the right next step.",
+)
+preview = engine.test_call("northline-intake")
 ```
 
 `testCall` creates a session ticket; it does not play audio by itself. Open the
@@ -81,23 +82,29 @@ number or place a phone call.
 ## 4. Switch the speaking model
 
 ```ts
-await supafone.labs.agents.update("northline-intake", {
-  realtime: { provider: "google", model: "gemini-3.1-flash-live-preview", voice: "Puck" },
-});
-const nextPreview = await supafone.labs.agents.testCall("northline-intake");
+import { OpenAIS2S } from "supafone-labs";
+
+const next = new OpenAIS2S(supafone, { model: "gpt-realtime-2.1", voice: "marin" });
+await next.apply("northline-intake");
+const nextPreview = await next.testCall("northline-intake");
 ```
 
 ```python
-supafone.labs.agents.update("northline-intake", {
-    "realtime": {"provider": "xai", "model": "grok-voice-latest", "voice": "eve"},
-})
-next_preview = supafone.labs.agents.test_call("northline-intake")
+from supafone_labs import OpenAIS2S
+
+next_engine = OpenAIS2S(supafone, model="gpt-realtime-2.1", voice="marin")
+next_engine.apply("northline-intake")
+next_preview = next_engine.test_call("northline-intake")
 ```
 
-OpenAI `gpt-live-1` is also available with `marin`. Check the new provider's
-readiness first. The new selection applies to the next session; the harness
-keeps the agent configuration, supported tools, fixed three stages, and phone
-configuration. Voices and model behavior remain provider-specific.
+The same method selects Gemini, Grok, or another Hydra version. To return to
+the managed default, apply `UltravoxS2S`. Provider objects share `SupafoneS2S`;
+check [all five classes and their defaults](unified-s2s.md#provider-classes).
+
+`apply` changes the next session; `testCall` / `test_call` previews the saved
+agent without applying a selection itself. The same agent keeps its number,
+supported tools, and fixed native stages. Model voices and capabilities vary:
+Hydra has no native transcripts and cannot change persona or voice mid-session.
 
 ## 5. Connect a phone transport
 
@@ -109,7 +116,8 @@ webhooks or outbound routing before testing a real call. Follow the
 
 Native S2S supports intake → booking → confirmation and allowed server tools.
 It does not currently support recording, Supervisor coaching, human transfer,
-DTMF navigation, public widgets, or live language/voice profile switching.
+specialist-team handoff, DTMF navigation, public widgets, or live language/voice
+profile switching.
 
 ## Managed compatibility Agent Factory Agent
 
