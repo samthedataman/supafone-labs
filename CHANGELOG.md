@@ -10,6 +10,9 @@
 - Add Google/Gemini provider-key aliases for the realtime factory path.
 
 - Documentation now has a complete [native realtime Agent Factory guide](gitbook/realtime-agent-factory.md) covering OpenAI, Google/Gemini, xAI, browser preview, carrier phone paths, provider keys, limitations, and troubleshooting.
+- Recamp the public README and GitBook around the two first-class paths, make
+  `/docs/` the only linked documentation route, and document the managed
+  Ultravox-compatible lane separately from native realtime S2S.
 
 ## 0.6.0 - 2026-09-01
 

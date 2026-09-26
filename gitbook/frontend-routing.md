@@ -8,14 +8,16 @@ the static frontend should route users through the developer experience.
 | Route | Purpose |
 | --- | --- |
 | `/` | Product overview and entry points |
-| `/docs.html` | Native docs index or GitBook handoff |
+| `/docs/` | Canonical, crawler-readable documentation index |
 | `/builder.html` | Agent Factory and provider-agnostic builder |
 | `/console.html` | Account, usage, logs, keys |
 | `/tester.html` | Supervisor/TTS/STT playground |
 | `/get-key.html` | Labs Cloud key signup |
 | `/pricing.html` | Pricing and credits |
 
-GitBook docs should mirror those routes with pages for quickstart, Agent
+`/docs` and `/docs.html` permanently redirect to `/docs/`; no separate docs
+surface should be linked or published. GitBook docs should mirror that route
+with pages for quickstart, Agent
 Factory, provider framework, BYOK, voices, logs, MCP, and E2E testing.
 
 ## Builder First Screen

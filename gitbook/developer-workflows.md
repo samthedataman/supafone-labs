@@ -1,14 +1,15 @@
 # Developer Workflows
 
-Supafone Labs has one defining framework and one secondary delivery path. Lead
-with the model-agnostic supervisor; use Agent Factory when the user also wants
-Supafone to provision the complete hosted product.
+Supafone Labs has two first-class delivery paths. Use the native realtime Agent
+Factory when the speaking model should be swappable, or use Supafone
+Supervisor when the team already runs another agent stack and wants a common
+control and evidence layer.
 
 ## Native realtime workflow
 
 Choose a catalog model, connect its provider key, create the Agent Factory agent with `realtime`, run `testCall`, then configure managed or BYO telephony. Native realtime uses fixed stages and a separate transport; follow [Native Realtime Agent Factory](realtime-agent-factory.md) before advertising recording, transfer, or Supervisor features.
 
-## Primary: Model-Agnostic Supafone Supervisor
+## Supervise an existing agent
 
 Use this path when the developer already has an agent running on Ultravox,
 Vapi, Retell, ElevenLabs, OpenAI Realtime, Grok, Bland, LiveKit, Pipecat,
@@ -26,7 +27,7 @@ state—then emits a silent directive only when the live agent needs help. The
 caller does not hear the directive. If the Supervisor is disabled, out of balance,
 or times out, the call continues without intervention.
 
-## Secondary: Hosted Agent Factory
+## Create a hosted agent
 
 Use this path when the developer wants Supafone to create the agent, phone
 number, voice, stages, logs, widget, and optional supervision.
@@ -207,9 +208,9 @@ failure boundaries. See [Dynamic Voice Catalog and Selection](voice-catalog-and-
 
 ## Which One Should the UI Lead With?
 
-The product story should lead with Supafone Supervisor. Inside the hosted builder,
-the task flow should then lead with the one `sl_` Labs key because that is the
-lowest-friction provisioning path—it authenticates every surface:
+Show native realtime Agent Factory and Supafone Supervisor as the two first
+choices. Inside the hosted builder, lead with the one `sl_` Labs key because
+that is the lowest-friction provisioning path—it authenticates every surface:
 
 1. Paste your `sl_live_...` key (as `SUPAFONE_LABS_API_KEY` / `SUPAFONE_TOKEN`).
 2. Choose inbound or outbound.

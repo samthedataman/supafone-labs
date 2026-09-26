@@ -30,8 +30,8 @@ The matrix below describes Supervisor adapters for existing stacks. It does not 
 | <a id="provider-retell"></a>Retell | Developer-owned context | System entry in the custom-LLM WebSocket context | Entry exists before the next response is emitted |
 | <a id="provider-bland"></a>Bland | Observation only | No universal prompt-injection action | Events normalize without emitting an unsupported action |
 | <a id="provider-gpt_realtime"></a>OpenAI Realtime | Native control | System `conversation.item.create` | Item-created or item-done event arrives without provider error |
-| <a id="provider-grok"></a>Grok Voice Agent | Native control | `response.create.instructions` | Provider emits `response.created` followed by completion or an error |
-| <a id="provider-gemini_live"></a>Gemini Live | Native control | `clientContent` user turn; system role is invalid mid-session | Subsequent server content reflects the accepted update |
+| <a id="provider-grok"></a>Grok Voice Agent | Native control | `response.create.instructions` | Provider emits `response.created`, then `response.done` or an error |
+| <a id="provider-gemini_live"></a>Gemini Developer Live | Observation only | `clientContent` is ordinary conversation history | Default adapter observes events and emits no hidden mid-call control |
 | <a id="provider-elevenlabs"></a>ElevenLabs Agents | Native control | `contextual_update` | Socket remains healthy and the next turn completes |
 | <a id="provider-deepgram"></a>Deepgram Voice Agent | Native control | `UpdatePrompt` | Provider emits `PromptUpdated` |
 | <a id="provider-livekit"></a>LiveKit Agents | Developer-owned context | `ChatContext.add_message` followed by `update_chat_ctx` | Persisted context contains the system entry |
@@ -98,7 +98,7 @@ The public release verifies framework support at three levels:
 2. `tests/test_live_injection_contracts.py` performs credentialed acceptance
    probes where the vendor exposes a live test path. Missing credentials are
    skips, never passes.
-3. `tests/test_documentation_framework_matrix.py` requires this page to contain
+3. `the generated documentation parity checks` requires this page to contain
    every runtime from `provider_contracts.py` and rejects duplicate or stale
    matrix entries.
 

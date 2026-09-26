@@ -20,8 +20,9 @@ The builder should preserve the product hierarchy:
 
 | Role | Builder meaning |
 | --- | --- |
-| Primary: model supervisor | Supafone Supervisor supervises and improves the live agent by default. |
-| Secondary: Agent Factory | Create a complete hosted agent with managed defaults and no required vendor keys. |
+| Native realtime Agent Factory | Swap among the four S2S models while keeping the same carrier and tool contract. |
+| Supafone Supervisor | Supervise and improve an existing or managed live agent. |
+| Managed compatibility Agent Factory | Create a complete hosted agent with managed defaults and no required vendor keys. |
 
 When users open BYOK, split hosted-delivery settings into three drawers:
 

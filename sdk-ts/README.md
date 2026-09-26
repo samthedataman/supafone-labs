@@ -82,8 +82,9 @@ whisper to it live — a permanent vendor limitation, not a Supafone gap.
 are not conversational agents, so there is nothing to inject into.
 
 Injection is *possible* for all 10, but managed delivery is wired end-to-end
-**only for Ultravox today**; the other nine are supported via their native
-primitive with managed delivery rolling out / BYO. A live test against any vendor
+**only for the legacy managed Supervisor delivery path**; the other nine are
+supported via their native primitive with managed delivery rolling out / BYO.
+Native realtime Agent Factory delivery is a separate first-class path. A live test against any vendor
 needs that vendor's key — free/trial tiers exist for all except OpenAI Realtime
 (paid, no free tier). Full matrix:
 [gitbook/framework-support.md](../gitbook/framework-support.md). *(The npm
@@ -91,7 +92,20 @@ package-page copy updates on the next release.)*
 
 ## Native realtime Agent Factory
 
-Version 0.6.1 can create direct speech-to-speech browser and phone agents with `realtime: { provider, model, voice }`. Supported entries are OpenAI GPT Realtime 2.1, GPT Live 1, Google Gemini Live 3.1, and xAI Grok Voice. Use `labs.agents.testCall(agentKey)` for an authenticated browser preview. Provider keys and carrier credentials are required for live calls; see the [full guide](../gitbook/realtime-agent-factory.md).
+Version 0.6.1 can create direct speech-to-speech browser and phone agents with
+`realtime: { provider, model, voice }`. Supported entries are OpenAI GPT
+Realtime 2.1, GPT Live 1, Google Gemini Live 3.1, and xAI Grok Voice. Each
+entry keeps the same Supafone-managed, Twilio, Telnyx, Plivo, or SIP phone
+transport. Use `labs.agents.testCall(agentKey)` for an authenticated browser
+preview. Provider keys and carrier credentials are required for live calls; see
+the [full guide](../gitbook/realtime-agent-factory.md).
+
+| Provider | Model | Default voice |
+| --- | --- | --- |
+| OpenAI | `gpt-realtime-2.1` | `marin` |
+| OpenAI | `gpt-live-1` | `marin` |
+| Google | `gemini-3.1-flash-live-preview` | `Puck` |
+| xAI | `grok-voice-latest` | `eve` |
 
 ```ts
 const agent = await supafone.labs.agents.createInbound({

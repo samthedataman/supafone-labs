@@ -17,7 +17,29 @@ immediately, then swap in a real provider via `ANTHROPIC_API_KEY`.
 
 ## 1a. Native realtime Agent Factory
 
-The default quickstart below uses managed hosted delivery. For direct speech-to-speech, select a catalog `realtime` model, connect the provider key, and follow [Native Realtime Agent Factory](realtime-agent-factory.md). A live native call also needs carrier credentials and a public HTTPS/WebSocket URL.
+For direct speech-to-speech, select a catalog model and keep the same agent
+contract across browser and phone delivery:
+
+```ts
+const agent = await supafone.labs.agents.createInbound({
+  agentKey: "northline-realtime",
+  name: "Northline realtime intake",
+  realtime: {
+    provider: "openai",
+    model: "gpt-realtime-2.1",
+    voice: "marin",
+  },
+  telephony: { mode: "supafone_managed", provider: "supafone" },
+});
+
+const preview = await supafone.labs.agents.testCall("northline-realtime");
+```
+
+The catalog also includes `gpt-live-1`, `gemini-3.1-flash-live-preview`, and
+`grok-voice-latest`. Connect the selected provider key before a live call; BYO
+Twilio, Telnyx, Plivo, and SIP use the same selection. See [Native Realtime
+Agent Factory](realtime-agent-factory.md) for the Python example, carrier
+setup, fixed stages, and feature boundaries.
 
 ## 1b. Or create a hosted Supafone agent from REST, Python, TypeScript, or MCP
 

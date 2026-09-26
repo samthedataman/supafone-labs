@@ -19,7 +19,7 @@ The distinction matters:
 
 ## Native realtime Agent Factory
 
-Direct browser and phone delivery is available for OpenAI GPT Realtime/GPT Live, Google Gemini Live, and xAI Grok Voice. This is separate from the Supervisor adapter matrix below. See the [native realtime guide](realtime-agent-factory.md).
+Direct browser and phone delivery is available for OpenAI GPT Realtime/GPT Live, Google Gemini Live, and xAI Grok Voice. This is separate from the Supervisor adapter matrix below. See the [native realtime guide](realtime-agent-factory.md). The native path supports Supafone-managed, Twilio, Telnyx, Plivo, and SIP phone transports.
 
 ## Capability matrix
 

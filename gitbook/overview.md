@@ -33,11 +33,11 @@ auth) or a scoped `sf_live_...` key. This path is
 for complete agents: inbound receptionists, outbound sales agents, web agents,
 campaign agents, generated executable call plans, managed numbers, presets,
 tools, artifacts, and Supafone Supervisor.
-This is the Agent Factory path: by default, Supafone supplies the operational
-provider layer so the developer does not need to bring voice-platform,
-telephony, TTS, STT, or LLM keys to get started. This Agent Factory path is a
-secondary delivery convenience; the supervisor also works when Supafone did
-not create the agent.
+This is the Agent Factory path: choose either the direct native realtime
+runtime, where you swap among four S2S models and keep the carrier contract, or
+the managed Ultravox-compatible runtime, where Supafone supplies the operational
+provider layer. The supervisor also works when Supafone did not create the
+agent.
 
 ## Core Concepts
 
@@ -53,7 +53,7 @@ not create the agent.
 - **Supervisor**: Supafone Supervisor live supervision attached to a hosted or BYO agent.
 - **Standing directive**: a persistent coaching preamble improved from
   post-call outcomes.
-- **Agent Factory**: the secondary hosted-agent creation path that turns one
+- **Agent Factory**: the hosted-agent creation path that turns one
   job description into validated prompts and a 3–8 stage runtime, then adds
   managed platform, telephony, TTS/STT/LLM, numbers, tools, and logs.
 - **Number strategy**: shared pool by default, dedicated/premium only by

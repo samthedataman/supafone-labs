@@ -211,6 +211,13 @@ The Agent Factory can run OpenAI GPT Realtime 2.1, OpenAI GPT Live 1, Google Gem
 
 This direct S2S path is separate from the default managed Ultravox runtime and from Supafone Supervisor.
 
+| Provider | Model |
+| --- | --- |
+| OpenAI | `gpt-realtime-2.1` |
+| OpenAI | `gpt-live-1` |
+| Google | `gemini-3.1-flash-live-preview` |
+| xAI | `grok-voice-latest` |
+
 ## Start here
 
 1. Read [the production problems](production-voice-ai-challenges.md).
