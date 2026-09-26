@@ -5,11 +5,26 @@ an **Agent Factory**. The harness connects the speaking model to the agent's
 prompt, allowed tools, stages, credentials, and audio transport. Agent Factory
 creates and manages the agent configuration used by that harness.
 
+## Shared S2S interface
+
+Use the same `SupafoneS2S` interface for **Ultravox, OpenAI, Gemini, Grok,
+and Smallest AI Hydra**. Provider subclasses supply the selection while Agent
+Factory keeps the agent and phone identity. Ultravox stays the default; the
+native catalog offers six model choices. See [the common interface](unified-s2s.md)
+for the class contract and switching examples.
+
+Model changes apply to new calls, not a live-call handoff. Capabilities remain
+provider-specific: Hydra has no native transcripts and cannot change its
+persona or voice mid-session. Check credentials and test the selected provider
+before a customer call.
+
 ## Build once, choose the model
 
 Create an agent with a `realtime: { provider, model, voice }` selection. The
 native catalog includes OpenAI `gpt-realtime-2.1`, OpenAI `gpt-live-1`, Google
-`gemini-3.1-flash-live-preview`, and xAI `grok-voice-latest`.
+`gemini-3.1-flash-live-preview`, xAI `grok-voice-latest`, and Smallest AI
+`hydra-v1.0` and `hydra-v1.1`. Use the shared provider classes or the underlying
+`realtime` selection; `UltravoxS2S` keeps the existing managed default.
 
 The same agent can use authenticated browser previews, Supafone-managed phone,
 BYO Twilio, BYO Telnyx, BYO Plivo, or BYO SIP. Update the selection before a new
@@ -33,7 +48,7 @@ checked separately from model readiness.
 
 | Surface | Purpose | Runtime boundary |
 | --- | --- | --- |
-| Native realtime Agent Factory | Build and switch S2S agents through the hosted API and dashboard | Four catalog models, fixed native stages, supported server tools, browser and phone |
+| Native realtime Agent Factory | Build and switch S2S agents through the hosted API and dashboard | Six native catalog models, fixed native stages, supported server tools, browser and phone |
 | Managed compatibility Agent Factory | Continue existing Ultravox-backed hosted workflows | Selected when `realtime` is omitted; includes the broader planner and compatible recording, transfer, widgets, and supervision features |
 | Supafone Supervisor | Observe and coach agents you already run | Separate SDK/runtime with provider-specific guidance and observation capabilities |
 

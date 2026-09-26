@@ -8,11 +8,25 @@ for the next session. Model voices and behavior remain provider-specific.
 
 The native transport is separate from the managed Ultravox compatibility path
 and from Supafone Supervisor, which observes and coaches existing supported
-agent stacks. Omitting `realtime` keeps the managed compatibility runtime.
+agent stacks. Omitting `realtime` when creating an agent keeps the managed compatibility
+runtime. Apply `UltravoxS2S` (or update `realtime: null`) to switch an existing
+native agent back to that runtime.
 
 Use this guide when the speaking model itself should own the live audio loop.
-Use [Supafone Supervisor](supafone-supervisor.md) when you want to keep another
+Use [Supafone Supervisor](https://labs.supafone.ai/docs/supafone-supervisor/) when you want to keep another
 agent stack and add supervision.
+
+## One interface, five provider families
+
+The public `SupafoneS2S` superclass has `UltravoxS2S`, `OpenAIS2S`,
+`GeminiS2S`, `GrokS2S`, and `HydraS2S` provider classes. They produce the same
+Agent Factory selection shape, so an application can choose a provider and
+reuse the same create, update, and preview workflow. See
+[Shared S2S Interface](unified-s2s.md) for Python and TypeScript examples.
+
+Ultravox remains the default managed runtime. The other four families provide
+six native model choices below. A common interface does not erase differences
+in transcripts, voices, tool behavior, or runtime features.
 
 ## Supported catalog
 
@@ -25,10 +39,17 @@ The catalog is the source of truth. Call `GET /api/v1/agents/catalog` or
 | OpenAI | `openai` | `gpt-live-1` | `marin` | Available | 24 kHz / 24 kHz |
 | Google | `google` (also `gemini`/`gemini_live` in the product API) | `gemini-3.1-flash-live-preview` | `Puck` | Preview | 16 kHz / 24 kHz |
 | xAI | `xai` (also `grok`/`grok_voice` in the product API) | `grok-voice-latest` | `eve` | Available | 24 kHz / 24 kHz |
+| Smallest AI | `smallest` | `hydra-v1.0` | `sterling` | Available | 16 kHz / 48 kHz |
+| Smallest AI | `smallest` | `hydra-v1.1` | `maya` | Available | 16 kHz / 24 kHz |
 
 GPT Live delegates reasoning and tools to GPT-5.6 Luna. The OpenAI key used by
 the workspace must be allowed to use both models. Gemini is marked preview
 because the provider API is still subject to change.
+
+Hydra currently supports English only. It uses native model voices and does not emit transcript events. Its
+initial instructions and voice are fixed for a session. See
+[Hydra capabilities](#hydra-capabilities) before choosing it for a workflow
+that requires transcripts or live persona changes.
 
 Every catalog entry currently advertises both authenticated browser and phone
 transport for these phone providers:
@@ -107,7 +128,7 @@ it uses Supafone's configured platform key. Customers do not need their own
 provider account when that platform key is available. Keys never belong in
 the agent's `realtime` selection or browser code.
 
-Check `GET /api/v1/labs/runtime?provider=google` (or `openai`, `xai`). Status
+Check `GET /api/v1/labs/runtime?provider=google` (or `openai`, `xai`, `smallest`). Status
 reports `configured`, `connected`, and `source`: `account` for BYOK, `platform`
 for managed credentials, `none` for missing configuration, and `invalid` for
 an unreadable saved key. `connected` means a credential resolves, not that a
@@ -126,9 +147,9 @@ curl "$SUPAFONE_API_BASE_URL/api/v1/labs/runtime" \
   }'
 ```
 
-Use `openai`, `google`, or `xai` for native realtime. Google accepts either a
+Use `openai`, `google`, `xai`, or `smallest` for native realtime. Google accepts either a
 Gemini or Google API key. Environment fallback names are `OPENAI_API_KEY`,
-`GEMINI_API_KEY`/`GOOGLE_API_KEY`, and `XAI_API_KEY` when the platform is
+`GEMINI_API_KEY`/`GOOGLE_API_KEY`, `XAI_API_KEY`, and `SMALLEST_API_KEY` when the platform is
 configured to supply them. Do not put a key inside `realtime` or log it in a
 client payload.
 
@@ -214,7 +235,7 @@ separate admin step:
   `/api/v1/realtime/sip/events`.
 
 Twilio inbound and outbound use the existing managed/BYOK telephony setup and
-its carrier webhook checks. See [Phone Numbers](phone-numbers.md) and the
+its carrier webhook checks. See [Phone Numbers](https://labs.supafone.ai/docs/phone-numbers/) and the
 private product's [SIP architecture guide](https://github.com/samthedataman/supafone/blob/master/docs/architecture/realtime-sip.md)
 for carrier-specific infrastructure.
 
@@ -252,6 +273,30 @@ Example create payload:
 }
 ```
 
+## Hydra capabilities
+
+Smallest AI's Hydra models provide direct audio and tool calls, with no native
+transcript events. Supafone therefore cannot show or grade a Hydra transcript
+as though one had been received. A separate transcription system is not
+implicitly enabled. See [Smallest AI's overview](https://docs.smallest.ai/models/documentation/speech-to-speech-hydra/overview).
+
+Hydra accepts mono PCM16 at 16 kHz. Version `hydra-v1.0` returns 48 kHz audio;
+`hydra-v1.1` returns 24 kHz. The browser or carrier adapter uses the selected
+model's sample rates. Use a voice from that version's catalog rather than
+carrying a voice ID from another provider. See the [Hydra model card](https://docs.smallest.ai/models/model-cards/speech-to-speech/hydra).
+
+The opening instructions and voice are fixed when Hydra connects; changing
+those requires a new session. Only tool definitions can be updated mid-session.
+Supafone keeps stage authority on its server and communicates approved stage
+instructions through tool results. This is not a live rewrite of Hydra's
+persona. See [session behavior](https://docs.smallest.ai/models/documentation/speech-to-speech-hydra/managing-sessions)
+and [tool calling](https://docs.smallest.ai/models/documentation/speech-to-speech-hydra/tool-calling).
+
+Configure `SMALLEST_API_KEY` on the Supafone server for managed Hydra access,
+or store an optional account key with provider `smallest`. Missing credentials
+remain setup required. Adding the adapter does not configure a production key
+or establish successful live calls.
+
 ## Feature boundaries
 
 Native realtime is intentionally explicit. Current runtime responses report:
@@ -259,6 +304,7 @@ Native realtime is intentionally explicit. Current runtime responses report:
 - browser preview and carrier phone transport: supported;
 - fixed intake → booking → confirmation stages: supported;
 - provider-native tools and account-scoped agent configuration: supported;
+- transcripts: provider-dependent; Hydra has no native transcript events;
 - recording, Supafone Supervisor coaching, human transfer, DTMF navigation, and
   specialist-team handoff, public web widgets, and live language/voice profile switching: not implemented
   on this transport;

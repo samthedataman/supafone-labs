@@ -1,5 +1,14 @@
 # Developer Workflows
 
+## One superclass, five providers
+
+Import `SupafoneS2S` and its provider classes: `UltravoxS2S`, `OpenAIS2S`,
+`GeminiS2S`, `GrokS2S`, and `HydraS2S`. Each offers `create`, `apply`, and
+`testCall` (Python `test_call`) through the same hosted agent contract.
+`apply` changes the next call on the existing agent; preview always uses the
+saved configuration. [See complete Python and TypeScript examples](unified-s2s.md).
+
+
 **Dashboard:** open [Supafone agents](https://app.supafone.ai/app/agents),
 select your agent, and use its native realtime model controls. The older
 [Labs workspace](https://labs.supafone.ai/builder.html) is the managed Ultravox
@@ -18,6 +27,8 @@ among supported models.
 | OpenAI | `gpt-live-1` | `marin` |
 | Google | `gemini-3.1-flash-live-preview` | `Puck` |
 | xAI | `grok-voice-latest` | `eve` |
+| Smallest AI | `hydra-v1.0` | `sterling` |
+| Smallest AI | `hydra-v1.1` | `maya` |
 
 Every catalog model has browser and phone adapters for Supafone-managed phone,
 BYO Twilio, BYO Telnyx, BYO Plivo, and BYO SIP. Discover the current choices
@@ -29,7 +40,7 @@ workspace's credential and carrier readiness.
 Authenticate with your Supafone API key. The selected model uses a configured
 Supafone platform key unless your account has supplied an encrypted BYOK key
 for that provider. Read `GET /api/v1/labs/runtime?provider=openai` (or `google`,
-`xai`) to check the source and status before calling. Customers do not need to
+`xai`, `smallest`) to check the source and status before calling. Customers do not need to
 paste a provider key when the platform supplies one.
 
 `source: platform` means a server credential exists. `source: account` means
@@ -41,34 +52,32 @@ key and from carrier credentials. See [Managed keys and BYOK](byok-providers.md)
 ## Create and preview
 
 ```ts
-import { Supafone } from "supafone-labs";
+import { Supafone, HydraS2S } from "supafone-labs";
 
 const supafone = new Supafone({ apiKey: process.env.SUPAFONE_TOKEN! });
-const agent = await supafone.labs.agents.createInbound({
+const engine = new HydraS2S(supafone, { model: "hydra-v1.1", voice: "maya" });
+const agent = await engine.create({
   agentKey: "northline-intake",
   name: "Northline intake",
-  assistantName: "Maya",
   description: "Answer inquiries, capture the request, and book the next step.",
-  realtime: { provider: "openai", model: "gpt-realtime-2.1", voice: "marin" },
   telephony: { mode: "supafone_managed", provider: "supafone" },
 });
-const preview = await supafone.labs.agents.testCall("northline-intake");
+const preview = await engine.testCall("northline-intake");
 ```
 
 ```python
 import os
-from supafone_labs import Supafone
+from supafone_labs import Supafone, HydraS2S
 
 supafone = Supafone(api_key=os.environ["SUPAFONE_TOKEN"])
-agent = supafone.labs.agents.create_inbound({
-    "agentKey": "northline-intake",
-    "name": "Northline intake",
-    "assistantName": "Maya",
-    "description": "Answer inquiries, capture the request, and book the next step.",
-    "realtime": {"provider": "openai", "model": "gpt-realtime-2.1", "voice": "marin"},
-    "telephony": {"mode": "supafone_managed", "provider": "supafone"},
-})
-preview = supafone.labs.agents.test_call("northline-intake")
+engine = HydraS2S(supafone, model="hydra-v1.1", voice="maya")
+agent = engine.create(
+    agentKey="northline-intake",
+    name="Northline intake",
+    description="Answer inquiries, capture the request, and book the next step.",
+    telephony={"mode": "supafone_managed", "provider": "supafone"},
+)
+preview = engine.test_call("northline-intake")
 ```
 
 The returned browser session has a one-use ticket and sample rates. Use the
@@ -78,21 +87,31 @@ dashboard preview or a compatible audio client to speak to the agent;
 ## Switch an existing agent
 
 ```ts
-await supafone.labs.agents.update("northline-intake", {
-  realtime: { provider: "google", model: "gemini-3.1-flash-live-preview", voice: "Puck" },
-});
+import { OpenAIS2S } from "supafone-labs";
+
+const next = new OpenAIS2S(supafone, { model: "gpt-realtime-2.1", voice: "marin" });
+await next.apply("northline-intake");
+const preview = await next.testCall("northline-intake");
 ```
 
 ```python
-supafone.labs.agents.update("northline-intake", {
-    "realtime": {"provider": "xai", "model": "grok-voice-latest", "voice": "eve"},
-})
+from supafone_labs import OpenAIS2S
+
+next_engine = OpenAIS2S(supafone, model="gpt-realtime-2.1", voice="marin")
+next_engine.apply("northline-intake")
+preview = next_engine.test_call("northline-intake")
 ```
 
-A model change takes effect on a new session. Keep your supported native
-workflow, then compare model behavior using the same tasks and tools. Select
-a voice valid for the new model. This is configuration reuse, not a promise of
-identical speech, timing, tool decisions, or seamless mid-call model handoff.
+Use the same methods with `GeminiS2S`, `GrokS2S`, or `HydraS2S`. Applying
+`UltravoxS2S` returns to the managed default. **Preview uses the saved agent;
+call `apply` before testing a new selection.**
+
+A model change takes effect on a new session and keeps the agent's phone
+assignment. Native-to-native switches preserve supported tools and fixed
+stages. Entering native S2S from the Ultravox planner uses the fixed native
+stage contract; returning to Ultravox does not restore an older arbitrary
+stage plan. Select a voice valid for the new model and compare behavior with
+the same tasks. Speech, timing, and tool decisions can differ by provider.
 
 ## Move from browser to phone
 
@@ -111,7 +130,9 @@ the tools server-side with agent and account authority.
 
 The native transport currently has no recording, Supervisor coaching, human
 transfer, specialist-team handoff, DTMF navigation, public widget, or live language/voice profile
-switching. The large managed TTS catalog does not replace native model voices.
+switching. Hydra has no native transcript stream and cannot change persona or voice
+mid-session. Its fixed stages advance through validated tool results. The
+large managed TTS catalog does not replace native model voices.
 Use the [native guide](realtime-agent-factory.md#feature-boundaries) as the
 feature contract.
 

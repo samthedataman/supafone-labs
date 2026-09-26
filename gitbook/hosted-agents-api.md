@@ -165,15 +165,15 @@ Expected capability themes:
     }
   },
   "runtimes": {
-    "available": ["ultravox", "openai", "google", "xai"],
+    "available": ["ultravox", "openai", "google", "xai", "smallest"],
     "managed": "ultravox",
-    "byok": ["ultravox", "openai", "google", "xai"],
+    "byok": ["ultravox", "openai", "google", "xai", "smallest"],
     "coming_soon": ["vapi", "retell", "bland", "livekit", "pipecat"]
   }
 }
 ```
 
-The `runtimes` block separates the managed Ultravox default from native realtime Agent Factory providers. Native `openai`, `google`, and `xai` routes require the selected model key and use the `supafone_realtime` transport. Vapi, Retell, Bland, LiveKit, and Pipecat remain adapter/Supervisor integrations rather than direct Agent Factory runtimes.
+The `runtimes` block separates the managed Ultravox default from native realtime Agent Factory providers. Native `openai`, `google`, `xai`, and `smallest` routes require the selected model key and use the `supafone_realtime` transport. Vapi, Retell, Bland, LiveKit, and Pipecat remain adapter/Supervisor integrations rather than direct Agent Factory runtimes.
 
 ## Generate and Review a Call Plan
 
@@ -462,7 +462,7 @@ curl https://api.supafone.ai/api/v1/labs/runtime \
 ```
 
 `base_url` is optional. A blank `api_key` keeps the stored key, so you can
-re-save other fields. Native realtime accepts `openai`, `google`, and `xai` here; it returns masked `{configured, connected, source}` status and never returns a key.
+re-save other fields. Native realtime accepts `openai`, `google`, `xai`, and `smallest` here; it returns masked `{configured, connected, source}` status and never returns a key.
 Both `GET` and `PUT` return the same status shape:
 
 ```json

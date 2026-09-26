@@ -28,7 +28,7 @@ The builder should preserve the product hierarchy:
 
 | Role | Builder meaning |
 | --- | --- |
-| Native realtime Agent Factory | Swap among the four S2S models while keeping the same carrier and tool contract. |
+| Native realtime Agent Factory | Swap among the six native S2S models while keeping the same carrier and tool contract. |
 | Supafone Supervisor | Supervise and improve an existing or managed live agent. |
 | Managed compatibility Agent Factory | Create a complete hosted agent with managed defaults and no required vendor keys. |
 
@@ -45,16 +45,24 @@ transcription, PII redaction, retention days, and consent announcement.
 
 ## Native realtime builder path
 
-The builder can select OpenAI GPT Realtime 2.1, GPT Live 1, Gemini Live 3.1, or
-Grok Voice. Use the selected model's configured Supafone platform key by default;
+The product AgentBuilder can select OpenAI GPT Realtime 2.1, GPT Live 1, Gemini
+Live 3.1, Grok Voice, or Smallest AI Hydra 1.0/1.1. Ultravox remains the default.
+Use the selected model's configured Supafone platform key by default;
 an account BYOK key overrides it. Show credential source and model/carrier
 readiness before launch, and surface missing setup without requiring BYOK
 when a platform key exists.
 
 Native agents use the authenticated `supafone_realtime` browser transport and
 fixed intake → booking → confirmation stages. Model switching applies to new
-sessions. Recording, Supervisor coaching, transfer, DTMF, public widgets, and
-live language/voice profile switching are not available on this transport.
+sessions. Hydra has no native transcripts and keeps its voice and persona
+fixed per session. Recording, Supervisor coaching, transfer, specialist-team
+handoff, DTMF, public widgets, and live language/voice profile switching are
+not available on this transport.
+
+Open the agent, choose its provider/model/voice, inspect readiness, save, and
+start a fresh preview. The shared SDK classes follow the same flow: `create`,
+then `apply` to switch, then `testCall`/`test_call`.
+[Shared S2S interface](unified-s2s.md).
 
 See [Native Realtime Agent Factory](realtime-agent-factory.md) for the complete request and readiness contract.
 

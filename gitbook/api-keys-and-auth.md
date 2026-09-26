@@ -3,12 +3,12 @@
 ## Supafone authentication and S2S model credentials
 
 Your Supafone API key authenticates your app to Agent Factory. It is different
-from the server-side OpenAI, Google, or xAI key used by the selected speaking
+from the server-side OpenAI, Google, xAI, or Smallest AI key used by the selected speaking
 model. Supafone uses its configured platform key unless the account has an
 encrypted BYOK override for that provider. Customers need no separate vendor
 key when managed credentials are available.
 
-Use `GET /api/v1/labs/runtime?provider=openai` (or `google`, `xai`) to inspect
+Use `GET /api/v1/labs/runtime?provider=openai` (or `google`, `xai`, `smallest`) to inspect
 credential source and readiness without exposing the secret. Model access and
 carrier routing still need live verification. See [Native S2S credentials](realtime-agent-factory.md#managed-credentials-and-optional-byok).
 

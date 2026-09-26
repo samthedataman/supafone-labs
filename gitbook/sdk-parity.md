@@ -1,5 +1,14 @@
 # SDK Parity
 
+## One superclass, five providers
+
+Import `SupafoneS2S` and its provider classes: `UltravoxS2S`, `OpenAIS2S`,
+`GeminiS2S`, `GrokS2S`, and `HydraS2S`. Each offers `create`, `apply`, and
+`testCall` (Python `test_call`) through the same hosted agent contract.
+`apply` changes the next call on the existing agent; preview always uses the
+saved configuration. [See complete Python and TypeScript examples](unified-s2s.md).
+
+
 The Python and TypeScript SDKs should let developers do the same work with the
 same vocabulary. Use camelCase in TypeScript and snake_case in Python, but keep
 the payload concepts identical.

@@ -1666,7 +1666,7 @@ class LabsAgentsNamespace:
         suffix = f"?{parse.urlencode({'agency_id': agency})}" if agency else ""
         return self._client._request_supafone_api(
             "PATCH",
-            f"/api/v1/labs/agents/{parse.quote(agent_key)}{suffix}",
+            f"/api/v1/labs/agents/{parse.quote(agent_key, safe='')}{suffix}",
             _labs_agent_update_payload({
                 **_merge(config, kwargs),
                 **({"realtime": kwargs["realtime"]} if "realtime" in kwargs else {}),
@@ -2678,6 +2678,8 @@ def _provider_keys_payload(data: Mapping[str, Any]) -> dict[str, Any]:
             "openai_api_key": _pick(data, "openai_api_key", "openaiApiKey"),
             "xai": data.get("xai"),
             "xai_api_key": _pick(data, "xai_api_key", "xaiApiKey"),
+            "smallest": data.get("smallest"),
+            "smallest_api_key": _pick(data, "smallest_api_key", "smallestApiKey"),
         }
     )
 

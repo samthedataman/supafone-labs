@@ -5,6 +5,19 @@ Its S2S harness connects the selected speaking model to the agent's prompt,
 supported tools, stages, and browser or phone transport. You can change the
 model without rebuilding the surrounding native agent integration.
 
+## Shared S2S interface
+
+Use the same `SupafoneS2S` interface for **Ultravox, OpenAI, Gemini, Grok,
+and Smallest AI Hydra**. Provider subclasses supply the selection while Agent
+Factory keeps the agent and phone identity. Ultravox stays the default; the
+native catalog offers six model choices. See [the common interface](unified-s2s.md)
+for the class contract and switching examples.
+
+Model changes apply to new calls, not a live-call handoff. Capabilities remain
+provider-specific: Hydra has no native transcripts and cannot change its
+persona or voice mid-session. Check credentials and test the selected provider
+before a customer call.
+
 ## Choose an S2S option
 
 | Provider | Model | Default voice |
@@ -13,25 +26,31 @@ model without rebuilding the surrounding native agent integration.
 | OpenAI | `gpt-live-1` | `marin` |
 | Google | `gemini-3.1-flash-live-preview` | `Puck` |
 | xAI | `grok-voice-latest` | `eve` |
+| Smallest AI | `hydra-v1.0` | `sterling` |
+| Smallest AI | `hydra-v1.1` | `maya` |
 
-All four catalog models support browser previews and the same five phone
+All six native catalog models support browser previews and the same five phone
 families: Supafone-managed, Twilio, Telnyx, Plivo, and SIP. Model availability
 and carrier readiness depend on the deployment's configuration.
 
 ## Create a native agent
 
+In the [Supafone dashboard](https://app.supafone.ai/app/agents), create or open
+an agent, choose its speaking provider/model/voice, inspect credential status,
+save, and preview it. The SDK follows the same Agent Factory contract:
+
 ```ts
-import { Supafone } from "supafone-labs";
+import { Supafone, HydraS2S } from "supafone-labs";
 
 const supafone = new Supafone({ apiKey: process.env.SUPAFONE_TOKEN! });
-const agent = await supafone.labs.agents.createInbound({
+const engine = new HydraS2S(supafone, { model: "hydra-v1.1", voice: "maya" });
+const agent = await engine.create({
   agentKey: "northline-intake",
   name: "Northline intake",
   description: "Understand the request and book the right next step.",
-  realtime: { provider: "openai", model: "gpt-realtime-2.1", voice: "marin" },
   telephony: { mode: "supafone_managed", provider: "supafone" },
 });
-const preview = await supafone.labs.agents.testCall("northline-intake");
+const preview = await engine.testCall("northline-intake");
 ```
 
 Start with one Supafone API key. The selected model uses a configured platform
@@ -42,11 +61,14 @@ server. Managed phone and BYO carriers have separate readiness checks.
 ## Keep the workflow when you switch
 
 ```ts
-await supafone.labs.agents.update("northline-intake", {
-  realtime: { provider: "xai", model: "grok-voice-latest", voice: "eve" },
-});
+import { OpenAIS2S } from "supafone-labs";
+
+const next = new OpenAIS2S(supafone, { model: "gpt-realtime-2.1", voice: "marin" });
+await next.apply("northline-intake");
+const preview = await next.testCall("northline-intake");
 ```
 
+Apply the selection before previewing: `testCall` uses the saved agent.
 The next session uses the new model. The agent identity, instructions,
 supported tools, fixed intake → booking → confirmation stages, and phone
 configuration remain together. Use a voice supported by the selected model.

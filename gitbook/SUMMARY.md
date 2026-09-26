@@ -5,6 +5,7 @@
 ## Start Building
 
 * [Quickstart](quickstart.md)
+* [Shared S2S Interface](unified-s2s.md)
 * [SDK Installation](sdk-installation.md)
 * [Developer Workflows](developer-workflows.md)
 * [API Keys and Authentication](api-keys-and-auth.md)

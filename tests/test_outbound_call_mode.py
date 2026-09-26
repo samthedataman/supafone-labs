@@ -199,7 +199,7 @@ def test_agent_lifecycle_routes_and_update_persist_mode_in_metadata():
     sf.labs.agents.pause("agent/one", agencyId="agency-1")
 
     assert [call[:2] for call in calls] == [
-        ("PATCH", "/api/v1/labs/agents/agent/one?agency_id=agency-1"),
+        ("PATCH", "/api/v1/labs/agents/agent%2Fone?agency_id=agency-1"),
         ("GET", "/api/v1/labs/agents/agent/one/readiness?agency_id=agency-1"),
         ("POST", "/api/v1/labs/agents/agent/one/activate?agency_id=agency-1"),
         ("POST", "/api/v1/labs/agents/agent/one/pause?agency_id=agency-1"),

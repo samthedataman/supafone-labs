@@ -55,7 +55,7 @@ developers using REST directly.
 
 Agent creation can opt into two to four same-call language/voice profiles with
 an automatically translated primary greeting. See
-[Live language and voice routing](live-language-voice-routing.md).
+[Live language and voice routing](https://labs.supafone.ai/docs/live-language-voice-routing/).
 
 The recommended TypeScript package is `supafone-labs`:
 
@@ -214,15 +214,15 @@ Important response fields:
     }
   },
   "runtimes": {
-    "available": ["ultravox", "openai", "google", "xai"],
+    "available": ["ultravox", "openai", "google", "xai", "smallest"],
     "managed": "ultravox",
-    "byok": ["ultravox", "openai", "google", "xai"],
+    "byok": ["ultravox", "openai", "google", "xai", "smallest"],
     "coming_soon": ["vapi", "retell", "bland", "livekit", "pipecat"]
   }
 }
 ```
 
-The `runtimes` block separates the managed Ultravox default from native realtime Agent Factory providers. Native `openai`, `google`, and `xai` routes require the selected model key and use the `supafone_realtime` transport. Vapi, Retell, Bland, LiveKit, and Pipecat remain adapter/Supervisor integrations rather than direct Agent Factory runtimes.
+The `runtimes` block separates the managed Ultravox default from native realtime Agent Factory providers. Native `openai`, `google`, `xai`, and `smallest` routes require the selected model key and use the `supafone_realtime` transport. Vapi, Retell, Bland, LiveKit, and Pipecat remain adapter/Supervisor integrations rather than direct Agent Factory runtimes.
 
 List presets:
 
@@ -518,7 +518,7 @@ curl "$SUPAFONE_API_BASE_URL/api/v1/labs/runtime" \
   }'
 ```
 
-`base_url` is optional. A blank `api_key` keeps the stored key. Native realtime accepts `openai`, `google`, or `xai` and returns masked `{configured, connected, source}` status. Ultravox remains the managed default. See [Native Realtime Agent Factory](realtime-agent-factory.md). Both `GET` and `PUT` return a masked status shape:
+`base_url` is optional. A blank `api_key` keeps the stored key. Native realtime accepts `openai`, `google`, `xai`, or `smallest` and returns masked `{configured, connected, source}` status. Ultravox remains the managed default. See [Native Realtime Agent Factory](realtime-agent-factory.md). Both `GET` and `PUT` return a masked status shape:
 
 ```json
 {

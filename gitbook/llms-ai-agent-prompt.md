@@ -33,15 +33,20 @@ helping developers integrate Supafone Labs.
 
 ## Native realtime Agent Factory facts
 
-- Catalog models: `gpt-realtime-2.1`, `gpt-live-1`, `gemini-3.1-flash-live-preview`, and `grok-voice-latest`.
-- Providers: `openai`, `google`/`gemini`, and `xai`/`grok`.
+- Catalog models: `gpt-realtime-2.1`, `gpt-live-1`, `gemini-3.1-flash-live-preview`, `grok-voice-latest`, `hydra-v1.0`, and `hydra-v1.1`.
+- Native providers: `openai`, `google`/`gemini`, `xai`/`grok`, and `smallest`.
+- All five speaking families share exported `SupafoneS2S` classes: `UltravoxS2S`, `OpenAIS2S`, `GeminiS2S`, `GrokS2S`, and `HydraS2S`.
+- `create` provisions an ordinary agent; `apply(agentKey)` changes its next call; `testCall`/`test_call` previews the saved agent and never applies a selection implicitly.
+- Ultravox remains the default. Native choices are six models across four families; do not claim every S2S model is supported.
+- Hydra defaults to `hydra-v1.1` with `maya`; v1.0 defaults to `sterling`. It has no native transcripts and cannot change persona or voice mid-session. Fixed stage transitions use validated tool-result instructions.
+- `SMALLEST_API_KEY` supplies managed Hydra credentials when configured; account BYOK overrides it. Never claim credentials or live calls are verified from the catalog alone.
 - The S2S harness connects one agent prompt, supported tools, fixed stages, and audio transport to its selected speaking model.
 - Native model credentials resolve server-side: account BYOK overrides a configured platform key. Customers need no vendor key when managed credentials exist.
 - Check runtime status per selected provider; credential presence does not establish model entitlement or live-call quality. Phone calls also need carrier readiness.
 - Changing realtime applies to new sessions; it is not a mid-call model handoff.
 - Phone transports: Supafone-managed, BYO Twilio, BYO Telnyx, BYO Plivo, and BYO SIP.
 - Browser preview uses `labs.agents.testCall()` / `test_call()` and `transport: "supafone_realtime"`.
-- Native realtime agents use fixed intake → booking → confirmation stages and do not currently expose recording, Supervisor coaching, transfer, DTMF navigation, public widgets, or live language/voice profile switching.
+- Native realtime agents use fixed intake → booking → confirmation stages and do not currently expose recording, Supervisor coaching, transfer, specialist-team handoff, DTMF navigation, public widgets, or live language/voice profile switching.
 - The standard managed Agent Factory/Ultravox path and the native realtime path are separate choices.
 
 ## Do Not Confuse These
@@ -94,7 +99,10 @@ For Python examples, use:
 import supafone_labs
 brain = supafone_labs.supercharge(my_agent)
 
-Prefer createInboundWithNumber() and createOutboundWithNumber() for complete
+For swappable S2S agents, import a provider class (for example HydraS2S), use
+create(...), then apply(agentKey) before previewing a changed model. See unified-s2s.md.
+
+Use createInboundWithNumber() and createOutboundWithNumber() for complete
 hosted agents, but include numberStrategy: "default_pool" unless the user
 explicitly asks for a dedicated or premium number.
 ```
