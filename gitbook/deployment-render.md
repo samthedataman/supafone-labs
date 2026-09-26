@@ -86,9 +86,9 @@ SUPAFONE_API_BASE_URL=https://api.supafone.ai \
 npx tsx examples/smoke-hosted-agent.ts
 ```
 
-## GitBook Replacement Notes
+## Documentation Source Notes
 
-This GitBook source lives under `supafone-labs/gitbook/`. Publish that folder as
-the GitBook root so `README.md` and `SUMMARY.md` drive navigation. The older
-native docs can remain in place during migration until the GitBook publish path
-is verified.
+The canonical public documentation path is `/docs/`. The GitBook source lives
+under `supafone-labs/gitbook/` and is rendered into that path by the Labs
+static-site build. Keep `README.md`, `SUMMARY.md`, the generated provider
+contracts, and the native realtime guide in sync with the published SDK.
