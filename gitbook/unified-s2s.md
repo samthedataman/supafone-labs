@@ -10,6 +10,91 @@ The SDK selects and configures a hosted runtime. It does not put vendor keys
 in a browser or start a provider connection on its own. The server owns audio,
 allowed tools, stages, and credential resolution.
 
+## Create a supervised S2S agent
+
+**Hosted rollout status:** the published SDKs accept this configuration. The
+native S2S Supervisor rollout is pending; the existing managed Ultravox path
+remains available. See [SDK installation and deployment status](https://labs.supafone.ai/docs/sdk-installation/)
+before testing a native provider.
+
+Pass `supervisor` to **`create` on the base class**. The constructor selects the
+speaking provider, model and voice; `create` configures the hosted agent,
+including its Supervisor. You do not need a separate Supervisor client or
+standalone adapter for a hosted S2S agent.
+
+TypeScript:
+
+```ts
+import { Supafone, SupafoneS2S } from "supafone-labs";
+
+const client = new Supafone({ apiKey: process.env.SUPAFONE_TOKEN! });
+const engine = new SupafoneS2S(client, {
+  provider: "smallest", model: "hydra-v1.1", voice: "maya",
+});
+
+const agent = await engine.create({
+  agentKey: "northline-intake",
+  name: "Northline intake",
+  description: "Understand the request and book the right next step.",
+  supervisor: true,
+});
+```
+
+Python:
+
+```python
+import os
+from supafone_labs import Supafone, SupafoneS2S
+
+client = Supafone(api_key=os.environ["SUPAFONE_TOKEN"])
+engine = SupafoneS2S(client, provider="smallest", model="hydra-v1.1", voice="maya")
+agent = engine.create(
+    agent_key="northline-intake",
+    name="Northline intake",
+    description="Understand the request and book the right next step.",
+    supervisor=True,
+)
+```
+
+`supervisor=True` / `true` explicitly enables hosted coaching. A new `Supafone`
+client already defaults to enabled supervision when you omit this field; if
+you configure a different client default, an explicit create setting overrides
+it. To explicitly choose Supafone's managed Supervisor credentials, use
+`supervisor={"enabled": True, "mode": "managed"}` in Python or
+`supervisor: { enabled: true, mode: "managed" }` in TypeScript. Speaking-provider
+credentials and Supervisor credentials are separate.
+
+The same create setting works with `UltravoxS2S`, `OpenAIS2S`, `GeminiS2S`,
+`GrokS2S` and `HydraS2S`. The hosted deployment must support the selected runtime
+and have its provider and Supervisor credentials configured. For Hydra, the
+speaking credential is `SMALLEST_API_KEY` or an encrypted account BYOK override.
+Creating an agent does not connect audio or place a call. Start a preview with
+`engine.test_call("northline-intake")` / `engine.testCall("northline-intake")`
+after checking readiness.
+
+## Enable or disable Supervisor on an existing agent
+
+Update the saved agent through the same client:
+
+```ts
+await client.labs.agents.update("northline-intake", {
+  supervisor: { enabled: true, mode: "managed" },
+});
+// To turn coaching off:
+await client.labs.agents.update("northline-intake", { supervisor: false });
+```
+
+```python
+client.labs.agents.update("northline-intake", supervisor={"enabled": True, "mode": "managed"})
+# To turn coaching off:
+client.labs.agents.update("northline-intake", supervisor=False)
+```
+
+Use `supervisor=True` / `true` to enable the saved Supervisor profile without
+requesting a switch to managed mode. These updates change the stored agent
+configuration; they are not a mid-call control. See
+[Supervisor models and BYOK](supervisor-models.md) for choosing a reasoning model.
+
 ## Two voice-output choices in one Agent Factory
 
 **Ultravox + custom TTS** keeps the existing managed phone agent and lets a
@@ -33,48 +118,6 @@ is not a universal voice override for native models.
 All five classes extend the exported `SupafoneS2S` base class. This is **five
 speaking-provider families**, with **six native model choices plus the Ultravox
 default**. It is a supported catalog, not a claim to include every S2S model.
-
-## Create an agent with Hydra
-
-TypeScript:
-
-```ts
-import { Supafone, HydraS2S } from "supafone-labs";
-
-const client = new Supafone({ apiKey: process.env.SUPAFONE_TOKEN! });
-const engine = new HydraS2S(client, { model: "hydra-v1.1", voice: "maya" });
-
-const agent = await engine.create({
-  agentKey: "northline-intake",
-  name: "Northline intake",
-  description: "Understand the request and book the right next step.",
-});
-const preview = await engine.testCall("northline-intake");
-console.log(preview.browser_session);
-```
-
-Python:
-
-```python
-import os
-from supafone_labs import Supafone, HydraS2S
-
-client = Supafone(api_key=os.environ["SUPAFONE_TOKEN"])
-engine = HydraS2S(client, model="hydra-v1.1", voice="maya")
-agent = engine.create(
-    agentKey="northline-intake",
-    name="Northline intake",
-    description="Understand the request and book the right next step.",
-)
-preview = engine.test_call("northline-intake")
-print(preview["browser_session"])
-```
-
-Create the provider credential on the Supafone server before a live preview.
-For Hydra, that is the managed `SMALLEST_API_KEY` or an encrypted account
-BYOK override. Your application only needs its Supafone key when a platform
-credential is configured. Missing configuration is reported as setup required.
-Creating the agent is separate from connecting audio or making a phone call.
 
 ## Switch the same fone
 
@@ -115,8 +158,9 @@ number. Existing phone assignment and tools stay on the agent; only tools
 supported by the selected runtime are available during that call. Check the
 new provider's credentials, then preview before using it with callers.
 
-The same generated/custom stage plan and team remain on the agent when its
-speaking selection changes. Active calls keep their frozen workflow. Opt-in
+The saved Supervisor configuration, generated/custom stage plan and team remain
+on the agent when its speaking selection changes. `apply` changes only the
+speaking selection; it does not enable, disable or replace the Supervisor. Active calls keep their frozen workflow. Opt-in
 native live switching uses a separate allowed-model broker policy; it does not
 change what `apply` means. See [Shared runtime, Manager and teams](shared-agent-runtime.md).
 
@@ -124,7 +168,7 @@ change what `apply` means. See [Shared runtime, Manager and teams](shared-agent-
 
 | Operation | TypeScript | Python | Meaning |
 | --- | --- | --- | --- |
-| Create agent | `engine.create({...})` | `engine.create(name="...", ...)` | Create through Agent Factory using this provider selection |
+| Create supervised agent | `engine.create({name: "...", supervisor: true})` | `engine.create(name="...", supervisor=True)` | Create through Agent Factory using this provider selection and hosted coaching |
 | Select for an existing agent | `engine.apply(agentKey)` | `engine.apply(agent_key)` | Update only the speaking selection for the next session |
 | Preview the saved agent | `engine.testCall(agentKey)` | `engine.test_call(agent_key)` | Return a session for the agent's currently saved configuration |
 | Inspect selection | `engine.realtime` | `engine.realtime` | Native provider/model/voice selection; `null`/`None` for Ultravox |

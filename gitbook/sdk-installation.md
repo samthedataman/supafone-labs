@@ -1,197 +1,172 @@
 # SDK Installation
 
-## One superclass, five providers
+## Add Supervisor to your S2S agent
 
-Import `SupafoneS2S` and its provider classes: `UltravoxS2S`, `OpenAIS2S`,
-`GeminiS2S`, `GrokS2S`, and `HydraS2S`. Each offers `create`, `apply`, and
-`testCall` (Python `test_call`) through the same hosted agent contract.
-`apply` changes the next call on the existing agent; preview always uses the
-saved configuration. [See complete Python and TypeScript examples](unified-s2s.md).
+Pass `supervisor=True` in Python or `supervisor: true` in TypeScript to
+**`SupafoneS2S.create()`**. The same option works with `UltravoxS2S`,
+`OpenAIS2S`, `GeminiS2S`, `GrokS2S`, and `HydraS2S`.
 
+The constructor chooses the speaking model. `create()` saves the agent's job,
+Supervisor setting, stages, and tools. You do not need a separate
+`SupafoneLabs` object to supervise this hosted agent.
 
-Python and TypeScript expose the same hosted S2S harness: create an Agent
-Factory agent with `realtime: { provider, model, voice }`, preview it, and
-update the selection for the next session. Start with your Supafone API key;
-configured platform model keys are used unless the account supplies BYOK.
-The SDK sends the configuration to Supafone's server; installing the package
-does not itself host the model or provision provider credentials.
+### Install
 
-[Create and switch an S2S agent](quickstart.md) · [Runtime limits](realtime-agent-factory.md#feature-boundaries)
-
-Supafone Labs publishes a Python package and an unscoped TypeScript package.
-The Python SDK and CLI release is **0.7.1** on
-[PyPI](https://pypi.org/project/supafone-labs/0.7.1/). The TypeScript SDK is
-**0.7.0** on [npm](https://www.npmjs.com/package/supafone-labs/v/0.7.0).
-Python 0.7.1 adds explicit CLI commands for S2S selection, stage planning,
-Manager and Supervisor configuration, and provider readiness.
-
-Version **0.7.0** adds shared hosted workflow options for stage requirements,
-Manager reasoning, specialist teams, recording, and approved native model
-handoffs. These options require the corresponding Supafone backend deployment;
-SDK installation alone does not enable hosted features. See the
-[shared Agent Factory runtime](shared-agent-runtime.md) for configuration and
-provider boundaries.
-
-Version 0.6.3 introduced the shared `SupafoneS2S` superclass and all five provider
-classes, including Hydra. Install the current package from
-[PyPI](https://pypi.org/project/supafone-labs/0.7.1/) or
-[npm](https://www.npmjs.com/package/supafone-labs/v/0.7.0), then follow
-[Native Realtime Agent Factory](realtime-agent-factory.md).
-
-## Python
-
-```bash
-pip install supafone-labs
-```
-
-The Python package installs the `supafone` command:
+The Python SDK and CLI are **0.7.1**; the TypeScript SDK is **0.7.0**.
 
 ```bash
 python -m pip install --upgrade supafone-labs==0.7.1
-supafone --version
-supafone agents create --help
+npm install supafone-labs@0.7.0
 ```
 
-The CLI uses the same hosted API as the SDK. The npm package is a library and
-does not install this executable.
+Use your Supafone account key as `SUPAFONE_API_KEY`. Provider and managed
+Supervisor keys stay on Supafone's server.
 
-Recommended full install for hosted cloud, HTTP, STT, and server helpers:
-
-```bash
-pip install "supafone-labs[all]"
-```
-
-Native S2S usage:
+### Python
 
 ```python
 import os
-from supafone_labs import Supafone, HydraS2S
+from supafone_labs import Supafone, SupafoneS2S
 
-sf = Supafone(api_key=os.environ["SUPAFONE_TOKEN"])
-engine = HydraS2S(sf, model="hydra-v1.1", voice="maya")
-agent = engine.create(agentKey="intake", name="Intake")
-```
+client = Supafone(api_key=os.environ["SUPAFONE_API_KEY"])
+engine = SupafoneS2S(client, provider="openai")
 
-### Separate Supervisor integration
-
-Explicit usage:
-
-```python
-from supafone_labs import SupafoneLabs
-
-brain = SupafoneLabs(
-    provider="ultravox",
-    llm="hosted",
-    agent_label="intake",
+agent = engine.create(
+    agent_key="front-desk",
+    name="Front desk",
+    description="Help callers and book the right next step.",
+    supervisor=True,
 )
 ```
 
-Environment:
+### TypeScript
 
-```bash
-export SUPAFONE_LABS_API_KEY=sl_live_...
+```ts
+import { Supafone, SupafoneS2S } from "supafone-labs";
+
+const client = new Supafone({ apiKey: process.env.SUPAFONE_API_KEY! });
+const engine = new SupafoneS2S(client, { provider: "openai" });
+
+const agent = await engine.create({
+  agentKey: "front-desk",
+  name: "Front desk",
+  description: "Help callers and book the right next step.",
+  supervisor: true,
+});
 ```
 
-If no Labs key is present, use BYO provider keys such as `ANTHROPIC_API_KEY`,
-`OPENAI_API_KEY`, `XAI_API_KEY`, or local fake providers for tests.
+Use `provider="ultravox"`, `"openai"`, `"google"`, `"xai"`, or `"smallest"`
+in Python, or the corresponding `provider` value in TypeScript. You can also
+choose the provider subclass. Model and native voice options remain on the
+S2S constructor. See [the shared S2S interface](unified-s2s.md) for the catalog.
 
-### Supervisor provider and controls
+**Put `supervisor` on `create()`, not on the S2S constructor.** This is an
+agent setting saved by the hosted Agent Factory, independently of its speaking
+model. Creating the configuration does not start a call.
 
-On the managed compatibility runtime, `labs.enabled: true` attaches the
-model-agnostic Supervisor. Hosted native S2S can also attach coaching through
-the agent's `supervisor` setting and `check_guidance` tool. A Supafone
-`sl_...` key can use a managed Supervisor model; BYOK can use Claude, OpenAI,
-Gemini, OpenRouter, Groq, or Cerebras. The speaking agent and Supervisor model
-are independent.
+## Turn Supervisor on for an existing agent
+
+Use the same client to update the saved agent:
 
 ```python
-from supafone_labs import SupafoneLabs
-from supafone_labs.config import Settings
-
-supervisor = SupafoneLabs(
-    provider="ultravox",       # speaking-agent adapter
-    llm="anthropic",           # supervisor provider
-    supervisor_model="claude-haiku-4-5-20251001",
-    config=Settings(
-        confidence_threshold=0.65,
-        supervisor_timeout_seconds=5.0,
-    ),
-    supervisor_instructions="Prioritize empathy, tool truth, and the next required intake step.",
-    scenario="intake",
-    mode="apply",
-    telemetry=True,
-    post_call_analysis=True,
-)
+client.labs.agents.update("front-desk", supervisor=True)
+# Disable it explicitly:
+client.labs.agents.update("front-desk", supervisor=False)
 ```
 
-The older `oracle_model`, `oracle_timeout_seconds`, and `oracle_instructions`
-names remain deprecated compatibility aliases. New code should use the
-Supervisor names above. See [Supervisor Models: Managed and BYOK](supervisor-models.md)
-and [Programmable Supervisor Directives](programmable-supervisor-directives.md).
+```ts
+await client.labs.agents.update("front-desk", { supervisor: true });
+// Disable it explicitly:
+await client.labs.agents.update("front-desk", { supervisor: false });
+```
 
-For raw hosted completions, both SDKs expose `model`, `max_tokens`/
-`maxTokens`, and `temperature`. `whisper()` additionally accepts operator
-`guardrails`. The full supervisor also accepts custom belief/directive prompts,
-an injection adapter, telemetry and post-call controls, and an `agent_label`
-for optimization history.
+These updates configure subsequent calls. Switching the speaking provider with
+`engine.apply("front-desk")` preserves the saved Supervisor setting; `apply()`
+only changes the speaking selection. It does not enable supervision on an
+existing agent whose Supervisor is disabled.
 
-## TypeScript
+## Managed defaults and your own reasoning model
+
+New agents inherit `Supafone`'s `supervisor` default, which is `true`. The
+explicit flag above makes that choice visible. `supervisor=True` enables the
+agent's default or saved Supervisor profile; it does not replace an existing
+BYOK profile. To explicitly select Supafone-managed reasoning, use:
+
+```python
+agent = engine.create(
+    name="Managed front desk",
+    supervisor={"enabled": True, "mode": "managed"},
+)
+# The same object works with client.labs.agents.update(...).
+```
+
+```ts
+const managedAgent = await engine.create({
+  name: "Managed front desk",
+  supervisor: { enabled: true, mode: "managed" },
+});
+```
+
+The speaking model and reasoning model are independent. Optional BYOK
+Supervisor profiles support Anthropic, OpenAI, Gemini, OpenRouter, Groq, and
+Cerebras. [Choose managed or BYOK reasoning](supervisor-models.md).
+
+Managed operation requires the corresponding keys on Supafone's server. An
+account's saved speaking-provider key takes priority over its platform default.
+Installing an SDK does not configure keys or deploy the hosted runtime.
+**Hosted rollout status (September 28, 2026):** the published SDKs accept this
+configuration, but the new native S2S Supervisor backend rollout is still
+pending. Ultravox uses its existing managed supervision path. Check
+`client.labs.capabilities()` and agent readiness before a live call; a saved
+`supervisor` flag alone is not evidence that coaching ran.
+
+For advanced workflows, [Manager and specialist teams](shared-agent-runtime.md)
+add bounded reasoning and stage coordination above the speaking agent.
+Supervisor guidance and Manager coordination are separate controls.
+
+## Test the saved agent
+
+```python
+preview = engine.test_call("front-desk")
+```
+
+```ts
+const preview = await engine.testCall("front-desk");
+```
+
+Preview creates an authenticated browser session for the saved configuration;
+your audio client must connect using the returned transport. It can consume
+managed minutes. Provider credentials and audio remain server-managed.
+
+Ultravox retains its compatible custom TTS options. Native models use their
+own voices. Hydra has no native live transcript; its coaching context is
+model-reported. See [runtime limits](realtime-agent-factory.md#feature-boundaries).
+
+## Command-line setup
+
+The Python package installs `supafone`; the npm package is a library.
 
 ```bash
-npm i supafone-labs
+supafone --version
+supafone agents create --name "Front desk" --set agent_key=front-desk --s2s-provider openai --supervisor managed
+supafone agents update front-desk --supervisor managed
 ```
 
-ESM:
+Use the actual agent key returned by creation when updating.
+[Read the CLI guide](cli.md) for stage planning, Manager controls, and provider
+readiness checks.
 
-```ts
-import { Supafone } from "supafone-labs";
+## Integrate Supervisor with a runtime you operate
 
-const supafone = new Supafone({
-  apiKey: process.env.SUPAFONE_LABS_API_KEY!,
-});
-```
+`SupafoneLabs(...)` is the separate observation and guidance interface for a
+runtime you integrate yourself. It is not required for the hosted S2S examples
+above. Start with [Supafone Supervisor](supafone-supervisor.md) and the
+[adapter capability reference](provider-contracts.md) for that integration.
 
-CommonJS:
-
-```js
-const { Supafone } = require("supafone-labs");
-```
-
-Hosted-agent usage — since 0.4.4 a lone `sl_` key cross-fills every credential
-lane (labs, hosted-agent, and account) automatically:
-
-```ts
-const supafone = new Supafone({
-  apiKey: process.env.SUPAFONE_TOKEN!, // sl_live_... — one key, both APIs
-});
-```
-
-Explicit per-surface keys are still supported when you want them scoped:
-
-```ts
-const supafone = new Supafone({
-  apiKey: process.env.SUPAFONE_LABS_API_KEY!,
-  supafoneApiKey: process.env.SUPAFONE_API_KEY!,
-  supafoneApiBaseUrl: "https://api.supafone.ai",
-});
-```
-
-The package works in Node 18+ and browsers using native `fetch`. Live STT needs
-a global `WebSocket`; on older Node versions, pass a WebSocket implementation.
-
-Hosted Agent Factory creation can also opt into same-call language and voice
-routing. See [Live Language and Voice Routing](live-language-voice-routing.md)
-for the shared TypeScript, Python, REST, and MCP contract.
-
-```ts
-import WebSocket from "ws";
-
-const live = supafone.liveTranscribe({
-  WebSocketImpl: WebSocket,
-  language: "multi",
-  onResult: (r) => console.log(r.transcript)
-});
-```
+The package also provides optional HTTP, STT, and server helpers through
+`pip install "supafone-labs[all]"`. TypeScript works in Node 18+ and browsers
+with native `fetch`; live STT needs a global `WebSocket` or an implementation
+passed by your application. Keep account keys in trusted server code.
 
 ## Universal Phone Tester
 

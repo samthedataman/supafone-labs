@@ -28,7 +28,49 @@ If you only use hosted-agent methods, `SUPAFONE_API_KEY` is enough. If you use
 both products from one SDK instance, pass `SUPAFONE_API_KEY` as
 `supafoneApiKey`.
 
-## Quick start
+## Quick start: S2S with Supervisor
+
+**Hosted rollout status:** the SDK accepts this configuration. Native S2S
+Supervisor rollout is pending; the existing managed Ultravox path remains
+available. See [SDK installation and deployment status](https://labs.supafone.ai/docs/sdk-installation/).
+
+```ts
+import { Supafone, SupafoneS2S } from "supafone-labs";
+
+const client = new Supafone({ apiKey: process.env.SUPAFONE_API_KEY! });
+const engine = new SupafoneS2S(client, { provider: "openai" });
+const agent = await engine.create({
+  name: "Front desk",
+  supervisor: true,
+});
+```
+
+Set `provider`, `model` and `voice` on the constructor; set `supervisor` on
+**`create`**. This uses hosted Agent Factory coaching without a separate
+Supervisor client or standalone adapter. A new `Supafone` client already
+defaults to enabled supervision. To explicitly choose platform-managed
+reasoning, pass `supervisor: { enabled: true, mode: "managed" }` instead.
+Runtime support and configured server credentials determine readiness.
+
+For an existing agent:
+
+```ts
+const agentKey = agent.agent.agent_key!;
+await client.labs.agents.update(agentKey, {
+  supervisor: { enabled: true, mode: "managed" },
+});
+// To disable coaching:
+await client.labs.agents.update(agentKey, { supervisor: false });
+```
+
+Use `{ supervisor: true }` to enable the saved profile without requesting a
+change to managed mode. Updates affect the saved agent; they are not mid-call
+controls. Switching providers with `apply` preserves the saved Supervisor
+configuration and changes only the speaking selection.
+
+## Standalone supervision
+
+For a voice stack you already operate, request and deliver guidance yourself:
 
 ```ts
 import { Supafone } from "supafone-labs";
@@ -87,12 +129,15 @@ Supafone's hosted Agent Factory. Supafone handles the audio adapter, tools,
 stages, and supported phone transport behind one API.
 
 ```ts
-import { Supafone, HydraS2S, OpenAIS2S, UltravoxS2S } from "supafone-labs";
+import { Supafone, SupafoneS2S, OpenAIS2S, UltravoxS2S } from "supafone-labs";
 
 const client = new Supafone({ apiKey: process.env.SUPAFONE_API_KEY! });
-const hydra = new HydraS2S(client, { model: "hydra-v1.1", voice: "maya" });
+const hydra = new SupafoneS2S(client, {
+  provider: "smallest", model: "hydra-v1.1", voice: "maya",
+});
 const created = await hydra.create({
   name: "Intake", goal: "Collect the caller's details and book a consultation",
+  supervisor: { enabled: true, mode: "managed" },
   telephony: { mode: "supafone_managed", provider: "supafone" },
 });
 const agentKey = created.agent.agent_key!;
@@ -104,7 +149,8 @@ await new OpenAIS2S(client, { model: "gpt-realtime-2.1", voice: "marin" }).apply
 await new UltravoxS2S(client).apply(agentKey);
 ```
 
-`apply` saves a selection for subsequent calls. `testCall` previews the saved
+`apply` saves only the speaking selection for subsequent calls and preserves
+the saved Supervisor profile. `testCall` previews the saved
 agent and does not implicitly switch providers. The same constructors and
 `create`, `apply`, and `test_call` methods are available in Python.
 

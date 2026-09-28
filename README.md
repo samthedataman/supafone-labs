@@ -27,6 +27,10 @@ stages, and browser/phone delivery through Python, TypeScript, and REST.
 
 ## Start here: the S2S harness
 
+**Hosted rollout status:** the SDK configuration shown below is available.
+Native S2S Supervisor rollout is pending; the existing managed Ultravox path
+remains available. See [SDK installation and deployment status](https://labs.supafone.ai/docs/sdk-installation/).
+
 Agent Factory creates the agent; the harness runs its selected speaking model
 with supported tools, stages, and browser or phone delivery. The exported
 `SupafoneS2S` superclass gives Python and TypeScript one interface for five
@@ -41,14 +45,17 @@ provider's runtime status before launch; catalog support and key presence do
 not establish model access or successful carrier calls.
 
 ```ts
-import { Supafone, HydraS2S, OpenAIS2S } from "supafone-labs";
+import { Supafone, SupafoneS2S, OpenAIS2S } from "supafone-labs";
 
 const sf = new Supafone({ apiKey: process.env.SUPAFONE_TOKEN! });
-const hydra = new HydraS2S(sf, { model: "hydra-v1.1", voice: "maya" });
-await hydra.create({
+const engine = new SupafoneS2S(sf, {
+  provider: "smallest", model: "hydra-v1.1", voice: "maya",
+});
+await engine.create({
   agentKey: "intake",
   name: "Intake",
   description: "Understand the request and book the right next step.",
+  supervisor: true,
 });
 
 // Switch the same agent for its next call, then preview the saved selection.
@@ -57,9 +64,34 @@ await openai.apply("intake");
 const preview = await openai.testCall("intake");
 ```
 
+Python uses the same base class and create setting:
+
+```python
+import os
+from supafone_labs import Supafone, SupafoneS2S
+
+client = Supafone(api_key=os.environ["SUPAFONE_TOKEN"])
+engine = SupafoneS2S(client, provider="smallest", model="hydra-v1.1", voice="maya")
+agent = engine.create(agent_key="intake", name="Intake", supervisor=True)
+```
+
+Set the speaking provider on the constructor and **Supervisor on `create`**.
+No separate Supervisor client or standalone adapter is needed for hosted S2S.
+A new `Supafone` client already defaults to enabled supervision. For explicit
+platform-managed reasoning, pass `supervisor={"enabled": True, "mode": "managed"}`
+in Python or `supervisor: { enabled: true, mode: "managed" }` in TypeScript.
+The deployment must have the corresponding runtime and credentials configured.
+
+For an existing agent, use `client.labs.agents.update("intake", supervisor=True)`
+in Python or `await sf.labs.agents.update("intake", { supervisor: true })` in
+TypeScript; use `False` / `false` to disable coaching. These update the saved
+profile for subsequent calls. [Complete Supervisor examples](gitbook/unified-s2s.md)
+show how to explicitly select managed mode on an existing agent.
+
 `create`, `apply`, and `testCall` (Python `test_call`) work across all five
 provider classes. Preview does not apply a selection automatically. Switching
-keeps the agent, phone assignment, custom stage plan, team and configured tools.
+keeps the agent, phone assignment, saved Supervisor configuration, custom stage
+plan, team and configured tools. `apply` changes only the speaking selection.
 All five speaking families use the same shared call runtime. Phone delivery supports
 Supafone-managed, Twilio, Telnyx, Plivo, and SIP with separate carrier setup.
 
@@ -120,10 +152,11 @@ External TTS is specific to compatible runtimes. Deepgram previews and custom
 SDK synthesis do not automatically enable a hosted phone-call integration.
 [Compare voice-output choices and see working examples](gitbook/voice-output-modes.md).
 
-## Supafone Supervisor: supervise an existing stack
+## Supafone Supervisor: hosted and standalone coaching
 
-Supafone Supervisor is a separate offering: a second AI runs beside the realtime
-agent, observes the live conversation off the latency-critical audio path, and
+Hosted S2S agents enable Supervisor through `create` or an agent update as shown
+above. It is also available separately for an existing voice stack. A second AI
+runs beside the realtime agent, observes the live conversation off the latency-critical audio path, and
 silently corrects the agent when it detects tool failures, unsafe claims,
 language changes, missed intent, or a broken workflow. If the Supervisor has
 nothing useful to add—or cannot respond in time—the call continues unchanged.
