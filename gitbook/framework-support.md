@@ -36,6 +36,19 @@ phone transports and from the fourteen Supervisor adapters below.
 
 ## Direct Agent Factory realtime delivery
 
+All five Agent Factory speaking families support hosted Supervisor coaching.
+Ultravox keeps its existing deferred guidance path. Native OpenAI, Gemini,
+Grok, and Hydra use a shared call-scoped coach and return bounded guidance
+through model-invoked `check_guidance` tool results. The same relay handles
+browser and the five existing phone transports.
+
+Hydra supplies **model-reported context**, not transcripts; OpenAI, Gemini,
+and Grok can supply provider transcripts. Coaching support, the agent's
+enabled setting, and Supervisor credential readiness are separate. See the
+[native coaching contract](realtime-agent-factory.md#supervisor-coaching-across-all-five-speaking-families).
+
+## Standalone Supervisor adapters
+
 The matrix below describes Supervisor adapters for existing stacks. It does not describe direct model hosting. The Agent Factory also has a native S2S transport for OpenAI, Google/Gemini, xAI, and Smallest AI/Hydra; that path is documented in [Native Realtime Agent Factory](realtime-agent-factory.md).
 
 ## Runtime matrix
@@ -49,7 +62,7 @@ The matrix below describes Supervisor adapters for existing stacks. It does not 
 | <a id="provider-bland"></a>Bland | Observation only | No universal prompt-injection action | Events normalize without emitting an unsupported action |
 | <a id="provider-gpt_realtime"></a>OpenAI Realtime | Native control | System `conversation.item.create` | Item-created or item-done event arrives without provider error |
 | <a id="provider-grok"></a>Grok Voice Agent | Native control | `response.create.instructions` | Provider emits `response.created`, then `response.done` or an error |
-| <a id="provider-gemini_live"></a>Gemini Developer Live | Observation only | `clientContent` is ordinary conversation history | Default adapter observes events and emits no hidden mid-call control |
+| <a id="provider-gemini_live"></a>Gemini Developer Live | Observation only | `clientContent` is ordinary conversation history | Default declared contract observes events; raw conversation context is not a privileged system instruction |
 | <a id="provider-elevenlabs"></a>ElevenLabs Agents | Native control | `contextual_update` | Socket remains healthy and the next turn completes |
 | <a id="provider-deepgram"></a>Deepgram Voice Agent | Native control | `UpdatePrompt` | Provider emits `PromptUpdated` |
 | <a id="provider-livekit"></a>LiveKit Agents | Developer-owned context | `ChatContext.add_message` followed by `update_chat_ctx` | Persisted context contains the system entry |
@@ -105,7 +118,10 @@ It does **not** mean Supafone hosts every provider account automatically.
 
 For supported transcript-producing Supervisor integrations, Supafone selects
 one transcript authority per call. Native Hydra supplies no transcript events
-and this native adapter does not add a separate transcription service:
+and this native adapter does not add a separate transcription service. Hosted
+Hydra coaching uses explicitly labeled model-reported context and server tool
+outcomes instead. That context must never be displayed as a caller transcript:
+
 
 - Provider transcript for a supported monolingual stream.
 - Deepgram live tap when multilingual language authority is required and raw

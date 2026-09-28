@@ -117,7 +117,11 @@ webhooks or outbound routing before testing a real call. Follow the
 [carrier setup guide](realtime-agent-factory.md#phone-calls-and-carrier-selection).
 
 Native S2S supports intake → booking → confirmation and allowed server tools.
-It does not currently support recording, Supervisor coaching, human transfer,
+Set `supervisor: true` on the agent to enable coaching across all five speaking
+families. Native guidance arrives through `check_guidance`; Hydra uses
+model-reported context, not transcripts. Configure the Supervisor model
+credentials separately from the speaking model.
+It does not currently support recording, human transfer,
 specialist-team handoff, DTMF navigation, public widgets, or live language/voice
 profile switching.
 
@@ -140,5 +144,6 @@ result = await brain.observe(raw_platform_event)
 ```
 
 Use the [framework coverage matrix](https://labs.supafone.ai/docs/framework-support/) to determine whether
-your adapter can send guidance or only observe. This integration does not
-turn on Supervisor coaching in the native S2S harness.
+your adapter can send guidance or only observe. For hosted native S2S, use
+the agent's `supervisor` setting instead; the shared relay delivers coaching
+through `check_guidance` when supervision is enabled and credentials are ready.

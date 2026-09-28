@@ -55,7 +55,9 @@ when a platform key exists.
 Native agents use the authenticated `supafone_realtime` browser transport and
 fixed intake → booking → confirmation stages. Model switching applies to new
 sessions. Hydra has no native transcripts and keeps its voice and persona
-fixed per session. Recording, Supervisor coaching, transfer, specialist-team
+fixed per session. All five speaking families support Supervisor coaching when
+enabled and configured. Native models receive `check_guidance` tool results;
+Hydra supplies model-reported context, not transcripts. Recording, transfer, specialist-team
 handoff, DTMF, public widgets, and live language/voice profile switching are
 not available on this transport.
 

@@ -58,6 +58,7 @@ const agent = await engine.create({
   agentKey: "northline-intake",
   name: "Northline intake",
   description: "Understand the request and book the right next step.",
+  supervisor: true,
   telephony: { mode: "supafone_managed", provider: "supafone" },
 });
 const preview = await engine.testCall("northline-intake");
@@ -67,6 +68,15 @@ Start with one Supafone API key. The selected model uses a configured platform
 key by default; an encrypted account BYOK key overrides it. Check the model's
 runtime status and test a preview before dialing. Keep provider keys on the
 server. Managed phone and BYO carriers have separate readiness checks.
+
+## Keep the coach when you switch
+
+Set `supervisor: true` or the managed/BYOK Supervisor object on the agent.
+All five speaking families support coaching, independently from the voice
+choice. Native models receive guidance through `check_guidance`; Hydra passes
+model-reported context because it has no transcript stream. A supported coach
+must also be enabled and have its Supervisor credentials configured.
+See [the hosted coaching contract](realtime-agent-factory.md#supervisor-coaching-across-all-five-speaking-families).
 
 ## Keep the workflow when you switch
 
@@ -82,8 +92,7 @@ Apply the selection before previewing: `testCall` uses the saved agent.
 The next session uses the new model. The agent identity, instructions,
 supported tools, fixed intake → booking → confirmation stages, and phone
 configuration remain together. Use a voice supported by the selected model.
-The native harness does not support arbitrary planner stages, Supervisor
-coaching, recording, human transfer, specialist-team handoff, DTMF, public widgets, or live
+The native harness does not support arbitrary planner stages, recording, human transfer, specialist-team handoff, DTMF, public widgets, or live
 language/voice profile switching today.
 
 The [native S2S guide](realtime-agent-factory.md) contains Python examples,

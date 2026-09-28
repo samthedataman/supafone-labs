@@ -143,7 +143,10 @@ Hydra supports English audio and tools, without transcript events or mutable
 mid-session persona/voice. Supafone supplies its fixed stages at session start
 and advances the stage using tool results. Hydra 1.1 uses 16 kHz input / 24 kHz
 output; 1.0 uses 16 kHz / 48 kHz and a different voice roster. Native sessions
-do not claim Ultravox's recording, Supervisor, transfer, or agent-team parity.
+do not claim Ultravox's recording, transfer, or agent-team parity.
+All five hosted speaking families support optional Supervisor coaching. Native
+models receive guidance through `check_guidance`; Hydra supplies explicitly
+labeled model-reported context rather than transcripts.
 See the [unified S2S guide](https://labs.supafone.ai/docs/unified-s2s/) and
 [capability matrix](https://labs.supafone.ai/docs/realtime-agent-factory/).
 ## Spawn a hosted Supafone agent
@@ -229,7 +232,7 @@ import { Supafone } from "supafone-labs";
 const supafone = new Supafone({
   apiKey: process.env.SUPAFONE_LABS_API_KEY || process.env.SUPAFONE_API_KEY!,
   supafoneApiKey: process.env.SUPAFONE_API_KEY!,
-  // Supafone Supervisor is on by default for live guidance, QA, and scoring.
+  // Requests Supervisor by default; its model credentials must also be configured.
   // Set false only when you intentionally need an unsupervised agent.
   supervisor: true,
   // Defaults to https://api.supafone.ai. Override for staging/local tests.

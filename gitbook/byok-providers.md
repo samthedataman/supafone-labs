@@ -134,9 +134,13 @@ Native realtime uses `realtime: { provider, model, voice }` with
 OpenAI, Google, xAI, or Smallest AI account key through `PUT /api/v1/labs/runtime`, then use
 Supafone-managed, Twilio, Telnyx, Plivo,
 or SIP phone transport. The native path has fixed intake → booking →
-confirmation stages and does not currently provide recording, Supervisor
-coaching, transfer, DTMF, or public widgets. See [Native Realtime Agent
+confirmation stages and does not currently provide recording, transfer, DTMF, or public widgets. See [Native Realtime Agent
 Factory](realtime-agent-factory.md).
+
+All five Agent Factory speaking families support Supervisor coaching when
+enabled and configured. The native `check_guidance` tool returns guidance;
+Hydra uses model-reported context rather than transcripts. Speaking-model
+credentials and Supervisor credentials are separate readiness checks.
 
 ## BYOK Supervisor Providers
 

@@ -122,13 +122,22 @@ carrier readiness. Test caller ID, webhook signatures, inbound routing, and
 outbound behavior for the selected carrier. Follow the
 [native carrier guide](realtime-agent-factory.md#phone-calls-and-carrier-selection).
 
+## Enable coaching for any speaking model
+
+Set `supervisor: true` or a managed/BYOK Supervisor configuration on the agent.
+All five hosted speaking families support coaching. Native OpenAI, Gemini,
+Grok, and Hydra request guidance through `check_guidance`; Hydra supplies
+model-reported context because it does not emit transcripts. The Supervisor
+model needs its own configured credentials. An enabled setting is not proof
+of a running coach. See [hosted coaching](realtime-agent-factory.md#supervisor-coaching-across-all-five-speaking-families).
+
 ## Understand the native feature boundary
 
 Native agents use fixed intake → booking → confirmation stages and allowed
 knowledge, lead capture, scheduling, SMS/email, and custom tools. Supafone runs
 the tools server-side with agent and account authority.
 
-The native transport currently has no recording, Supervisor coaching, human
+The native transport currently has no recording, human
 transfer, specialist-team handoff, DTMF navigation, public widget, or live language/voice profile
 switching. Hydra has no native transcript stream and cannot change persona or voice
 mid-session. Its fixed stages advance through validated tool results. The
@@ -163,8 +172,9 @@ result = await brain.observe(raw_platform_event)
 
 Check [framework coverage](framework-support.md) and
 [programmable directives](programmable-supervisor-directives.md). The presence
-of a Supervisor adapter for a provider does not mean Supervisor is enabled in
-that provider's native Agent Factory transport.
+of a Supervisor adapter for a provider is separate from hosted Agent Factory
+support. All five hosted speaking families support coaching; an individual
+agent must also have supervision enabled and a configured Supervisor model.
 
 ## Key Routing
 

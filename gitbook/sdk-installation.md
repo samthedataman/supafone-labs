@@ -74,7 +74,8 @@ If no Labs key is present, use BYO provider keys such as `ANTHROPIC_API_KEY`,
 ### Supervisor provider and controls
 
 On the managed compatibility runtime, `labs.enabled: true` attaches the
-model-agnostic Supervisor. Native S2S does not currently attach it. A Supafone
+model-agnostic Supervisor. Hosted native S2S can also attach coaching through
+the agent's `supervisor` setting and `check_guidance` tool. A Supafone
 `sl_...` key can use a managed Supervisor model; BYOK can use Claude, OpenAI,
 Gemini, OpenRouter, Groq, or Cerebras. The speaking agent and Supervisor model
 are independent.

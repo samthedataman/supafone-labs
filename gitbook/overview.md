@@ -62,10 +62,11 @@ checked separately from model readiness.
 | Managed compatibility Agent Factory | Continue existing Ultravox-backed hosted workflows | Selected when `realtime` is omitted; includes the broader planner and compatible recording, transfer, widgets, and supervision features |
 | Supafone Supervisor | Observe and coach agents you already run | Separate SDK/runtime with provider-specific guidance and observation capabilities |
 
-Supafone Supervisor is an independent product surface. It is not currently
-attached to the native S2S transport. The managed compatibility path and
-supported external stacks can use it as documented in the
-[framework matrix](framework-support.md).
+Supafone Supervisor is an independent reasoning layer available on all five
+Agent Factory speaking families, as well as supported external stacks. Native
+models receive guidance through the `check_guidance` tool. Hydra provides
+model-reported context rather than transcripts. See the
+[framework matrix](framework-support.md) for delivery differences.
 
 ## API and SDK surfaces
 

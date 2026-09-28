@@ -64,9 +64,13 @@ supported tools and fixed intake → booking → confirmation stages. Moving fro
 Ultravox to native S2S uses that fixed stage contract. Phone delivery supports
 Supafone-managed, Twilio, Telnyx, Plivo, and SIP with separate carrier setup.
 
+All five hosted speaking families support Supervisor coaching when enabled
+and configured. Native models request guidance through `check_guidance`;
+Hydra supplies labeled model-reported context, not transcripts.
+
 Capabilities differ by runtime. Hydra has no native transcripts and cannot
 change persona or voice mid-session. Native S2S currently excludes recording,
-Supervisor coaching, human transfer, specialist-team handoff, DTMF, public
+human transfer, specialist-team handoff, DTMF, public
 widgets, and live language/voice profile switching. `UltravoxS2S` selects the
 managed default and its broader compatible hosted features; omitting
 `realtime` on creation also preserves that default.
@@ -110,7 +114,7 @@ const supafone = new Supafone({ apiKey: process.env.SUPAFONE_TOKEN! });
 ```
 
 Agent Factory customers can use Supafone's managed Supervisor models without
-another vendor key:
+another vendor key when the deployment has the managed credentials configured:
 
 ```ts
 const agent = await supafone.labs.agents.createInbound({
@@ -283,10 +287,11 @@ is temporarily unavailable.
 
 The native Agent Factory creates an agent for the shared S2S harness. Choose
 its speaking model while retaining the supported tools, fixed stages, and
-browser or carrier transport. Supafone Supervisor is a separate offering for
-observing and coaching compatible existing stacks; native S2S does not
-currently attach it. The managed Ultravox compatibility runtime keeps its
-broader hosted features and optional Supervisor attachment.
+browser or carrier transport. Supafone Supervisor can coach all five hosted
+speaking families and supported existing stacks. Native models request bounded
+guidance through `check_guidance`; Hydra supplies model-reported context, not
+transcripts. The managed Ultravox runtime keeps its deferred guidance delivery
+and broader hosted features.
 
 The supervisor is model agnostic by construction. Provider adapters normalize
 each stack into one call-state contract and compile one abstract directive back

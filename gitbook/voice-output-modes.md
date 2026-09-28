@@ -147,7 +147,10 @@ Preview the saved configuration after each change.
 
 On compatible managed Ultravox calls, changing the TTS provider changes the
 speaking voice without replacing the Supervisor layer. Native Agent Factory
-calls on OpenAI, Gemini, Grok, and Hydra do not currently have Supervisor coaching.
+calls on OpenAI, Gemini, Grok, and Hydra also support coaching through the
+`check_guidance` tool. Hydra supplies model-reported context, not transcripts.
+Enable supervision and configure its managed or BYOK model separately from
+the speaking model. See [the hosted coaching contract](realtime-agent-factory.md#supervisor-coaching-across-all-five-speaking-families).
 External SDK adapters have their own guidance and observation support; see
 [Framework Coverage](framework-support.md).
 

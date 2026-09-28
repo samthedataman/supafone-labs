@@ -66,22 +66,6 @@ This is why the framework can become more useful without taking over the live
 audio path. The speaking agent stays fast; the supervisor accumulates context,
 detects patterns, and closes the verification loop.
 
-## The directive packet is a supervisor note, not another prompt
-
-The canonical packet keeps the judgments a human call supervisor makes
-separate: `empathy_directive` controls the interpersonal response,
-`tactical_directive` names one next operational move, `surface_facts` preserves
-observed evidence, `guardrails` protects policy and tool truth, `language`
-selects the next-turn language, `confidence` decides whether intervention is
-justified, and `kind` classifies the help. Weak evidence produces no packet.
-
-The packet is proposed by the Supervisor model, checked again by deterministic
-gates, and only then compiled into a provider-native hidden steer. It is never
-automatically spoken to the caller. Read
-[Programmable Supervisor Directives](programmable-supervisor-directives.md) for
-the JSON shape, human-supervisor mapping, field bounds, transforms, and safety
-behavior.
-
 ## Model agnostic by construction
 
 The contract is between call events and supervisor directives, not between
@@ -99,13 +83,90 @@ supervision, QA, telemetry, and improvement loop. See
 The managed Ultravox-compatible Agent Factory is a compatibility lane for
 provisioning a complete hosted agent with supervision already attached. Native
 realtime Agent Factory is a separate first-class path for swapping among the
-four supported S2S models while keeping the carrier contract. The Supervisor
+four native S2S provider families while keeping the carrier contract. Both
+Agent Factory paths support coaching when enabled and configured. The Supervisor
 contract also works when Supafone did not create the agent.
+
+## Supervisor coaching across all five speaking families
+
+Enable `supervisor: true` (Python `"supervisor": True`) when creating an agent,
+or supply the existing managed/BYOK `supervisor` configuration. Supervisor is
+independent of the speaking model: Ultravox, OpenAI, Gemini, Grok, and Hydra
+all support hosted coaching. The same call-scoped coach is used for native
+browser sessions and Supafone-managed, Twilio, Telnyx, Plivo, and SIP calls.
+Each transport still needs its own configuration and live validation.
+
+```ts
+import { Supafone, HydraS2S } from "supafone-labs";
+
+const client = new Supafone({ apiKey: process.env.SUPAFONE_TOKEN! });
+const engine = new HydraS2S(client, { model: "hydra-v1.1", voice: "maya" });
+await engine.create({
+  agentKey: "coached-intake",
+  name: "Coached intake",
+  description: "Understand the caller's request and verify the booking result.",
+  supervisor: true,
+});
+```
+
+```python
+from supafone_labs import Supafone, OpenAIS2S
+
+client = Supafone(api_key="sl_live_...")
+engine = OpenAIS2S(client, model="gpt-realtime-2.1", voice="marin")
+engine.create({
+    "agentKey": "coached-intake",
+    "name": "Coached intake",
+    "description": "Understand the request and verify the booking result.",
+    "supervisor": True,
+})
+```
+
+### Observe, reason, return guidance
+
+| Speaking path | Observation and delivery |
+| --- | --- |
+| Managed Ultravox, including compatible custom TTS | Existing call observation and deferred guidance delivery |
+| Native OpenAI, Gemini, Grok | Provider transcripts and server tool outcomes inform a background coach; the model receives available guidance in a `check_guidance` tool result |
+| Native Hydra | No native transcripts. `check_guidance(context)` supplies **model-reported context**; the coach checks it alongside server tool outcomes and returns guidance through the same tool result |
+
+The native model is instructed to check for guidance at appropriate turn/tool
+boundaries. Supervisor never speaks to the caller, forces a new response, or
+interrupts the audio stream. A slow or unavailable Supervisor yields no
+instruction and the call continues. Tool-result delivery is a request by the
+speaking model, not a guarantee that it checks on every turn or follows a note.
+
+Hydra context is explicitly recorded as `model_reported_context`, not a
+transcript or an independently verified quote. Provider transcript paths use
+`provider_transcript`. The server's actual tool result remains authoritative
+for whether a booking or another operation succeeded. Hydra's persona and
+voice remain fixed during the session; a coaching tool result does not rewrite
+them.
+
+### Supported, enabled, and ready are different
+
+Native runtime metadata separates `supervisor: true` (supported) from
+`supervisor_enabled` (the saved agent setting),
+`supervisor_credentials_configured` (whether the Supervisor credential resolves),
+`supervisor_observation`
+(`provider_transcript` or `model_reported_context`), and
+`supervisor_delivery: "tool_result"`. Support or an enabled setting does not
+establish working credentials or a live coach. Even configured credentials
+do not verify provider access or successful inference. Configure the selected managed
+or BYOK Supervisor model separately from the speaking model, and inspect call
+activity before treating coaching as running.
+
+See [Supervisor Models: Managed and BYOK](supervisor-models.md) for model
+configuration. The [standalone adapter matrix](framework-support.md) describes
+external sessions; Hydra's hosted coaching does not imply a standalone Hydra
+Supervisor adapter exists.
 
 ## Enable supervision
 
-Supervision, QA, and call scoring are on by default for hosted agents. A normal
-client needs no extra setup.
+The SDK enables supervision in hosted agent creation by default. The selected
+Supervisor model still needs configured managed or BYOK credentials. Native
+coaching is available across the five speaking families; recording, QA artifacts,
+and transcript availability remain separate runtime capabilities.
 
 Python:
 
@@ -259,6 +320,6 @@ curl "https://api.labs.supafone.ai/v1/optimizer/standing?agent=intake" \
 
 ## Degrade Safety
 
-The Supervisor is timeout-bounded and off the hot path. If its model fails,
+The supervisor is timeout-bounded and off the hot path. If the oracle fails,
 times out, hits a balance or cap error, or decides no intervention is needed,
 it returns no directive and the call continues normally.

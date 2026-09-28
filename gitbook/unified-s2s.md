@@ -165,7 +165,10 @@ sample rates instead of guessing from the provider name.
 
 Hydra currently supports English only. It has no native transcript stream; its persona and voice are fixed for
 the connection. Supafone advances its fixed stages through validated tool
-results, not a persona rewrite. Native recording, Supervisor coaching, human
+results, not a persona rewrite. All five hosted speaking families support
+Supervisor coaching when enabled and configured. Native models receive
+guidance through `check_guidance`; Hydra supplies model-reported context,
+not transcripts. Native recording, human
 transfer, specialist-team handoff, DTMF, public widgets, and live language/voice
 profile switching remain unavailable. Ultravox retains its broader compatible
 hosted features. See the [native model matrix and limits](realtime-agent-factory.md).

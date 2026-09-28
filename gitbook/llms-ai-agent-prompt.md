@@ -46,7 +46,8 @@ helping developers integrate Supafone Labs.
 - Changing realtime applies to new sessions; it is not a mid-call model handoff.
 - Phone transports: Supafone-managed, BYO Twilio, BYO Telnyx, BYO Plivo, and BYO SIP.
 - Browser preview uses `labs.agents.testCall()` / `test_call()` and `transport: "supafone_realtime"`.
-- Native realtime agents use fixed intake → booking → confirmation stages and do not currently expose recording, Supervisor coaching, transfer, specialist-team handoff, DTMF navigation, public widgets, or live language/voice profile switching.
+- All five hosted speaking families support Supervisor coaching when enabled and configured. Native delivery uses model-invoked `check_guidance` tool results; Hydra uses model-reported context, never fabricated transcripts. Distinguish supported, enabled, and credential-ready.
+- Native realtime agents use fixed intake → booking → confirmation stages and do not currently expose recording, transfer, specialist-team handoff, DTMF navigation, public widgets, or live language/voice profile switching.
 - The standard managed Agent Factory/Ultravox path and the native realtime path are separate choices.
 
 ## Do Not Confuse These

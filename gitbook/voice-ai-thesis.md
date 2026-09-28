@@ -57,9 +57,10 @@ reuse the same supported native agent contract for a new session. Configured
 Supafone platform keys supply each model by default; account BYOK overrides
 are optional. See [the native guide](realtime-agent-factory.md).
 
-Supafone Supervisor separately observes existing supported agent stacks and
-compiles guidance according to each adapter's capabilities. It is not currently
-attached to the native S2S transport.
+Supafone Supervisor coaches all five Agent Factory speaking families and
+separately supports existing stacks through adapters. Native models request
+guidance through `check_guidance`; Hydra provides model-reported context
+rather than transcripts. External adapter capabilities remain provider-specific.
 
 The managed Ultravox compatibility path remains available when `realtime` is
 omitted. It supports the broader hosted planner and compatible recording,

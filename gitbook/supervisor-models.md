@@ -2,12 +2,14 @@
 
 The **speaking model** owns caller audio. The **Supervisor model** reasons beside
 the call and proposes bounded silent guidance. They are independent: an OpenAI
-Realtime, Gemini Live, Grok Voice, Ultravox, Vapi, or Retell agent can use any
+Realtime, Gemini Live, Grok Voice, Hydra, Ultravox, Vapi, or Retell agent can use any
 supported managed or BYOK Supervisor model below.
 
 ## Managed models
 
-Paid Agent Factory customers do not need another model key:
+Agent Factory can use Supafone-managed Supervisor credentials when the
+deployment has them configured. Customer BYOK is optional. This is independent
+from the speaking model's credential readiness:
 
 | Model | Purpose |
 | --- | --- |

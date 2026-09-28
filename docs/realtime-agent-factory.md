@@ -6,9 +6,9 @@ Agent Factory creates that durable agent; its `realtime` selection chooses
 the speaking model. Updating the selection reuses the native agent contract
 for the next session. Model voices and behavior remain provider-specific.
 
-The native transport is separate from the managed Ultravox compatibility path
-and from Supafone Supervisor, which observes and coaches existing supported
-agent stacks. Omitting `realtime` when creating an agent keeps the managed compatibility
+The native transport is separate from the managed Ultravox compatibility path.
+Both support Supafone Supervisor coaching; external stacks can also connect
+through standalone Supervisor adapters. Omitting `realtime` when creating an agent keeps the managed compatibility
 runtime. Apply `UltravoxS2S` (or update `realtime: null`) to switch an existing
 native agent back to that runtime.
 
@@ -238,7 +238,7 @@ separate admin step:
 
 Twilio inbound and outbound use the existing managed/BYOK telephony setup and
 its carrier webhook checks. See [Phone Numbers](https://labs.supafone.ai/docs/phone-numbers/) and the
-private product's [SIP architecture guide](https://github.com/samthedataman/supafone/blob/master/docs/architecture/realtime-sip.md)
+private product's [SIP architecture guide](https://labs.supafone.ai/docs/https://github.com/samthedataman/supafone/blob/master/docs/architecture/realtime-sip/)
 for carrier-specific infrastructure.
 
 ## REST contract
@@ -299,6 +299,80 @@ or store an optional account key with provider `smallest`. Missing credentials
 remain setup required. Adding the adapter does not configure a production key
 or establish successful live calls.
 
+## Supervisor coaching across all five speaking families
+
+Enable `supervisor: true` (Python `"supervisor": True`) when creating an agent,
+or supply the existing managed/BYOK `supervisor` configuration. Supervisor is
+independent of the speaking model: Ultravox, OpenAI, Gemini, Grok, and Hydra
+all support hosted coaching. The same call-scoped coach is used for native
+browser sessions and Supafone-managed, Twilio, Telnyx, Plivo, and SIP calls.
+Each transport still needs its own configuration and live validation.
+
+```ts
+import { Supafone, HydraS2S } from "supafone-labs";
+
+const client = new Supafone({ apiKey: process.env.SUPAFONE_TOKEN! });
+const engine = new HydraS2S(client, { model: "hydra-v1.1", voice: "maya" });
+await engine.create({
+  agentKey: "coached-intake",
+  name: "Coached intake",
+  description: "Understand the caller's request and verify the booking result.",
+  supervisor: true,
+});
+```
+
+```python
+from supafone_labs import Supafone, OpenAIS2S
+
+client = Supafone(api_key="sl_live_...")
+engine = OpenAIS2S(client, model="gpt-realtime-2.1", voice="marin")
+engine.create({
+    "agentKey": "coached-intake",
+    "name": "Coached intake",
+    "description": "Understand the request and verify the booking result.",
+    "supervisor": True,
+})
+```
+
+### Observe, reason, return guidance
+
+| Speaking path | Observation and delivery |
+| --- | --- |
+| Managed Ultravox, including compatible custom TTS | Existing call observation and deferred guidance delivery |
+| Native OpenAI, Gemini, Grok | Provider transcripts and server tool outcomes inform a background coach; the model receives available guidance in a `check_guidance` tool result |
+| Native Hydra | No native transcripts. `check_guidance(context)` supplies **model-reported context**; the coach checks it alongside server tool outcomes and returns guidance through the same tool result |
+
+The native model is instructed to check for guidance at appropriate turn/tool
+boundaries. Supervisor never speaks to the caller, forces a new response, or
+interrupts the audio stream. A slow or unavailable Supervisor yields no
+instruction and the call continues. Tool-result delivery is a request by the
+speaking model, not a guarantee that it checks on every turn or follows a note.
+
+Hydra context is explicitly recorded as `model_reported_context`, not a
+transcript or an independently verified quote. Provider transcript paths use
+`provider_transcript`. The server's actual tool result remains authoritative
+for whether a booking or another operation succeeded. Hydra's persona and
+voice remain fixed during the session; a coaching tool result does not rewrite
+them.
+
+### Supported, enabled, and ready are different
+
+Native runtime metadata separates `supervisor: true` (supported) from
+`supervisor_enabled` (the saved agent setting),
+`supervisor_credentials_configured` (whether the Supervisor credential resolves),
+`supervisor_observation`
+(`provider_transcript` or `model_reported_context`), and
+`supervisor_delivery: "tool_result"`. Support or an enabled setting does not
+establish working credentials or a live coach. Even configured credentials
+do not verify provider access or successful inference. Configure the selected managed
+or BYOK Supervisor model separately from the speaking model, and inspect call
+activity before treating coaching as running.
+
+See [Supervisor Models: Managed and BYOK](https://labs.supafone.ai/docs/supervisor-models/) for model
+configuration. The [standalone adapter matrix](https://labs.supafone.ai/docs/framework-support/) describes
+external sessions; Hydra's hosted coaching does not imply a standalone Hydra
+Supervisor adapter exists.
+
 ## Feature boundaries
 
 Native realtime is intentionally explicit. Current runtime responses report:
@@ -306,14 +380,15 @@ Native realtime is intentionally explicit. Current runtime responses report:
 - browser preview and carrier phone transport: supported;
 - fixed intake → booking → confirmation stages: supported;
 - provider-native tools and account-scoped agent configuration: supported;
+- Supervisor coaching: supported when enabled and configured; native delivery uses `check_guidance`;
 - transcripts: provider-dependent; Hydra has no native transcript events;
-- recording, Supafone Supervisor coaching, human transfer, DTMF navigation, and
+- recording, human transfer, DTMF navigation, and
   specialist-team handoff, public web widgets, and live language/voice profile switching: not implemented
   on this transport;
 - live carrier quality, regional reachability, and model access: require a
   deployment test with real credentials.
 
-When recording, Supervisor, transfer, or a full planner is required, use the
+When recording, transfer, or a full planner is required, use the
 managed Ultravox path or bring an existing compatible stack to Supafone
 Supervisor instead.
 
