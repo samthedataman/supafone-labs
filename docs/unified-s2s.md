@@ -98,8 +98,8 @@ await client.labs.runtime.configure({ provider: "openai", mode: "supafone_manage
 
 These updates require account-admin permission and affect future calls for all
 agents using that provider. They do not change Supervisor's reasoning key.
-Explicit reset and updated readiness controls require **0.7.2** and the pending
-backend rollout. [All five provider keys and CLI setup](https://labs.supafone.ai/docs/byok-providers/)
+Explicit reset and updated readiness controls require **0.7.2** and the matching
+hosted backend, now deployed on Supafone. [All five provider keys and CLI setup](https://labs.supafone.ai/docs/byok-providers/)
 explains the provider IDs, credential precedence and readiness.
 
 ## Enable or disable Supervisor on an existing agent
