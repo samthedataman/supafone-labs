@@ -384,37 +384,38 @@ agent; fetches it back; verifies `runtime.telephony.mode` is `supafone_managed`
 and the runtime is managed (`runtime.managed === true`, no developer Ultravox key
 required); and prints the returned widget snippet.
 
-## Hosted voices
+## Hosted voices: Ultravox + custom TTS
 
-Select a current provider voice from plain-language intent:
+The managed Ultravox option remains part of the shared S2S offering. Its
+conversation runtime and compatible TTS voice are separate choices:
 
 ```ts
-const matches = await supafone.labs.voices.recommend({
-  description: "calm Spanish customer-support voice",
-  language: "es-MX",
-  configuredOnly: true,
-});
+import { UltravoxS2S } from "supafone-labs";
 
-const voice = matches.matches[0].voice;
-await supafone.labs.agents.createInbound({
+const catalog = await supafone.labs.voices.list({ provider: "cartesia" });
+console.log(catalog.voices);
+
+await new UltravoxS2S(supafone).create({
   name: "Spanish support",
-  voice: supafone.labs.voices.selection(voice),
+  voice: { provider: "cartesia", voiceId: process.env.CARTESIA_VOICE_ID! },
 });
 ```
 
-The hosted catalog refreshes Ultravox, Cartesia, ElevenLabs, and Inworld and
-normalizes names, languages, gender, accent, voice type, model limits, and the
-Ultravox-compatible language intersection. Full reference:
-[Dynamic Voice Catalog and Selection](../gitbook/voice-catalog-and-selection.md).
+Use a real, configured catalog voice. Compatible Ultravox, Cartesia, ElevenLabs,
+and Inworld voices can supply the managed agent's speech. Native OpenAI,
+Gemini, Grok, and Hydra use their own model voices; external TTS is not a
+universal override. Deepgram is preview-only in the current hosted Ultravox
+integration. Custom TTS backends are for developer-owned synthesis unless a
+hosted runtime bridge explicitly supports them.
 
-Labs Cloud also exposes direct hosted TTS and STT:
+SDK 0.6.3 exposes `labs.voices.list({ provider })`. Use the documented REST
+endpoints for pagination, recommendations, and capability details; this
+version does not export `voices.recommend`, `selection`, or `listAll` helpers.
+See [voice-output choices](https://labs.supafone.ai/docs/voice-output-modes/) and
+[the voice catalog](https://labs.supafone.ai/docs/voice-catalog-and-selection/).
 
-```ts
-const wav = await supafone.tts("You're all set — talk soon!", "supafone-labs-calm-en");
-// wav: Uint8Array
-
-const text = await supafone.stt(audioBytes, { language: "en" });
-```
+Labs Cloud's standalone `tts` and `stt` methods remain separate synthesis and
+transcription tools; using them does not change a saved agent's speaking model.
 
 ## Live multilingual transcription
 

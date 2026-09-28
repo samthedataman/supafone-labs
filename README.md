@@ -75,6 +75,17 @@ managed default and its broader compatible hosted features; omitting
 [Quickstart](gitbook/quickstart.md) · [Native runtime contract](gitbook/realtime-agent-factory.md) ·
 [Managed keys and BYOK](gitbook/byok-providers.md) · [Framework coverage](gitbook/framework-support.md)
 
+## Keep custom TTS alongside native S2S
+
+The existing **Ultravox + custom TTS** phone agent is part of the shared
+`SupafoneS2S` interface. Use `UltravoxS2S` with the agent's `voice` settings for
+compatible Cartesia, ElevenLabs, Inworld, or Ultravox catalog voices. Use the
+other provider classes for native S2S with each model's own voice list.
+
+External TTS is specific to compatible runtimes. Deepgram previews and custom
+SDK synthesis do not automatically enable a hosted phone-call integration.
+[Compare voice-output choices and see working examples](gitbook/voice-output-modes.md).
+
 ## Supafone Supervisor: supervise an existing stack
 
 Supafone Supervisor is a separate offering: a second AI runs beside the realtime

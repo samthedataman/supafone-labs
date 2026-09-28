@@ -10,6 +10,16 @@ The SDK selects and configures a hosted runtime. It does not put vendor keys
 in a browser or start a provider connection on its own. The server owns audio,
 allowed tools, stages, and credential resolution.
 
+## Two voice-output choices in one Agent Factory
+
+**Ultravox + custom TTS** keeps the existing managed phone agent and lets a
+compatible Cartesia, ElevenLabs, Inworld, or Ultravox catalog voice supply its
+speech. **Native S2S** selects OpenAI, Gemini, Grok, or Hydra and uses that
+model's own voice list. Both are available through `SupafoneS2S`; external TTS
+is not a universal voice override for native models.
+
+[Compare both paths and create an Ultravox agent with custom TTS](voice-output-modes.md).
+
 ## Provider classes
 
 | Exported class | Provider ID | Model choices | Runtime behavior |

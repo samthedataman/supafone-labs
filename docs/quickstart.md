@@ -8,6 +8,8 @@ compatibility builder and links to these S2S controls.
 Create an Agent Factory agent, preview it in the browser, then switch its
 speech-to-speech model through the same Supafone harness.
 
+Need a specific Cartesia, ElevenLabs, or Inworld voice? Start with [Ultravox + custom TTS](voice-output-modes.md). It uses the same shared S2S interface and preserves the existing managed-agent option. The native example below uses its model’s own voice.
+
 ## 1. Install and authenticate
 
 ```bash

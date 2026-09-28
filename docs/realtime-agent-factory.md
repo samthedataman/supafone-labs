@@ -16,6 +16,8 @@ Use this guide when the speaking model itself should own the live audio loop.
 Use [Supafone Supervisor](https://labs.supafone.ai/docs/supafone-supervisor/) when you want to keep another
 agent stack and add supervision.
 
+Want to keep your own TTS voice? Choose [Ultravox + custom TTS](voice-output-modes.md) through the same shared interface. This native guide covers models that own their audio output; external TTS is not supported on these native paths.
+
 ## One interface, five provider families
 
 The public `SupafoneS2S` superclass has `UltravoxS2S`, `OpenAIS2S`,

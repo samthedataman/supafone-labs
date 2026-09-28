@@ -1,7 +1,7 @@
 # Dynamic Voice Catalog and Selection
 
 Supafone exposes one normalized voice catalog across Ultravox, Cartesia,
-ElevenLabs, and Inworld. Developers can discover the voices their account can
+ElevenLabs, Inworld, and preview-only Deepgram entries. Developers can discover the voices their account can
 actually use, filter them with stable fields, preview them, or ask Supafone to
 select one from a plain-language description.
 
@@ -29,22 +29,18 @@ This keeps provider naming consistent in dashboards built with either SDK. Do
 not infer the TTS provider from the runtime: an Ultravox call can render an
 ElevenLabs, Cartesia, Inworld, or another provider-backed voice.
 
-```ts
-const catalog = await supafone.labs.voices.listAll();
-for (const voice of catalog.voices) {
-  console.log(voice.provider_label, voice.provider_logo_url, voice.label);
-}
-```
+The published Python and TypeScript SDKs expose `labs.voices.list` with a
+provider filter. Use the REST catalog below for advanced filtering and pagination.
+Version 0.6.3 does not expose `listAll`/`list_all`, `selection`, `recommend`, or
+`voices.capabilities` convenience methods; the underlying REST operations are
+available where documented here.
 
-```python
-catalog = supafone.labs.voices.list_all()
-for voice in catalog["voices"]:
-    print(voice["provider_label"], voice["provider_logo_url"], voice["label"])
-```
-
-Unknown future providers remain selectable. Their canonical name is returned
-while logo fields are null, allowing clients to render a text or monogram
-fallback without rejecting the voice.
+Unknown providers can remain visible with a text or monogram fallback. Being
+listed is not proof of live-call compatibility. Inspect `runtime_selectable`,
+`runtime_support_reason`, and the provider's integration capability. Deepgram
+entries currently support previews but cannot be selected for managed Ultravox
+calls. A custom SDK `TTSProvider` also does not register a hosted call bridge.
+See [voice-output choices](voice-output-modes.md).
 
 ## The Compatibility Rule
 
@@ -101,117 +97,73 @@ Official references:
 
 ## Inspect Capabilities
 
-TypeScript:
-
-```ts
-const capabilities = await supafone.labs.voices.capabilities();
-
-for (const provider of capabilities.providers) {
-  for (const model of provider.models) {
-    console.log(
-      provider.provider,
-      model.model,
-      model.documented_language_count,
-      model.ultravox_routing_language_count,
-    );
-  }
-}
+```bash
+curl "https://api.supafone.ai/api/v1/labs/voices/capabilities" \
+  -H "Authorization: Bearer $SUPAFONE_TOKEN"
 ```
 
-Python:
-
-```python
-capabilities = supafone.labs.voices.capabilities()
-for provider in capabilities["providers"]:
-    for model in provider["models"]:
-        print(
-            provider["provider"],
-            model["model"],
-            model["documented_language_count"],
-            model["ultravox_routing_language_count"],
-        )
-```
+Each provider reports `ultravox_integration` and its known model/language
+capabilities. `native` or `named_external` describes the integration route;
+`preview_only` does not permit a hosted live-call selection. Account credentials
+and a successful call preview are separate checks.
 
 ## List and Filter Voices
 
-`language` means the voice's native/accent language. `compatibleLanguage`
-means the provider model and Ultravox can both run that language live.
+For the basic provider filter, use the published SDK:
 
 ```ts
-const catalog = await supafone.labs.voices.listAll({
-  provider: "cartesia",
-  language: "es-MX",
-  compatibleLanguage: "es",
-  gender: "female",
-  voiceType: "customer_support",
-  model: "sonic-3.5",
-  configuredOnly: true,
-});
+const page = await supafone.labs.voices.list({ provider: "cartesia" });
+console.log(page.voices);
 ```
 
 ```python
-catalog = supafone.labs.voices.list_all(
-    provider="cartesia",
-    language="es-MX",
-    compatible_language="es",
-    gender="female",
-    voice_type="customer_support",
-    model="sonic-3.5",
-    configured_only=True,
-)
+page = supafone.labs.voices.list(provider="cartesia")
+print(page["voices"])
 ```
 
-Available filters are `provider`, `search`, `language`,
-`compatible_language`, `gender`, `voice_type`, `model`, `runtime_provider`,
-and `configured_only`. The endpoint is cursor-paginated; `listAll()` and
-`list_all()` safely follow every page.
+For advanced filters, use REST:
+
+```bash
+curl --get "https://api.supafone.ai/api/v1/labs/voices" \
+  -H "Authorization: Bearer $SUPAFONE_TOKEN" \
+  --data-urlencode "provider=cartesia" \
+  --data-urlencode "compatible_language=es" \
+  --data-urlencode "configured_only=true" \
+  --data-urlencode "limit=100"
+```
+
+`language` filters a voice's native/accent language. `compatible_language`
+filters the intersection of model and Ultravox language support. Available
+filters also include `search`, `gender`, `voice_type`, `model`, and
+`runtime_provider`. Follow `next_cursor` until it is null to read all pages;
+a single SDK `list` request does not automatically paginate.
 
 ## Select from Plain Language
 
-Supafone searches both normalized fields and sanitized provider-native
-metadata. This means new provider labels, accent descriptors, use cases, and
-categories become searchable without adding a new regex for every field.
+The server can rank catalog entries against a description. Call its REST
+endpoint rather than an unpublished SDK helper:
+
+```bash
+curl "https://api.supafone.ai/api/v1/labs/voices/recommend" \
+  -H "Authorization: Bearer $SUPAFONE_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"description":"warm Spanish intake voice","provider":"cartesia","language":"es-MX","configuredOnly":true,"limit":3}'
+```
+
+Inspect the returned voice's live-call compatibility before using it. Pass its
+provider key, actual `provider_voice_id` (or catalog ID where appropriate), and
+model in the managed agent's `voice` object. Do not invent names such as
+`sonic-warm` in place of real catalog voice IDs.
 
 ```ts
-const result = await supafone.labs.voices.recommend({
-  description: "warm Puerto Rican Spanish female intake voice",
-  language: "es-PR",
-  voiceType: "warm_empathetic",
-  configuredOnly: true,
-  limit: 3,
-});
-
-const selected = result.matches[0].voice;
 await supafone.labs.agents.createInbound({
   name: "Spanish intake",
-  voice: supafone.labs.voices.selection(selected),
+  voice: { provider: "cartesia", voiceId: process.env.CARTESIA_VOICE_ID! },
 });
 ```
 
-Agent Factory can resolve the preference in one request:
-
-```python
-agent = supafone.labs.agents.create_inbound({
-    "name": "Hindi patient intake",
-    "preferredLanguage": "hi-IN",
-    "voicePreference": {
-        "description": "calm Hindi patient-support voice",
-        "provider": "inworld",
-        "configuredOnly": True,
-    },
-})
-```
-
-The backend stores the exact selected provider, voice ID, model, and fixed
-language hint. `preferredLanguage` applies for the whole call and supplies the
-default language filter for `voicePreference`. It does not enable live
-language or voice switching. Existing agents that specify a voice directly
-keep their current behavior; preference resolution is additive.
-
-To use multiple catalog voices during the same Agent Factory call, opt into
-`languageVoiceRouting` and provide an ordered language list or explicit
-profiles. The server validates every selection against this live catalog before
-creating the agent. See
+The same voice object works with `new UltravoxS2S(supafone).create(...)`.
+For two to four validated language/voice profiles on the managed runtime, see
 [Live Language and Voice Routing](live-language-voice-routing.md).
 
 ## Normalized Voice Shape
