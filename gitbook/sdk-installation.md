@@ -194,14 +194,14 @@ print(finished["verdict"], finished["transcript"])
 TypeScript:
 
 ```ts
-const started = await supafone.tester.gradeAgent({
+const started = await client.tester.gradeAgent({
   toNumber: "+14155550100",
   scenario: "price_probe",
   aiProvider: "vapi",
   telephonyProvider: "telnyx",
   authorized: true,
 });
-const finished = await supafone.tester.wait(started.session_id);
+const finished = await client.tester.wait(started.session_id);
 ```
 
 This places a real call and spends tester credits. Both SDKs reject missing
@@ -213,12 +213,12 @@ Earlier release `0.4.10` added first-class browser-session creation without buyi
 dialing a phone number:
 
 ```ts
-const started = await supafone.startWebRtcCall({ agentId: "agent-123" });
+const started = await client.startWebRtcCall({ agentId: "agent-123" });
 console.log(started.browser_session.join_url);
 ```
 
 ```python
-started = supafone.start_webrtc_call(agent_id="agent-123")
+started = client.start_webrtc_call(agent_id="agent-123")
 print(started["browser_session"]["join_url"])
 ```
 
