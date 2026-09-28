@@ -1824,9 +1824,15 @@ class LabsRuntimeNamespace:
     def __init__(self, client: Supafone) -> None:
         self._client = client
 
-    def get(self, *, agency_id: Optional[str] = None, agencyId: Optional[str] = None) -> Any:
+    def get(
+        self, *, agency_id: Optional[str] = None, agencyId: Optional[str] = None,
+        provider: Optional[str] = None,
+    ) -> Any:
         agency = agency_id or agencyId
-        suffix = f"?{parse.urlencode({'agency_id': agency})}" if agency else ""
+        query = {"agency_id": agency} if agency else {}
+        if provider:
+            query["provider"] = provider
+        suffix = f"?{parse.urlencode(query)}" if query else ""
         return self._client._request_supafone_api("GET", f"/api/v1/labs/runtime{suffix}")
 
     def configure(self, config: Optional[Mapping[str, Any]] = None, **kwargs: Any) -> Any:

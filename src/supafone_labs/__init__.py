@@ -86,7 +86,7 @@ from supafone_labs.s2s import (
     UltravoxS2S,
 )
 
-__version__ = "0.7.0"
+__version__ = "0.7.1"
 
 __all__ = [
     "SupafoneS2S",

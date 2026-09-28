@@ -33,6 +33,7 @@ import json
 import os
 import sys
 from collections.abc import Mapping, Sequence
+from importlib.metadata import version
 from pathlib import Path
 from typing import Any
 from urllib import error as urlerror
@@ -50,6 +51,17 @@ EXIT_USAGE = 2
 EXIT_PARTIAL = 3
 
 PROG = "supafone"
+
+S2S_PROVIDERS = {
+    "ultravox": "ultravox", "openai": "openai", "gemini": "google",
+    "google": "google", "grok": "xai", "xai": "xai",
+    "hydra": "smallest", "smallest": "smallest",
+}
+SUPERVISOR_KEY_ENVS = {
+    "anthropic": "ANTHROPIC_API_KEY", "openai": "OPENAI_API_KEY",
+    "gemini": "GEMINI_API_KEY", "openrouter": "OPENROUTER_API_KEY",
+    "groq": "GROQ_API_KEY", "cerebras": "CEREBRAS_API_KEY",
+}
 
 # Field names whose *string* values are credentials. Matched on the whole key or
 # on a `_`-delimited suffix, so `auth_token` and `twilio_auth_token` both mask
@@ -328,7 +340,7 @@ def resolve_api_key(args: argparse.Namespace, *, stdin: Any = None) -> tuple[str
     )
 
 
-def collect_secrets(api_key: str) -> list[str]:
+def collect_secrets(api_key: str, args: argparse.Namespace | None = None) -> list[str]:
     """Every credential this process holds, for output scrubbing."""
     values = [api_key]
     for name in (
@@ -341,6 +353,10 @@ def collect_secrets(api_key: str) -> list[str]:
         value = os.getenv(name, "")
         if value:
             values.append(value)
+    supervisor = getattr(args, "supervisor", None)
+    if supervisor in SUPERVISOR_KEY_ENVS:
+        env_name = getattr(args, "supervisor_api_key_env", None) or SUPERVISOR_KEY_ENVS[supervisor]
+        values.append(os.getenv(env_name, ""))
     return [value for value in dict.fromkeys(values) if value]
 
 
@@ -427,7 +443,7 @@ def _require_confirmation(actual: str | None, expected: str, *, action: str) -> 
         raise CliError(f'{action} requires the exact flag --confirm "{expected}"')
 
 
-def agent_config(args: argparse.Namespace) -> dict[str, Any]:
+def agent_config(args: argparse.Namespace, *, require_name: bool = True) -> dict[str, Any]:
     """Assemble the flat hosted-agent config the SDK expects."""
     data: dict[str, Any] = {}
     if getattr(args, "config_file", None):
@@ -447,10 +463,11 @@ def agent_config(args: argparse.Namespace) -> dict[str, Any]:
         ("language", "language"),
         ("preset_key", "preset_key"),
         ("agent_type", "agent_type"),
+        ("stage_count", "stage_count"),
     )
     for attribute, key in simple:
         value = getattr(args, attribute, None)
-        if value:
+        if value is not None:
             data[key] = value
     voice = {
         key: getattr(args, attribute)
@@ -463,20 +480,52 @@ def agent_config(args: argparse.Namespace) -> dict[str, Any]:
     }
     if voice:
         data["voice"] = {**dict(data.get("voice") or {}), **voice}
+    provider = getattr(args, "s2s_provider", None)
+    model = getattr(args, "s2s_model", None)
+    native_voice = getattr(args, "s2s_voice", None)
+    if provider or model or native_voice:
+        existing = data.get("realtime")
+        if existing is not None and not isinstance(existing, Mapping):
+            raise CliError("realtime must be a JSON object or null")
+        selected = S2S_PROVIDERS.get(provider or (existing or {}).get("provider"))
+        if not selected:
+            raise CliError(
+                "--s2s-model/--s2s-voice requires --s2s-provider "
+                "or realtime.provider in --config-file"
+            )
+        if selected == "ultravox":
+            if model or native_voice:
+                raise CliError(
+                    "Ultravox uses --voice-provider, --voice-id and --voice-model; "
+                    "omit --s2s-model/--s2s-voice"
+                )
+            data["realtime"] = None
+        else:
+            # Never carry a different provider's model or voice into a switch.
+            prior_provider = S2S_PROVIDERS.get((existing or {}).get("provider"))
+            selection = dict(existing or {}) if prior_provider == selected else {}
+            selection["provider"] = selected
+            if model:
+                selection["model"] = model
+            if native_voice:
+                selection["voice"] = native_voice
+            data["realtime"] = selection
+    manager = getattr(args, "manager", None)
+    if manager is not None:
+        data["manager"] = False if manager == "off" else {"enabled": True, "reasoning": manager}
     supervisor = getattr(args, "supervisor", None)
+    if (
+        getattr(args, "supervisor_model", None) or getattr(args, "supervisor_api_key_env", None)
+    ) and supervisor in (None, "off", "managed"):
+        raise CliError(
+            "--supervisor-model/--supervisor-api-key-env requires a BYOK --supervisor provider"
+        )
     if supervisor == "off":
         data["supervisor"] = False
     elif supervisor == "managed":
         data["supervisor"] = {"enabled": True, "mode": "managed"}
     elif supervisor:
-        default_env = {
-            "anthropic": "ANTHROPIC_API_KEY",
-            "openai": "OPENAI_API_KEY",
-            "gemini": "GEMINI_API_KEY",
-            "openrouter": "OPENROUTER_API_KEY",
-            "groq": "GROQ_API_KEY",
-            "cerebras": "CEREBRAS_API_KEY",
-        }[supervisor]
+        default_env = SUPERVISOR_KEY_ENVS[supervisor]
         env_name = getattr(args, "supervisor_api_key_env", None) or default_env
         api_key = os.getenv(env_name, "")
         if not api_key:
@@ -492,9 +541,11 @@ def agent_config(args: argparse.Namespace) -> dict[str, Any]:
             "api_key": api_key,
         }
     data.update(_parse_set(getattr(args, "set", None)))
+    if not data and not require_name:
+        raise CliError("agents update requires --config-file, --set, or at least one explicit field")
     if getattr(args, "agency_id", None):
         data.setdefault("agency_id", args.agency_id)
-    if not data.get("name"):
+    if require_name and not data.get("name"):
         raise CliError("agents create requires --name (or a name in --config-file/--set)")
     return data
 
@@ -525,10 +576,11 @@ def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         prog=PROG,
         description=(
-            "Supafone platform CLI — hosted agents, managed numbers, QA, voices, "
+            "Supafone platform CLI — S2S Agent Factory, managed numbers, QA, voices, "
             "and campaigns over the public Supafone SDK."
         ),
     )
+    parser.add_argument("--version", action="version", version=f"{PROG} {version('supafone-labs')}")
     credential = parser.add_mutually_exclusive_group()
     credential.add_argument(
         "--api-key",
@@ -610,6 +662,57 @@ def _capabilities_command(groups: Any) -> None:
     capabilities.set_defaults(command="show")
 
 
+def _agent_runtime_arguments(parser: argparse.ArgumentParser, *, creation: bool = False) -> None:
+    parser.add_argument(
+        "--s2s-provider", choices=tuple(S2S_PROVIDERS),
+        help="Speaking model family; Ultravox resets native S2S selection.",
+    )
+    parser.add_argument(
+        "--s2s-model", help="Native S2S model ID from capabilities; server default if omitted.",
+    )
+    parser.add_argument(
+        "--s2s-voice",
+        help="Native provider voice from capabilities (external TTS uses --voice-*).",
+    )
+    if creation:
+        parser.add_argument(
+            "--stage-count", type=int, choices=range(3, 9),
+            help="Number of stages for hosted plan generation (3–8).",
+        )
+    parser.add_argument(
+        "--manager", choices=("managed", "supervisor", "off"),
+        help="Use platform Manager reasoning, reuse the agent's Supervisor, or disable the Manager.",
+    )
+    parser.add_argument("--voice-provider")
+    parser.add_argument("--voice-id")
+    parser.add_argument("--voice-model")
+    parser.add_argument(
+        "--supervisor",
+        choices=(
+            "managed",
+            "off",
+            "anthropic",
+            "openai",
+            "gemini",
+            "openrouter",
+            "groq",
+            "cerebras",
+        ),
+        help="Use managed supervision, disable it, or choose a BYOK reasoning provider.",
+    )
+    parser.add_argument(
+        "--supervisor-model",
+        help="Override the provider's default Supervisor model.",
+    )
+    parser.add_argument(
+        "--supervisor-api-key-env",
+        help=(
+            "Environment variable containing the BYOK Supervisor key; "
+            "the key is never accepted as a CLI flag."
+        ),
+    )
+
+
 def _agent_commands(groups: Any) -> None:
     agents = groups.add_parser("agents", help="Hosted Supafone voice agents.")
     commands = agents.add_subparsers(dest="command", required=True)
@@ -632,34 +735,7 @@ def _agent_commands(groups: Any) -> None:
     create.add_argument("--language")
     create.add_argument("--preset-key")
     create.add_argument("--agent-type")
-    create.add_argument("--voice-provider")
-    create.add_argument("--voice-id")
-    create.add_argument("--voice-model")
-    create.add_argument(
-        "--supervisor",
-        choices=(
-            "managed",
-            "off",
-            "anthropic",
-            "openai",
-            "gemini",
-            "openrouter",
-            "groq",
-            "cerebras",
-        ),
-        help="Use managed supervision, disable it, or choose a BYOK reasoning provider.",
-    )
-    create.add_argument(
-        "--supervisor-model",
-        help="Override the provider's default Supervisor model.",
-    )
-    create.add_argument(
-        "--supervisor-api-key-env",
-        help=(
-            "Environment variable containing the BYOK Supervisor key; "
-            "the key is never accepted as a CLI flag."
-        ),
-    )
+    _agent_runtime_arguments(create, creation=True)
     create.add_argument("--config-file", help="JSON file with the flat agent config.")
     create.add_argument(
         "--set",
@@ -696,6 +772,7 @@ def _agent_commands(groups: Any) -> None:
     update.add_argument("--greeting")
     update.add_argument("--system-prompt")
     update.add_argument("--language")
+    _agent_runtime_arguments(update)
     update.add_argument("--config-file", help="JSON object with agent fields to update.")
     update.add_argument(
         "--set",
@@ -703,6 +780,15 @@ def _agent_commands(groups: Any) -> None:
         metavar="KEY=VALUE",
         help="Set an additional update field (JSON value when parseable). Repeatable.",
     )
+
+    plan = commands.add_parser("plan", help="Generate a hosted call-stage plan without creating an agent.")
+    plan.add_argument("--description")
+    plan.add_argument("--name")
+    plan.add_argument("--goal")
+    plan.add_argument("--direction", choices=("inbound", "outbound"))
+    plan.add_argument("--stage-count", type=int, choices=range(3, 9))
+    plan.add_argument("--config-file", help="JSON object with planner inputs.")
+    plan.add_argument("--set", action="append", metavar="KEY=VALUE")
 
     readiness = commands.add_parser("readiness", help="Check whether an agent can go live.")
     readiness.add_argument("agent_key")
@@ -733,7 +819,8 @@ def _tool_commands(groups: Any) -> None:
 def _runtime_commands(groups: Any) -> None:
     runtime = groups.add_parser("runtime", help="Hosted realtime runtime configuration.")
     commands = runtime.add_subparsers(dest="command", required=True)
-    commands.add_parser("get", help="Read masked runtime configuration.")
+    get = commands.add_parser("get", help="Read masked runtime configuration and provider readiness.")
+    get.add_argument("--provider", choices=tuple(S2S_PROVIDERS))
     update = commands.add_parser("update", help="Configure the hosted realtime runtime.")
     update.add_argument("--provider")
     update.add_argument("--credentials-file", help="JSON credentials object; never echoed.")
@@ -1001,6 +1088,9 @@ def _voice_commands(groups: Any) -> None:
     listing.add_argument("--provider")
     listing.add_argument("--search")
     listing.add_argument("--language")
+    listing.add_argument("--runtime-provider", choices=tuple(S2S_PROVIDERS), help="Filter voices by the speaking runtime.")
+    listing.add_argument("--model")
+    listing.add_argument("--configured-only", action="store_true", default=None)
     listing.add_argument("--cursor", type=int)
     listing.add_argument("--limit", type=int, default=50)
 
@@ -1284,22 +1374,15 @@ def dispatch(client: Supafone, args: argparse.Namespace) -> tuple[Any, list[str]
         if command == "get":
             return client.labs.agents.get(args.agent_key, agency_id=agency), []
         if command == "update":
-            config = _config_payload(
-                args,
-                label="agents update",
-                fields=(
-                    ("name", "name"),
-                    ("assistant_name", "assistant_name"),
-                    ("business_name", "business_name"),
-                    ("website_url", "website_url"),
-                    ("goal", "goal"),
-                    ("greeting", "greeting"),
-                    ("system_prompt", "system_prompt"),
-                    ("language", "language"),
-                ),
-            )
+            config = agent_config(args, require_name=False)
             config.pop("agency_id", None)
             return client.labs.agents.update(args.agent_key, config, agency_id=agency), []
+        if command == "plan":
+            config = _config_payload(args, label="agents plan", fields=(
+                ("description", "description"), ("name", "name"), ("goal", "goal"),
+                ("direction", "direction"), ("stage_count", "stage_count"),
+            ))
+            return client.labs.agents.plan(config), []
         if command == "readiness":
             return client.labs.agents.readiness(args.agent_key, agency_id=agency), []
         if command == "activate":
@@ -1330,7 +1413,7 @@ def dispatch(client: Supafone, args: argparse.Namespace) -> tuple[Any, list[str]
 
     if group == "runtime":
         if command == "get":
-            return client.labs.runtime.get(agency_id=agency), []
+            return client.labs.runtime.get(agency_id=agency, **({"provider": S2S_PROVIDERS[args.provider]} if args.provider else {})), []
         if command == "update":
             config = _config_payload(
                 args,
@@ -1594,6 +1677,9 @@ def dispatch(client: Supafone, args: argparse.Namespace) -> tuple[Any, list[str]
             return (
                 client.labs.voices.list(
                     provider=args.provider,
+                    runtime_provider=S2S_PROVIDERS.get(args.runtime_provider),
+                    model=args.model,
+                    configured_only=args.configured_only,
                     search=args.search,
                     language=args.language,
                     cursor=args.cursor,
@@ -1676,7 +1762,7 @@ def main(argv: Sequence[str] | None = None) -> int:
 
     try:
         api_key, source = resolve_api_key(args)
-        secrets = collect_secrets(api_key)
+        secrets = collect_secrets(api_key, args)
         if source == "flag:--api-key":
             warnings.append(
                 "--api-key was read from the command line, where it is visible in "

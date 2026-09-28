@@ -1220,6 +1220,9 @@ def test_voices_list_filters(monkeypatch, capsys):
     )
     assert fake.kwargs("voices.list") == {
         "provider": "cartesia",
+        "runtime_provider": None,
+        "model": None,
+        "configured_only": None,
         "search": "calm",
         "language": None,
         "cursor": None,

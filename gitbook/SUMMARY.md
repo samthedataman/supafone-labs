@@ -8,6 +8,7 @@
 * [Shared S2S Interface](unified-s2s.md)
 * [Ultravox + Custom TTS and Native S2S](voice-output-modes.md)
 * [SDK Installation](sdk-installation.md)
+* [Command-line Agent Factory](cli.md)
 * [Developer Workflows](developer-workflows.md)
 * [API Keys and Authentication](api-keys-and-auth.md)
 * [SDK Parity](sdk-parity.md)

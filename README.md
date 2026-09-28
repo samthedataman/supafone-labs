@@ -84,6 +84,31 @@ model/carrier combination has passed a live deployment test.
 [Quickstart](gitbook/quickstart.md) · [Native runtime contract](gitbook/realtime-agent-factory.md) ·
 [Managed keys and BYOK](gitbook/byok-providers.md) · [Framework coverage](gitbook/framework-support.md)
 
+## Command-line Agent Factory
+
+The Python package includes the `supafone` CLI. Upgrade to **0.7.1** for S2S
+selection, shared workflow controls, and hosted planning:
+
+```bash
+python -m pip install --upgrade supafone-labs==0.7.1
+supafone --version
+export SUPAFONE_API_KEY=sl_live_...
+supafone capabilities
+supafone runtime get --provider openai
+supafone agents create --name "Front desk" --s2s-provider openai \
+  --s2s-model gpt-realtime-2.1 --s2s-voice marin \
+  --supervisor managed --manager managed --stage-count 3
+supafone agents update AGENT_KEY --s2s-provider gemini
+supafone agents plan --description "Capture details, book a slot, then confirm." --stage-count 3
+```
+
+Use `--config-file` for reviewed stages, tool gates, teams and routing policies.
+Switch back with `--s2s-provider ultravox` to keep compatible custom TTS.
+[CLI reference and complete workflow example](docs/cli.md) covers all commands.
+The npm SDK remains **0.7.0** and does not install a CLI executable. Hosted
+workflow features require the corresponding backend deployment and configured
+server-side provider keys.
+
 ## Keep custom TTS alongside native S2S
 
 The existing **Ultravox + custom TTS** phone agent is part of the shared

@@ -19,9 +19,11 @@ does not itself host the model or provision provider credentials.
 [Create and switch an S2S agent](quickstart.md) · [Runtime limits](realtime-agent-factory.md#feature-boundaries)
 
 Supafone Labs publishes a Python package and an unscoped TypeScript package.
-The current release is **0.7.0** for both
-[PyPI](https://pypi.org/project/supafone-labs/) and
-[npm](https://www.npmjs.com/package/supafone-labs).
+The Python SDK and CLI release is **0.7.1** on
+[PyPI](https://pypi.org/project/supafone-labs/0.7.1/). The TypeScript SDK is
+**0.7.0** on [npm](https://www.npmjs.com/package/supafone-labs/v/0.7.0).
+Python 0.7.1 adds explicit CLI commands for S2S selection, stage planning,
+Manager and Supervisor configuration, and provider readiness.
 
 Version **0.7.0** adds shared hosted workflow options for stage requirements,
 Manager reasoning, specialist teams, recording, and approved native model
@@ -31,8 +33,8 @@ SDK installation alone does not enable hosted features. See the
 provider boundaries.
 
 Version 0.6.3 introduced the shared `SupafoneS2S` superclass and all five provider
-classes, including Hydra. Install 0.7.0 from
-[PyPI](https://pypi.org/project/supafone-labs/0.7.0/) or
+classes, including Hydra. Install the current package from
+[PyPI](https://pypi.org/project/supafone-labs/0.7.1/) or
 [npm](https://www.npmjs.com/package/supafone-labs/v/0.7.0), then follow
 [Native Realtime Agent Factory](realtime-agent-factory.md).
 
@@ -41,6 +43,17 @@ classes, including Hydra. Install 0.7.0 from
 ```bash
 pip install supafone-labs
 ```
+
+The Python package installs the `supafone` command:
+
+```bash
+python -m pip install --upgrade supafone-labs==0.7.1
+supafone --version
+supafone agents create --help
+```
+
+The CLI uses the same hosted API as the SDK. The npm package is a library and
+does not install this executable.
 
 Recommended full install for hosted cloud, HTTP, STT, and server helpers:
 

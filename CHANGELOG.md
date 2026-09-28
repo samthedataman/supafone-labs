@@ -1,5 +1,20 @@
 # Changelog
 
+## 0.7.1 - 2026-09-28 (Python CLI)
+
+- Add speaking-provider/model/voice selection to agent create and update, with
+  aliases for Gemini, Grok and Hydra and an explicit return to Ultravox.
+- Expose managed, Supervisor-profile and disabled Manager modes, shared
+  Supervisor/voice controls, hosted plan generation and create-time stage counts.
+- Add per-provider runtime status, runtime/model/configured voice filters, and
+  `supafone --version`; keep workflow JSON and explicit reset values intact.
+- Scrub selected Supervisor BYOK environment keys from echoed API errors.
+- Expand the CLI reference with a complete shared Agent Factory config, provider
+  limits, install verification and the full command index.
+- This is a Python-only patch. The TypeScript SDK remains at 0.7.0; the public
+  npm package does not install a CLI. Hosted features still require the matching
+  backend deployment and configured provider credentials.
+
 ## 0.7.0 - 2026-09-28
 
 - Expose the shared hosted Agent Factory workflow in Python and TypeScript:
