@@ -51,11 +51,11 @@ def test_public_docs_use_one_canonical_labs_path():
     assert "https://labs.supafone.ai/docs/" in (ROOT / "README.md").read_text(encoding="utf-8")
 
 
-def test_package_metadata_stays_on_published_release():
+def test_package_metadata_matches_release_version():
     pyproject = (ROOT / "pyproject.toml").read_text(encoding="utf-8")
     package = json.loads((ROOT / "sdk-ts" / "package.json").read_text(encoding="utf-8"))
     lock = json.loads((ROOT / "sdk-ts" / "package-lock.json").read_text(encoding="utf-8"))
-    assert re.search(r'^version = "0\.6\.3"$', pyproject, flags=re.MULTILINE)
-    assert package["version"] == "0.6.3"
-    assert lock["version"] == "0.6.3"
-    assert lock["packages"][""]["version"] == "0.6.3"
+    assert re.search(r'^version = "0\.7\.0"$', pyproject, flags=re.MULTILINE)
+    assert package["version"] == "0.7.0"
+    assert lock["version"] == "0.7.0"
+    assert lock["packages"][""]["version"] == "0.7.0"

@@ -29,11 +29,13 @@ This keeps provider naming consistent in dashboards built with either SDK. Do
 not infer the TTS provider from the runtime: an Ultravox call can render an
 ElevenLabs, Cartesia, Inworld, or another provider-backed voice.
 
-The published Python and TypeScript SDKs expose `labs.voices.list` with a
-provider filter. Use the REST catalog below for advanced filtering and pagination.
-Version 0.6.3 does not expose `listAll`/`list_all`, `selection`, `recommend`, or
-`voices.capabilities` convenience methods; the underlying REST operations are
-available where documented here.
+The published Python and TypeScript SDKs expose `labs.voices.list` with
+provider, language, model, and other catalog filters. Version 0.7.0 also exposes
+`listAll` (Python `list_all`) for automatic pagination, plus `capabilities`,
+`recommend`, `preview`, and `selection`. `selection(voice)` creates the voice
+configuration accepted by managed agent creation. The REST catalog below
+exposes the same hosted operations; these helpers do not make external TTS
+compatible with every native S2S model.
 
 Unknown providers can remain visible with a text or monogram fallback. Being
 listed is not proof of live-call compatibility. Inspect `runtime_selectable`,
@@ -121,7 +123,9 @@ page = supafone.labs.voices.list(provider="cartesia")
 print(page["voices"])
 ```
 
-For advanced filters, use REST:
+The SDK also accepts advanced filters such as `compatibleLanguage`
+(Python `compatible_language`) and `configuredOnly` (Python `configured_only`).
+The equivalent REST request is:
 
 ```bash
 curl --get "https://api.supafone.ai/api/v1/labs/voices" \
@@ -140,8 +144,10 @@ a single SDK `list` request does not automatically paginate.
 
 ## Select from Plain Language
 
-The server can rank catalog entries against a description. Call its REST
-endpoint rather than an unpublished SDK helper:
+The server can rank catalog entries against a description. Use
+`labs.voices.recommend({ description: "warm Spanish support voice" })` in
+TypeScript, `labs.voices.recommend(description="warm Spanish support voice")`
+in Python, or the equivalent REST endpoint:
 
 ```bash
 curl "https://api.supafone.ai/api/v1/labs/voices/recommend" \

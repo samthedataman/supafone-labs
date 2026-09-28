@@ -377,9 +377,11 @@ curl "https://api.supafone.ai/api/v1/labs/agents" \
   -d '{"name":"Spanish intake","preferredLanguage":"es-MX","voicePreference":{"description":"warm Latin American Spanish intake voice","configuredOnly":true}}'
 ```
 
-Use REST for these preference fields in SDK 0.6.3. For SDK creation, supply an
+The published SDK 0.7.0 also accepts `preferredLanguage` and `voicePreference`
+(with snake-case aliases) on managed agent creation. You can instead supply an
 explicit compatible `voice` selection as shown in the
-[custom TTS guide](voice-output-modes.md).
+[custom TTS guide](voice-output-modes.md). These preferences apply to the
+managed Ultravox voice path; native S2S providers use their own model voices.
 
 `preferredLanguage` applies one validated language and compatible voice for the
 entire call. It does not add a language-switch tool or change voices mid-call.

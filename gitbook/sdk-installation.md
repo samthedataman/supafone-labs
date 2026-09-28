@@ -19,11 +19,22 @@ does not itself host the model or provision provider credentials.
 [Create and switch an S2S agent](quickstart.md) · [Runtime limits](realtime-agent-factory.md#feature-boundaries)
 
 Supafone Labs publishes a Python package and an unscoped TypeScript package.
-The current release is **0.6.3** for both
+The current release is **0.7.0** for both
 [PyPI](https://pypi.org/project/supafone-labs/) and
 [npm](https://www.npmjs.com/package/supafone-labs).
 
-The 0.6.3 release adds the shared `SupafoneS2S` superclass and all five provider classes, including Hydra, in both SDKs. Install from [PyPI](https://pypi.org/project/supafone-labs/0.6.3/) or [npm](https://www.npmjs.com/package/supafone-labs/v/0.6.3), then follow [Native Realtime Agent Factory](realtime-agent-factory.md).
+Version **0.7.0** adds shared hosted workflow options for stage requirements,
+Manager reasoning, specialist teams, recording, and approved native model
+handoffs. These options require the corresponding Supafone backend deployment;
+SDK installation alone does not enable hosted features. See the
+[shared Agent Factory runtime](shared-agent-runtime.md) for configuration and
+provider boundaries.
+
+Version 0.6.3 introduced the shared `SupafoneS2S` superclass and all five provider
+classes, including Hydra. Install 0.7.0 from
+[PyPI](https://pypi.org/project/supafone-labs/0.7.0/) or
+[npm](https://www.npmjs.com/package/supafone-labs/v/0.7.0), then follow
+[Native Realtime Agent Factory](realtime-agent-factory.md).
 
 ## Python
 

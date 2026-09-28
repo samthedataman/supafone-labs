@@ -81,7 +81,7 @@ not certify a production call.
 
 ## One S2S interface, five providers
 
-Version 0.6.3 exports `SupafoneS2S`, the shared parent of `UltravoxS2S`,
+Since version 0.6.3, the SDK exports `SupafoneS2S`, the shared parent of `UltravoxS2S`,
 `OpenAIS2S`, `GeminiS2S`, `GrokS2S`, and `HydraS2S`. These classes use
 Supafone's hosted Agent Factory. Supafone handles the audio adapter, tools,
 stages, and supported phone transport behind one API.
@@ -405,9 +405,11 @@ universal override. Deepgram is preview-only in the current hosted Ultravox
 integration. Custom TTS backends are for developer-owned synthesis unless a
 hosted runtime bridge explicitly supports them.
 
-SDK 0.6.3 exposes `labs.voices.list({ provider })`. Use the documented REST
-endpoints for pagination, recommendations, and capability details; this
-version does not export `voices.recommend`, `selection`, or `listAll` helpers.
+The published SDK 0.7.0 exposes `labs.voices.list`, `listAll`, `capabilities`,
+`recommend`, `preview`, and `selection`. Use `listAll` for automatic catalog
+pagination, then pass `selection(voice)` into managed agent creation. These
+helpers query the hosted voice catalog; they do not enable external TTS on
+native OpenAI, Gemini, Grok, or Hydra sessions.
 See [voice-output choices](https://labs.supafone.ai/docs/voice-output-modes/) and
 [the voice catalog](https://labs.supafone.ai/docs/voice-catalog-and-selection/).
 

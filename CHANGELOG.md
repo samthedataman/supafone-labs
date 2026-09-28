@@ -1,5 +1,25 @@
 # Changelog
 
+## 0.7.0 - 2026-09-28
+
+- Expose the shared hosted Agent Factory workflow in Python and TypeScript:
+  validated 3–8 stage plans, structured completion requirements, captured facts,
+  stage-scoped tools, specialist teams, and bounded Manager reasoning.
+- Use the hosted planner for default stages across Ultravox, OpenAI, Gemini,
+  Grok, and Smallest AI Hydra; preserve explicit custom plans and disabled stages.
+- Add recording and native runtime-routing configuration, including approved
+  replacement models, handoff budgets, transport recovery, and language routing.
+  These SDK options require the corresponding managed backend deployment.
+- Document hosted Supervisor coaching across all five provider families and
+  distinguish it from developer-owned standalone adapter capabilities. The
+  standalone Gemini adapter is observation-only; hosted Gemini coaching uses
+  the managed guidance tool. Grok acceptance checks require both response
+  creation and completion.
+- Keep provider boundaries explicit: custom TTS and voice cloning remain on
+  Ultravox, Hydra has no live transcript and accepts English only, and native
+  model handoffs create a new provider session. Recording retention policies,
+  native voicemail, and Ultravox-to-native live handoffs are not implemented.
+
 ## 0.6.1 - 2026-09-20
 
 - Add one Agent Factory `realtime` selection contract for OpenAI GPT Realtime,
