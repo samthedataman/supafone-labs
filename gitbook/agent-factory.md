@@ -349,16 +349,16 @@ capabilities.
 
 Agent Factory can resolve a current provider voice from plain-language intent:
 
-```ts
-await supafone.labs.agents.createInbound({
-  name: "Spanish intake",
-  preferredLanguage: "es-MX",
-  voicePreference: {
-    description: "warm Latin American Spanish intake voice",
-    configuredOnly: true,
-  },
-});
+```bash
+curl "https://api.supafone.ai/api/v1/labs/agents" \
+  -H "Authorization: Bearer $SUPAFONE_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"name":"Spanish intake","preferredLanguage":"es-MX","voicePreference":{"description":"warm Latin American Spanish intake voice","configuredOnly":true}}'
 ```
+
+Use REST for these preference fields in SDK 0.6.3. For SDK creation, supply an
+explicit compatible `voice` selection as shown in the
+[custom TTS guide](voice-output-modes.md).
 
 `preferredLanguage` applies one validated language and compatible voice for the
 entire call. It does not add a language-switch tool or change voices mid-call.
