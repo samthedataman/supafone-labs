@@ -1,6 +1,6 @@
 {
   "name": "supafone-labs",
-  "version": "0.7.0",
+  "version": "0.7.2",
   "description": "Build voice agents with one speech-to-speech harness and swappable models.",
   "type": "module",
   "main": "./dist/cjs/index.js",

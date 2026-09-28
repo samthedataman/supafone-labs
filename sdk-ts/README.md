@@ -30,9 +30,9 @@ both products from one SDK instance, pass `SUPAFONE_API_KEY` as
 
 ## Quick start: S2S with Supervisor
 
-**Hosted rollout status:** the SDK accepts this configuration. Native S2S
-Supervisor rollout is pending; the existing managed Ultravox path remains
-available. See [SDK installation and deployment status](https://labs.supafone.ai/docs/sdk-installation/).
+**Hosted requirements:** the selected speaking provider and Supervisor need
+configured credentials. Check hosted readiness before a call. See
+[SDK installation](https://labs.supafone.ai/docs/sdk-installation/).
 
 ```ts
 import { Supafone, SupafoneS2S } from "supafone-labs";
@@ -192,6 +192,26 @@ See the [unified S2S guide](https://labs.supafone.ai/docs/unified-s2s/) and
 See [Shared runtime, Manager and teams](https://labs.supafone.ai/docs/shared-agent-runtime/)
 for `manager`, `agentTeam`, structured stage requirements, `recording` and
 `runtimeRouting`. Both SDKs preserve explicit empty stage-tool and edge arrays.
+
+## Choose speaking keys
+
+All five speaking providers use a saved account key when one exists, otherwise
+Supafone's configured platform key. Configure the account before live calls:
+
+```ts
+await client.labs.runtime.configure({
+  provider: "openai", mode: "byok", credentials: { apiKey: process.env.OPENAI_API_KEY! },
+});
+const status = await client.labs.runtime.get({ provider: "openai" });
+// Account-wide reset for this provider's future calls; omit credentials.
+await client.labs.runtime.configure({ provider: "openai", mode: "supafone_managed" });
+```
+
+Use `ultravox`, `openai`, `google`, `xai` or `smallest`. Runtime changes require
+account-admin permission and do not change Supervisor's reasoning profile.
+Explicit reset and provider readiness are **0.7.2** features; reset requires the
+matching hosted backend. [All provider keys and readiness](https://labs.supafone.ai/docs/byok-providers/)
+covers environment variables, CLI commands and masked readiness fields.
 
 ## Spawn a hosted Supafone agent
 

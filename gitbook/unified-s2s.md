@@ -12,10 +12,10 @@ allowed tools, stages, and credential resolution.
 
 ## Create a supervised S2S agent
 
-**Hosted rollout status:** the published SDKs accept this configuration. The
-native S2S Supervisor rollout is pending; the existing managed Ultravox path
-remains available. See [SDK installation and deployment status](https://labs.supafone.ai/docs/sdk-installation/)
-before testing a native provider.
+**Hosted requirements:** the selected speaking model and Supervisor need
+configured credentials. Native models use the shared call relay and guidance
+tools. See [SDK installation and readiness](https://labs.supafone.ai/docs/sdk-installation/)
+before testing a provider.
 
 Pass `supervisor` to **`create` on the base class**. The constructor selects the
 speaking provider, model and voice; `create` configures the hosted agent,
@@ -71,6 +71,36 @@ speaking credential is `SMALLEST_API_KEY` or an encrypted account BYOK override.
 Creating an agent does not connect audio or place a call. Start a preview with
 `engine.test_call("northline-intake")` / `engine.testCall("northline-intake")`
 after checking readiness.
+
+## Choose platform keys or your own speaking key
+
+All five speaking families use account runtime credentials. A saved account
+key takes priority; otherwise Supafone's configured platform key is used.
+Keep provider keys out of the `SupafoneS2S` constructor and `realtime`.
+
+```python
+client.labs.runtime.configure(
+    provider="openai", mode="byok",
+    credentials={"api_key": os.environ["OPENAI_API_KEY"]},
+)
+status = client.labs.runtime.get(provider="openai")
+# Account-wide reset to the platform default for future OpenAI calls.
+client.labs.runtime.configure(provider="openai", mode="supafone_managed")
+```
+
+```ts
+await client.labs.runtime.configure({
+  provider: "openai", mode: "byok", credentials: { apiKey: process.env.OPENAI_API_KEY! },
+});
+const status = await client.labs.runtime.get({ provider: "openai" });
+await client.labs.runtime.configure({ provider: "openai", mode: "supafone_managed" });
+```
+
+These updates require account-admin permission and affect future calls for all
+agents using that provider. They do not change Supervisor's reasoning key.
+Explicit reset and updated readiness controls require **0.7.2** and the pending
+backend rollout. [All five provider keys and CLI setup](https://labs.supafone.ai/docs/byok-providers/)
+explains the provider IDs, credential precedence and readiness.
 
 ## Enable or disable Supervisor on an existing agent
 

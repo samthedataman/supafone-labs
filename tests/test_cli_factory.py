@@ -245,3 +245,93 @@ def test_version_needs_no_credentials_or_api(monkeypatch, capsys):
         cli.main(["--version"])
     assert error.value.code == cli.EXIT_OK
     assert capsys.readouterr().out.strip() == f"supafone {version('supafone-labs')}"
+
+
+@pytest.mark.parametrize("alias,provider", [
+    ("ultravox", "ultravox"), ("openai", "openai"), ("gemini", "google"),
+    ("grok", "xai"), ("hydra", "smallest"),
+])
+def test_runtime_key_modes_and_env_input(invoke, monkeypatch, alias, provider):
+    monkeypatch.setenv("FIXTURE_SPEAKING_KEY", "fixture-speaking-secret-1234")
+    code, _, calls = invoke([
+        "runtime", "update", "--provider", alias, "--mode", "byok",
+        "--api-key-env", "FIXTURE_SPEAKING_KEY",
+    ])
+    assert code == cli.EXIT_OK
+    assert calls[-1][2] == {
+        "provider": provider, "mode": "byok", "credentials": {"api_key": "fixture-speaking-secret-1234"},
+    }
+    code, _, calls = invoke(["runtime", "update", "--provider", alias, "--mode", "supafone_managed"])
+    assert code == cli.EXIT_OK
+    assert calls[-1][2] == {"provider": provider, "mode": "supafone_managed"}
+
+
+def test_runtime_env_key_only_keeps_ultravox_default(invoke, monkeypatch):
+    monkeypatch.setenv("FIXTURE_SPEAKING_KEY", "fixture-speaking-secret-1234")
+    code, _, calls = invoke(["runtime", "update", "--api-key-env", "FIXTURE_SPEAKING_KEY"])
+    assert code == cli.EXIT_OK
+    assert calls[-1][2] == {"provider": "ultravox", "credentials": {"api_key": "fixture-speaking-secret-1234"}}
+
+
+def test_runtime_missing_env_and_managed_key_conflict_make_no_requests(invoke, monkeypatch):
+    monkeypatch.delenv("MISSING_SPEAKING_KEY", raising=False)
+    code, result, calls = invoke(["runtime", "update", "--provider", "openai", "--api-key-env", "MISSING_SPEAKING_KEY"])
+    assert code == cli.EXIT_USAGE and calls == []
+    assert "MISSING_SPEAKING_KEY" in result["error"]["message"]
+    monkeypatch.setenv("FIXTURE_SPEAKING_KEY", "fixture-speaking-secret-1234")
+    code, result, calls = invoke([
+        "runtime", "update", "--provider", "openai", "--mode", "managed",
+        "--api-key-env", "FIXTURE_SPEAKING_KEY",
+    ])
+    assert code == cli.EXIT_USAGE and calls == []
+    assert "cannot include credentials" in result["error"]["message"]
+
+
+@pytest.mark.parametrize("source", ["env", "credentials-file", "config-file", "set"])
+@pytest.mark.parametrize("success", [True, False])
+def test_runtime_credentials_scrubbed_everywhere(invoke, monkeypatch, tmp_path, source, success):
+    secret = "fixture-speaking-secret-never-echo-12345"
+    argv = ["runtime", "update", "--provider", "openai"]
+    if source == "env":
+        monkeypatch.setenv("FIXTURE_SPEAKING_KEY", secret)
+        argv += ["--api-key-env", "FIXTURE_SPEAKING_KEY"]
+    elif source == "set":
+        argv += ["--set", "credentials=" + json.dumps({"api_key": secret})]
+    else:
+        path = tmp_path / "key.json"
+        payload = {"api_key": secret} if source == "credentials-file" else {"credentials": {"api_key": secret}}
+        path.write_text(json.dumps(payload))
+        argv += [f"--{source}", str(path)]
+
+    def transport(*_):
+        if success:
+            return {"message": f"Connected {secret}", "nested": {"provider_note": secret}}
+        raise SupafoneError(f"Rejected {secret}", status=400, body={"detail": {"message": secret}})
+
+    monkeypatch.setattr(cli, "build_client", lambda *_: Supafone(api_key="sf_test", transport=transport))
+    code, result, _ = invoke(argv)
+    assert code == (cli.EXIT_OK if success else cli.EXIT_API_ERROR)
+    assert secret not in json.dumps(result)
+
+
+def test_runtime_env_and_config_key_conflict_is_explicit(invoke, monkeypatch, tmp_path):
+    monkeypatch.setenv("FIXTURE_SPEAKING_KEY", "fixture-speaking-secret-1234")
+    path = tmp_path / "config.json"
+    path.write_text(json.dumps({"credentials": {"apiKey": "fixture-other-secret"}}))
+    code, result, calls = invoke([
+        "runtime", "update", "--provider", "openai", "--config-file", str(path),
+        "--api-key-env", "FIXTURE_SPEAKING_KEY",
+    ])
+    assert code == cli.EXIT_USAGE and calls == []
+    assert "not both" in result["error"]["message"]
+
+
+def test_runtime_managed_reset_rejects_legacy_key_behind_empty_credentials(invoke, tmp_path):
+    path = tmp_path / "runtime.json"
+    path.write_text(json.dumps({
+        "provider": "ultravox", "mode": "supafone_managed",
+        "credentials": {"api_key": ""}, "ultravox": {"api_key": "fixture-legacy-secret"},
+    }))
+    code, result, calls = invoke(["runtime", "update", "--config-file", str(path)])
+    assert code == cli.EXIT_USAGE and calls == []
+    assert "cannot include credentials" in result["error"]["message"]

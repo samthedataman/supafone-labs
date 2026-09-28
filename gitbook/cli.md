@@ -8,11 +8,11 @@ than hidden.
 
 ## Install and verify
 
-The public Python package installs the `supafone` command. Python **0.7.1**
-adds the S2S and shared Agent Factory CLI controls:
+The public Python package installs the `supafone` command. Python **0.7.2**
+includes S2S, shared Agent Factory and managed/BYOK key controls:
 
 ```bash
-python -m pip install --upgrade supafone-labs==0.7.1
+python -m pip install --upgrade supafone-labs==0.7.2
 supafone --version
 supafone --help
 ```
@@ -21,7 +21,7 @@ supafone --help
 request. If the command is not on your shell's path, run
 `python -m supafone_labs.cli --version` using the same Python environment.
 
-The npm package remains `supafone-labs@0.7.0` and provides the TypeScript/JavaScript
+The npm package is `supafone-labs@0.7.2` and provides the TypeScript/JavaScript
 SDK; it does not install a CLI executable. The public Python distribution does
 not ship the separate internal `supafone-campaign` or `supafone-studio` commands.
 
@@ -203,12 +203,28 @@ saved BYOK key takes priority. You need your Supafone key, not a vendor key in
 `realtime`. To save an optional account override:
 
 ```bash
+supafone runtime update --provider gemini --mode byok --api-key-env GEMINI_API_KEY
+# A protected file remains supported instead of --api-key-env.
 supafone runtime update --provider google --credentials-file ./google-key.json
+# Remove this provider's account key and return to Supafone's platform default.
+supafone runtime update --provider gemini --mode supafone_managed
 ```
 
-The credentials file is a JSON object such as `{"api_key": "YOUR_PROVIDER_KEY"}`.
-Use canonical IDs with `runtime update`: `ultravox`, `openai`, `google`, `xai`,
-or `smallest`. Manage and protect this file like any other secret.
+Both runtime commands accept `ultravox`, `openai`, `google`/`gemini`,
+`xai`/`grok`, and `smallest`/`hydra`. `--api-key-env` names an existing variable
+containing the speaking key; the key value is not a command argument. A
+credentials file is a JSON object such as `{"api_key": "YOUR_PROVIDER_KEY"}`.
+Choose one input and protect it as a secret.
+
+Runtime changes require account-admin permission and affect future calls for
+all agents using that provider. Managed mode removes only its account key;
+do not supply credentials with it. Without a configured platform key, the
+provider remains unavailable. Omitting mode preserves the existing BYOK
+behavior. Speaking-key changes do not modify Supervisor's reasoning profile.
+
+Managed reset and `--api-key-env` are **0.7.2** features; reset also requires the
+matching hosted backend. See [all five provider keys](https://labs.supafone.ai/docs/byok-providers/)
+for environment variables, readiness and Python/TypeScript examples.
 
 ### Choose the speaking provider
 

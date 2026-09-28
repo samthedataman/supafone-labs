@@ -4,21 +4,128 @@ BYOK means "bring your own keys." It is powerful, but it should not be the
 default path. The default path is Supafone-managed infrastructure with one
 Supafone key.
 
-## Native S2S managed keys first
+## Choose speaking keys for all five S2S families
 
-The Supafone S2S harness resolves each speaking provider independently. A saved,
-encrypted account key overrides Supafone's configured platform key; otherwise
-the platform key is used. Check `GET /api/v1/labs/runtime?provider=openai` (or
-`google`, `xai`, `smallest`) for `source` and readiness. You do not need your own vendor key
-when Supafone has configured that provider. No credential is returned to the
-browser. A credential being present does not verify model permissions or live
-call quality.
+`SupafoneS2S` uses the account's saved speaking-provider key when one exists;
+otherwise it uses Supafone's configured platform key. Configure keys through
+`client.labs.runtime`, then create or switch an agent with `SupafoneS2S`.
+Vendor keys belong in account runtime configuration, not the S2S constructor
+or the agent's `realtime` selection.
 
-Managed model keys are configured on the server: `OPENAI_API_KEY`,
-`GEMINI_API_KEY`/`GOOGLE_API_KEY`, `XAI_API_KEY`, and `SMALLEST_API_KEY` for
-Hydra. An application using `HydraS2S` only needs its Supafone key when the
-platform supplies the Smallest credential. To override it, configure provider
-`smallest` through `labs.runtime.configure` with an account key.
+| Speaking family | Runtime provider ID | Your key's environment variable |
+| --- | --- | --- |
+| Ultravox | `ultravox` | `ULTRAVOX_API_KEY` |
+| OpenAI | `openai` | `OPENAI_API_KEY` |
+| Gemini | `google` | `GEMINI_API_KEY` or `GOOGLE_API_KEY` |
+| Grok | `xai` | `XAI_API_KEY` |
+| Smallest AI Hydra | `smallest` | `SMALLEST_API_KEY` |
+
+Environment names are conventions: the SDK sends the key you explicitly read.
+The CLI's `--api-key-env` can read any named variable. `SUPAFONE_API_KEY`
+authenticates your Supafone account separately. Keep keys in trusted server
+code or your local secret store.
+
+### Use Supafone's platform keys
+
+Without an account override, no key setup request is needed. Create the agent
+using your Supafone key. To remove an existing override and return to platform
+defaults, select managed mode:
+
+```python
+import os
+from supafone_labs import Supafone, SupafoneS2S
+
+client = Supafone(api_key=os.environ["SUPAFONE_API_KEY"])
+provider = "openai"  # Any runtime provider ID from the table above.
+client.labs.runtime.configure(provider=provider, mode="supafone_managed")
+engine = SupafoneS2S(client, provider=provider)
+agent = engine.create(name="Front desk", supervisor=True)
+```
+
+```ts
+import { Supafone, SupafoneS2S } from "supafone-labs";
+
+const client = new Supafone({ apiKey: process.env.SUPAFONE_API_KEY! });
+const provider = "openai";
+await client.labs.runtime.configure({ provider, mode: "supafone_managed" });
+const engine = new SupafoneS2S(client, { provider });
+const agent = await engine.create({ name: "Front desk", supervisor: true });
+```
+
+Managed mode removes only the selected provider's encrypted account override.
+It requires account-admin permission and affects **future calls for every agent
+in that account using that provider**. It does not change other provider keys,
+speaking selections, carrier settings or Supervisor profiles. Do not include
+credentials with managed mode. Without a configured platform key, status
+reports `source: "none"`; choosing managed mode does not provision a key.
+
+### Bring your own speaking key
+
+Use the same route for any of the five provider IDs:
+
+```python
+client.labs.runtime.configure(
+    provider="openai", mode="byok",
+    credentials={"api_key": os.environ["OPENAI_API_KEY"]},
+)
+status = client.labs.runtime.get(provider="openai")
+```
+
+```ts
+await client.labs.runtime.configure({
+  provider: "openai", mode: "byok",
+  credentials: { apiKey: process.env.OPENAI_API_KEY! },
+});
+const status = await client.labs.runtime.get({ provider: "openai" });
+```
+
+Substitute the table's provider ID and matching key for Ultravox, Gemini, Grok
+or Hydra. The key is encrypted on the account and takes priority over the
+platform key. An unreadable override reports `source: "invalid"`; reconnect it
+or explicitly return to managed mode. This setting is account-wide, not a
+per-agent credential override.
+
+### CLI
+
+```bash
+supafone runtime update --provider openai --mode byok --api-key-env OPENAI_API_KEY
+supafone runtime update --provider gemini --mode byok --api-key-env GEMINI_API_KEY
+supafone runtime update --provider grok --mode byok --api-key-env XAI_API_KEY
+supafone runtime update --provider hydra --mode byok --api-key-env SMALLEST_API_KEY
+supafone runtime update --provider ultravox --mode byok --api-key-env ULTRAVOX_API_KEY
+
+# Inspect configuration, then explicitly restore this provider's platform key.
+supafone runtime get --provider openai
+supafone runtime update --provider openai --mode supafone_managed
+```
+
+`--credentials-file` remains available for a JSON object containing `api_key`
+(and optionally `base_url` for Ultravox). Use it instead of `--api-key-env`.
+Do not put key values in command arguments. Credentials supplied through these
+inputs are scrubbed from CLI responses and error messages.
+
+### Readiness and compatibility
+
+`runtime.get` returns masked status. `configured` means an account override
+exists; `connected` means a usable key resolves. `source` is `account`,
+`platform`, `none` or `invalid`. These fields do not establish model permissions
+or successful calls. Earlier Ultravox responses use `managed` and
+`byok_connected`; updated responses retain these alongside the shared fields.
+
+Omitting `mode` retains existing configure behavior. A blank key preserves an
+Ultravox override; native key updates require a nonempty key. Use explicit
+managed mode to remove an override.
+
+**Release and rollout:** explicit managed reset, CLI environment-key input and
+TypeScript provider readiness are part of **0.7.2** and need the corresponding
+hosted backend. A configured key does not verify model access or call quality.
+See [SDK installation and readiness](sdk-installation.md).
+
+Speaking-key selection does not select Supervisor's reasoning key.
+`supervisor=True` / `true` enables the default or saved coaching profile;
+`supervisor={"enabled": True, "mode": "managed"}` explicitly chooses platform
+reasoning. Supervisor BYOK has its own provider and key. See
+[Supervisor Models: Managed and BYOK](supervisor-models.md).
 
 ## Managed compatibility defaults
 
@@ -108,8 +215,10 @@ curl https://api.supafone.ai/api/v1/labs/runtime \
   }'
 ```
 
-A blank `api_key` keeps the stored key. Native realtime Agent Factory providers are now available through the same route: use `openai`, `google`/`gemini`, `xai`/`grok`, or `smallest` with the selected model key. Ultravox remains the managed default for the standard Agent Factory path. See [Native Realtime Agent Factory](realtime-agent-factory.md). `GET /api/v1/labs/runtime` returns the same
-status shape:
+With mode omitted, a blank Ultravox `api_key` keeps the stored key. Native
+provider updates require a nonempty key. Use the shared examples above to
+connect any speaking family or explicitly return to platform defaults. Earlier
+Ultravox deployments return this compatibility status shape:
 
 ```json
 {

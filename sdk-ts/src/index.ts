@@ -1382,10 +1382,23 @@ export interface LabsVoicePreview {
 export interface LabsRuntimeResponse {
   account_id: string;
   provider: "ultravox" | string;
-  managed: boolean;
-  byok_connected: boolean;
+  /** Optional for compatibility with earlier hosted API deployments. */
+  managed?: boolean;
+  byok_connected?: boolean;
+  configured?: boolean;
+  connected?: boolean;
+  source?: "account" | "platform" | "none" | "invalid";
   base_url?: string;
   updated_at?: string;
+}
+
+export interface LabsRuntimeConfig {
+  agencyId?: string;
+  agency_id?: string;
+  provider?: string;
+  /** Account-wide: managed removes this provider's saved key for future calls. */
+  mode?: "supafone_managed" | "byok";
+  credentials?: { apiKey?: string; api_key?: string; baseUrl?: string; base_url?: string };
 }
 
 export interface LabsCallListOptions {
@@ -3838,25 +3851,34 @@ class LabsVoicesNamespace {
 class LabsRuntimeNamespace {
   constructor(private sm: SupafoneLabs) {}
 
-  get(opts: { agencyId?: string; agency_id?: string } = {}): Promise<LabsRuntimeResponse> {
+  get(opts: { agencyId?: string; agency_id?: string; provider?: string } = {}): Promise<LabsRuntimeResponse> {
     const q = new URLSearchParams();
     const agencyId = opts.agency_id ?? opts.agencyId;
     if (agencyId) q.set("agency_id", agencyId);
+    if (opts.provider) q.set("provider", opts.provider);
     const suffix = q.toString() ? `?${q}` : "";
     return this.sm.requestSupafoneApi<LabsRuntimeResponse>("GET", `/api/v1/labs/runtime${suffix}`);
   }
 
-  configure(input: {
-    agencyId?: string;
-    agency_id?: string;
-    provider?: "ultravox" | string;
-    credentials?: { apiKey?: string; api_key?: string; baseUrl?: string; base_url?: string };
-  }): Promise<LabsRuntimeResponse> {
+  /** Set an account speaking key, or restore the selected provider's platform default. */
+  configure(input: LabsRuntimeConfig): Promise<LabsRuntimeResponse> {
+    if (input.mode !== undefined && !["supafone_managed", "byok"].includes(input.mode)) {
+      throw new Error("runtime mode must be supafone_managed or byok");
+    }
     const credentials = input.credentials ?? {};
+    if (typeof credentials !== "object" || Array.isArray(credentials)) {
+      throw new Error("runtime credentials must be an object");
+    }
+    if (input.mode === "supafone_managed" && Object.values(credentials).some(
+      value => typeof value === "string" ? Boolean(value.trim()) : Boolean(value),
+    )) {
+      throw new Error("managed runtime mode cannot include credentials");
+    }
     return this.sm.requestSupafoneApi<LabsRuntimeResponse>("PUT", "/api/v1/labs/runtime", compact({
       agency_id: input.agency_id ?? input.agencyId,
       provider: input.provider ?? "ultravox",
-      credentials: compact({
+      mode: input.mode,
+      credentials: input.mode === "supafone_managed" ? undefined : compact({
         api_key: credentials.api_key ?? credentials.apiKey,
         base_url: credentials.base_url ?? credentials.baseUrl,
       }),

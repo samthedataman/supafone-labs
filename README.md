@@ -27,9 +27,9 @@ stages, and browser/phone delivery through Python, TypeScript, and REST.
 
 ## Start here: the S2S harness
 
-**Hosted rollout status:** the SDK configuration shown below is available.
-Native S2S Supervisor rollout is pending; the existing managed Ultravox path
-remains available. See [SDK installation and deployment status](https://labs.supafone.ai/docs/sdk-installation/).
+**Hosted requirements:** Supervisor uses the hosted call runtime. Configure the
+selected speaking provider and Supervisor credentials, then check readiness
+before starting a call. See [SDK installation](https://labs.supafone.ai/docs/sdk-installation/).
 
 Agent Factory creates the agent; the harness runs its selected speaking model
 with supported tools, stages, and browser or phone delivery. The exported
@@ -116,13 +116,24 @@ model/carrier combination has passed a live deployment test.
 [Quickstart](gitbook/quickstart.md) · [Native runtime contract](gitbook/realtime-agent-factory.md) ·
 [Managed keys and BYOK](gitbook/byok-providers.md) · [Framework coverage](gitbook/framework-support.md)
 
+## Choose who supplies the speaking key
+
+All five S2S families accept an account BYOK key or Supafone's configured
+platform key. Use `client.labs.runtime.configure` for account keys and
+`SupafoneS2S` for speaking selection. A stored account key takes priority.
+In **0.7.2**, explicit `mode: "supafone_managed"` removes that provider's
+override for future calls across the account. This is separate from Supervisor
+BYOK and requires the matching hosted API.
+[Speaking keys: Python, TypeScript, CLI and readiness](gitbook/byok-providers.md)
+shows each provider and setup requirements.
+
 ## Command-line Agent Factory
 
-The Python package includes the `supafone` CLI. Upgrade to **0.7.1** for S2S
+The Python package includes the `supafone` CLI. Upgrade to **0.7.2** for S2S
 selection, shared workflow controls, and hosted planning:
 
 ```bash
-python -m pip install --upgrade supafone-labs==0.7.1
+python -m pip install --upgrade supafone-labs==0.7.2
 supafone --version
 export SUPAFONE_API_KEY=sl_live_...
 supafone capabilities
@@ -137,7 +148,7 @@ supafone agents plan --description "Capture details, book a slot, then confirm."
 Use `--config-file` for reviewed stages, tool gates, teams and routing policies.
 Switch back with `--s2s-provider ultravox` to keep compatible custom TTS.
 [CLI reference and complete workflow example](docs/cli.md) covers all commands.
-The npm SDK remains **0.7.0** and does not install a CLI executable. Hosted
+The npm SDK is **0.7.2** and does not install a CLI executable. Hosted
 workflow features require the corresponding backend deployment and configured
 server-side provider keys.
 

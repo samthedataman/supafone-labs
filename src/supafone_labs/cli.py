@@ -340,6 +340,21 @@ def resolve_api_key(args: argparse.Namespace, *, stdin: Any = None) -> tuple[str
     )
 
 
+def _credential_values(value: Any) -> list[str]:
+    """Collect only credential-shaped values; never echo whole config files."""
+    if isinstance(value, Mapping):
+        found = []
+        for key, item in value.items():
+            if _is_secret_key(key) and isinstance(item, str):
+                found.extend((item, item.strip()))
+            else:
+                found.extend(_credential_values(item))
+        return found
+    if isinstance(value, (list, tuple)):
+        return [secret for item in value for secret in _credential_values(item)]
+    return []
+
+
 def collect_secrets(api_key: str, args: argparse.Namespace | None = None) -> list[str]:
     """Every credential this process holds, for output scrubbing."""
     values = [api_key]
@@ -357,6 +372,15 @@ def collect_secrets(api_key: str, args: argparse.Namespace | None = None) -> lis
     if supervisor in SUPERVISOR_KEY_ENVS:
         env_name = getattr(args, "supervisor_api_key_env", None) or SUPERVISOR_KEY_ENVS[supervisor]
         values.append(os.getenv(env_name, ""))
+    runtime_env = getattr(args, "runtime_api_key_env", None)
+    if runtime_env:
+        value = os.getenv(runtime_env, "")
+        values.extend((value, value.strip()))
+    for attribute, label in (("credentials_file", "--credentials-file"), ("config_file", "--config-file")):
+        path = getattr(args, attribute, None)
+        if path:
+            values.extend(_credential_values(_read_json_file(str(path), label=label)))
+    values.extend(_credential_values(_parse_set(getattr(args, "set", None))))
     return [value for value in dict.fromkeys(values) if value]
 
 
@@ -410,6 +434,7 @@ def _config_payload(
     *,
     label: str,
     fields: Sequence[tuple[str, str]] = (),
+    allow_empty: bool = False,
 ) -> dict[str, Any]:
     """Build a structured SDK payload without evaluating user input."""
     data: dict[str, Any] = {}
@@ -429,7 +454,7 @@ def _config_payload(
             raise CliError("--credentials-file must contain a JSON object")
         data["credentials"] = dict(credentials)
     data.update(_parse_set(getattr(args, "set", None)))
-    if not data:
+    if not data and not allow_empty:
         raise CliError(
             f"{label} requires --config-file, --set, or at least one explicit field"
         )
@@ -822,8 +847,17 @@ def _runtime_commands(groups: Any) -> None:
     get = commands.add_parser("get", help="Read masked runtime configuration and provider readiness.")
     get.add_argument("--provider", choices=tuple(S2S_PROVIDERS))
     update = commands.add_parser("update", help="Configure the hosted realtime runtime.")
-    update.add_argument("--provider")
-    update.add_argument("--credentials-file", help="JSON credentials object; never echoed.")
+    update.add_argument("--provider", help="Speaking provider ID; familiar S2S aliases are accepted.")
+    update.add_argument(
+        "--mode", choices=("supafone_managed", "managed", "byok"),
+        help="Account-wide key choice; managed removes this provider's saved key for future calls.",
+    )
+    keys = update.add_mutually_exclusive_group()
+    keys.add_argument("--credentials-file", help="JSON credentials object; never echoed.")
+    keys.add_argument(
+        "--api-key-env", dest="runtime_api_key_env", metavar="ENV_NAME",
+        help="Environment variable containing this speaking provider's BYOK key.",
+    )
     update.add_argument("--config-file", help="Complete runtime JSON object.")
     update.add_argument("--set", action="append", metavar="KEY=VALUE")
 
@@ -1418,8 +1452,25 @@ def dispatch(client: Supafone, args: argparse.Namespace) -> tuple[Any, list[str]
             config = _config_payload(
                 args,
                 label="runtime update",
-                fields=(("provider", "provider"),),
+                fields=(("provider", "provider"), ("mode", "mode")),
+                allow_empty=bool(args.runtime_api_key_env),
             )
+            provider = config.get("provider")
+            if isinstance(provider, str) and provider in S2S_PROVIDERS:
+                config["provider"] = S2S_PROVIDERS[provider]
+            if config.get("mode") == "managed":
+                config["mode"] = "supafone_managed"
+            env_name = args.runtime_api_key_env
+            if env_name:
+                key = os.getenv(env_name, "").strip()
+                if not key:
+                    raise CliError(f"--api-key-env requires a nonempty {env_name} environment variable")
+                credentials = config.get("credentials") or config.get("ultravox") or {}
+                if not isinstance(credentials, Mapping):
+                    raise CliError("runtime credentials must be a JSON object")
+                if credentials.get("api_key") or credentials.get("apiKey"):
+                    raise CliError("choose --api-key-env or an API key in the config, not both")
+                config["credentials"] = {**credentials, "api_key": key}
             return client.labs.runtime.configure(config), []
 
     if group == "telephony":
@@ -1784,7 +1835,7 @@ def main(argv: Sequence[str] | None = None) -> int:
             },
             warnings=warnings,
         )
-        _emit(result, args.output, sys.stderr)
+        _emit(redact(result, secrets), args.output, sys.stderr)
         return EXIT_USAGE
     except PartialFailure as exc:
         result = envelope(
@@ -1800,7 +1851,7 @@ def main(argv: Sequence[str] | None = None) -> int:
             },
             warnings=warnings + _simulation_warnings(exc.data),
         )
-        _emit(result, args.output, sys.stderr)
+        _emit(redact(result, secrets), args.output, sys.stderr)
         return EXIT_PARTIAL
     except SupafoneError as exc:
         detail = exc.body.get("detail") if isinstance(exc.body, Mapping) else None
@@ -1829,7 +1880,7 @@ def main(argv: Sequence[str] | None = None) -> int:
             },
             warnings=warnings,
         )
-        _emit(result, args.output, sys.stderr)
+        _emit(redact(result, secrets), args.output, sys.stderr)
         return EXIT_API_ERROR
     except (urlerror.URLError, TimeoutError) as exc:
         # The transport never reached the API, so nothing was applied remotely —
@@ -1843,7 +1894,7 @@ def main(argv: Sequence[str] | None = None) -> int:
             },
             warnings=warnings,
         )
-        _emit(result, args.output, sys.stderr)
+        _emit(redact(result, secrets), args.output, sys.stderr)
         return EXIT_API_ERROR
     except (OSError, ValueError) as exc:
         result = envelope(
@@ -1855,7 +1906,7 @@ def main(argv: Sequence[str] | None = None) -> int:
             },
             warnings=warnings,
         )
-        _emit(result, args.output, sys.stderr)
+        _emit(redact(result, secrets), args.output, sys.stderr)
         return EXIT_USAGE
 
     result = envelope(
@@ -1863,7 +1914,7 @@ def main(argv: Sequence[str] | None = None) -> int:
         data=redact(data, secrets),
         warnings=warnings + _simulation_warnings(data),
     )
-    _emit(result, args.output, sys.stdout)
+    _emit(redact(result, secrets), args.output, sys.stdout)
     return EXIT_OK
 
 

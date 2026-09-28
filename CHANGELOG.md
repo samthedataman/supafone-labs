@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.7.2 — 2026-09-28
+
+- Select BYOK or Supafone-managed speaking credentials independently for Ultravox, OpenAI, Gemini, Grok and Hydra. Returning to managed removes only that provider's saved account override and applies to future calls.
+- Query provider-specific credential readiness in TypeScript, matching Python and the CLI.
+- Configure runtime keys from CLI environment variables or credential files, with secret redaction in errors.
+- Lead installation and shared S2S guides with direct Supervisor configuration and document the separate speaking-key and Supervisor-key choices.
+
+These credential-mode operations require the matching hosted backend. Provider keys and model permissions are still required; SDK installation does not provision credentials.
+
 ## 0.7.1 - 2026-09-28 (Python CLI)
 
 - Add speaking-provider/model/voice selection to agent create and update, with

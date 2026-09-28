@@ -12,11 +12,11 @@ Supervisor setting, stages, and tools. You do not need a separate
 
 ### Install
 
-The Python SDK and CLI are **0.7.1**; the TypeScript SDK is **0.7.0**.
+The Python SDK, CLI and TypeScript SDK use **0.7.2**.
 
 ```bash
-python -m pip install --upgrade supafone-labs==0.7.1
-npm install supafone-labs@0.7.0
+python -m pip install --upgrade supafone-labs==0.7.2
+npm install supafone-labs@0.7.2
 ```
 
 Use your Supafone account key as `SUPAFONE_API_KEY`. Provider and managed
@@ -114,15 +114,41 @@ Cerebras. [Choose managed or BYOK reasoning](supervisor-models.md).
 Managed operation requires the corresponding keys on Supafone's server. An
 account's saved speaking-provider key takes priority over its platform default.
 Installing an SDK does not configure keys or deploy the hosted runtime.
-**Hosted rollout status (September 28, 2026):** the published SDKs accept this
-configuration, but the new native S2S Supervisor backend rollout is still
-pending. Ultravox uses its existing managed supervision path. Check
+**Hosted readiness:** Ultravox uses its managed supervision path; native S2S
+uses the shared call relay and guidance tools. Check
 `client.labs.capabilities()` and agent readiness before a live call; a saved
 `supervisor` flag alone is not evidence that coaching ran.
 
 For advanced workflows, [Manager and specialist teams](shared-agent-runtime.md)
 add bounded reasoning and stage coordination above the speaking agent.
 Supervisor guidance and Manager coordination are separate controls.
+
+## Use platform keys or bring your own speaking key
+
+Ultravox, OpenAI, Gemini, Grok and Hydra each use a saved account key when one
+exists, otherwise Supafone's configured platform key. Key choice belongs to
+the account runtime and is separate from Supervisor's reasoning profile.
+
+```python
+client.labs.runtime.configure(
+    provider="openai", mode="byok",
+    credentials={"api_key": os.environ["OPENAI_API_KEY"]},
+)
+status = client.labs.runtime.get(provider="openai")
+```
+
+```ts
+await client.labs.runtime.configure({
+  provider: "openai", mode: "byok", credentials: { apiKey: process.env.OPENAI_API_KEY! },
+});
+const status = await client.labs.runtime.get({ provider: "openai" });
+```
+
+Explicit `mode="supafone_managed"` / `mode: "supafone_managed"`, without
+credentials, removes this provider's account override for future calls across
+the account. This **0.7.2** feature requires admin permission and the matching
+hosted API. [Choose keys for all five providers](byok-providers.md)
+includes reset examples, the provider/key table, CLI commands and readiness.
 
 ## Test the saved agent
 

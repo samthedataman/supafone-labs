@@ -1836,12 +1836,34 @@ class LabsRuntimeNamespace:
         return self._client._request_supafone_api("GET", f"/api/v1/labs/runtime{suffix}")
 
     def configure(self, config: Optional[Mapping[str, Any]] = None, **kwargs: Any) -> Any:
+        """Configure an account-wide speaking key, or restore platform defaults.
+
+        ``mode="supafone_managed"`` removes this provider's saved account key
+        for future sessions. Omit mode to preserve the legacy BYOK behavior.
+        """
         data = _merge(config, kwargs)
+        mode = data.get("mode")
+        if mode == "managed":
+            mode = "supafone_managed"
+        if mode is not None and (not isinstance(mode, str) or mode not in {"supafone_managed", "byok"}):
+            raise ValueError("runtime mode must be supafone_managed or byok")
+        # Validate both aliases before choosing one, so a populated legacy
+        # block cannot be silently discarded by an explicit managed reset.
+        for candidate in (data.get("credentials"), data.get("ultravox")):
+            if candidate is not None and not isinstance(candidate, Mapping):
+                raise ValueError("runtime credentials must be an object")
+            if mode == "supafone_managed" and candidate and any(
+                value.strip() if isinstance(value, str) else value
+                for value in candidate.values()
+            ):
+                raise ValueError("managed runtime mode cannot include credentials")
+        credentials = data.get("credentials") or data.get("ultravox")
         payload = _compact(
             {
                 "agency_id": _pick(data, "agency_id", "agencyId"),
                 "provider": data.get("provider") or "ultravox",
-                "credentials": data.get("credentials") or data.get("ultravox"),
+                "mode": mode,
+                "credentials": credentials,
             }
         )
         return self._client._request_supafone_api("PUT", "/api/v1/labs/runtime", payload)
