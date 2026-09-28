@@ -9,6 +9,19 @@ an agent-wide prompt, three to eight focused stages, exit criteria, tool rules,
 safe transitions, and a final close. The exact plan returned to your code is
 the exact plan stored on the agent and executed during calls.
 
+## Shared across speaking models
+
+Ultravox, OpenAI, Gemini, Grok and Hydra execute the same stored plan. Each call
+freezes its stages and team. `next_stages` defines allowed branches;
+`requirements.required_fields` requires configured fields saved by `save_lead`,
+and `requirements.successful_tools` requires successful receipts from the
+current stage. Empty tool lists disable business tools; empty next-stage lists
+mark a terminal stage. `exit_criteria` is conversational guidance, not a parsed
+machine gate. Stage temperature is mapped on Ultravox; native adapters do not apply it.
+
+The Manager can propose transitions or specialist assignments, but the runtime
+still enforces these checks. See [Shared runtime, Manager and teams](shared-agent-runtime.md).
+
 ## Why developers care
 
 - **Write the business intent once.** You do not have to become a prompt

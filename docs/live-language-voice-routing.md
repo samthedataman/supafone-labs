@@ -1,11 +1,29 @@
 # Live language and voice routing
 
+## Native S2S language handoff
+
+Native OpenAI, Gemini, Grok and Hydra sessions can use `runtime_routing` with
+explicit `allowed_models` and `allowed_languages`. A caller-requested language
+switch starts a new allowed model/voice session through the native broker,
+keeps the server stage, facts and receipts, and consumes the configured handoff
+budget. It does not resume a provider's hidden session state. Hydra is
+English-only; another approved model is needed for a Spanish handoff.
+
+See [Shared runtime, Manager and teams](shared-agent-runtime.md#native-model-handoff)
+for the configuration. These native provider voices do not use the external-TTS
+profile routing described below.
+
+## Ultravox external-TTS profiles
+
+
 Hosted Agent Factory agents can opt into same-call routing across two to four
 approved languages. Each language can use a distinct compatible voice.
 Existing agents keep their current fixed-language behavior unless
 `languageVoiceRouting` is explicitly enabled.
 
-Native realtime agents select one model-native voice for the session. This managed language-routing contract does not switch a native realtime model or voice mid-call. See [Native Realtime Agent Factory](realtime-agent-factory.md).
+Native providers use their own model voices. Their separate broker policy can
+replace a speaking session; the Ultravox profile settings below are not that
+native session-handoff contract.
 
 ```ts
 const agent = await supafone.labs.agents.createInbound({

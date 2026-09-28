@@ -11,15 +11,22 @@ prompt, and SDK layers, see the
 
 The distinction matters:
 
-- **Native control**: Supafone, Ultravox, Vapi, OpenAI Realtime, Grok, Gemini
-  Live, ElevenLabs, Deepgram Voice Agent, and Inworld Realtime.
+- **Native control**: Supafone, Ultravox, Vapi, OpenAI Realtime, Grok,
+  ElevenLabs, Deepgram Voice Agent, and Inworld Realtime.
 - **Context you own**: Retell custom LLM, LiveKit Agents, and Pipecat.
-- **Observation-only by default**: Bland has no documented prompt-injection
+- **Observation-only by default**: Gemini Live and Bland have no universal hidden prompt-injection
   control; Cartesia Line needs an explicit custom-event hook in your agent.
 
 ## Native realtime Agent Factory
 
-Direct browser and phone delivery is available for OpenAI GPT Realtime/GPT Live, Google Gemini Live, and xAI Grok Voice. This is separate from the Supervisor adapter matrix below. See the [native realtime guide](realtime-agent-factory.md). The native path supports Supafone-managed, Twilio, Telnyx, Plivo, and SIP phone transports.
+Direct browser and phone delivery is available for OpenAI GPT Realtime/GPT Live, Google Gemini Live, xAI Grok Voice, and Smallest AI Hydra. This is separate from the Supervisor adapter matrix below. See the [native realtime guide](realtime-agent-factory.md).
+
+The five hosted families, including default Ultravox, share custom stages,
+Manager reasoning, specialist consultations and Supervisor coaching. Native
+calls support opt-in recording, widgets, carrier controls and allowed-model
+handoff within explicit limits. See [Shared runtime, Manager and teams](shared-agent-runtime.md).
+
+The native path supports Supafone-managed, Twilio, Telnyx, Plivo and SIP phone transports.
 
 ## Capability matrix
 
@@ -29,14 +36,14 @@ best injection path automatically.
 | Runtime | Integration mode | Compiled action | Acceptance criterion |
 |---|---|---|---|
 | <a id="provider-supafone"></a>Supafone Agent Factory (managed) | managed native control | Ultravox `user_text_message`, `urgency=later` | managed call accepts the data message |
-| Native realtime Agent Factory | direct S2S transport | Provider-native audio WebSocket for OpenAI, Google, or xAI | Authenticated browser/carrier session remains healthy |
+| Native realtime Agent Factory | direct S2S transport | Provider-native audio WebSocket for OpenAI, Google, xAI or Smallest | Authenticated browser/carrier session remains healthy |
 | <a id="provider-ultravox"></a>Ultravox | native control | `user_text_message`, `urgency=later` | Send Data Message returns HTTP 204 |
 | <a id="provider-vapi"></a>Vapi | native call control | `add-message` with a system message | POST to the live call `controlUrl` succeeds |
 | <a id="provider-retell"></a>Retell | custom LLM context | system context entry | entry is present before the next response |
 | <a id="provider-bland"></a>Bland | observation only | no action | event parses and no unsupported action is emitted |
 | <a id="provider-gpt_realtime"></a>OpenAI Realtime | native control | system `conversation.item.create` | item-created/done event, or no provider error |
-| <a id="provider-grok"></a>Grok Voice Agent | native control | `response.create.instructions` | `response.created` is received |
-| <a id="provider-gemini_live"></a>Gemini Live | native control | `clientContent` user turn (system is invalid mid-session) | next turn follows the updated instruction |
+| <a id="provider-grok"></a>Grok Voice Agent | native control | `response.create.instructions` | `response.created` followed by `response.done`; acceptance does not prove behavioral uptake |
+| <a id="provider-gemini_live"></a>Gemini Live | observation only | `clientContent` is ordinary conversation history | Default adapter emits no hidden mid-call control |
 | <a id="provider-elevenlabs"></a>ElevenLabs Agents | native control | `contextual_update` | socket remains healthy and next turn completes |
 | <a id="provider-deepgram"></a>Deepgram Voice Agent | native control | `UpdatePrompt` | `PromptUpdated` is received |
 | <a id="provider-livekit"></a>LiveKit Agents | framework context | `ChatContext.add_message` | `update_chat_ctx` persists the system entry |
@@ -57,7 +64,7 @@ through the complete SDK boundary:
 3. The Supervisor forms a belief, directive, and runtime decision.
 4. The adapter compiles the exact native control or framework-context payload.
 5. The test validates that payload byte-for-byte, or validates a safe no-action
-   result for Bland and Cartesia.
+   result for Gemini Live, Bland and Cartesia.
 
 `tests/test_live_injection_contracts.py` then provides credentialed acceptance
 probes for Ultravox, Vapi, OpenAI Realtime, Grok, Gemini Live, Deepgram, and

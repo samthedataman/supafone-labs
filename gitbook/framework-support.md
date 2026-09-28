@@ -51,6 +51,20 @@ enabled setting, and Supervisor credential readiness are separate. See the
 
 The matrix below describes Supervisor adapters for existing stacks. It does not describe direct model hosting. The Agent Factory also has a native S2S transport for OpenAI, Google/Gemini, xAI, and Smallest AI/Hydra; that path is documented in [Native Realtime Agent Factory](realtime-agent-factory.md).
 
+## Shared hosted workflow
+
+All five speaking families share the generated/custom stage planner, durable
+facts and tool receipts, Manager reasoning, specialist consultation and
+Supervisor coaching. Native calls additionally support public widgets,
+opt-in recording, configured carrier controls and opt-in native model handoff.
+These features have separate readiness checks and do not make every provider
+voice or carrier capability interchangeable.
+
+See the [hosted capability matrix](shared-agent-runtime.md#capability-matrix)
+for execution gates, recording, DTMF, transfer and remaining Ultravox-specific
+voice features. The matrix below covers the separate SDK adapters for stacks
+that developers already operate.
+
 ## Runtime matrix
 
 | Runtime | Support class | Supervisor delivery | Acceptance criterion |
@@ -118,10 +132,12 @@ It does **not** mean Supafone hosts every provider account automatically.
 
 For supported transcript-producing Supervisor integrations, Supafone selects
 one transcript authority per call. Native Hydra supplies no transcript events
-and this native adapter does not add a separate transcription service. Hosted
-Hydra coaching uses explicitly labeled model-reported context and server tool
-outcomes instead. That context must never be displayed as a caller transcript:
+and its native adapter does not add a live transcription service. Optional
+recording-based Deepgram transcription runs after a native call; it does not
+supply live Hydra evidence. The separate Supervisor integrations use:
 
+Hosted Hydra coaching uses labeled model-reported context and server tool
+outcomes; that context must never be displayed as a caller transcript.
 
 - Provider transcript for a supported monolingual stream.
 - Deepgram live tap when multilingual language authority is required and raw

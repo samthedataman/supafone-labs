@@ -7,6 +7,7 @@ Credentialed network acceptance lives in test_live_injection_contracts.py.
 """
 from __future__ import annotations
 
+import asyncio
 import json
 import re
 from datetime import date
@@ -23,7 +24,7 @@ from supafone_labs.runtime.provider_contracts import (
     PROVIDER_INJECTION_CONTRACTS,
     ProviderInjectionContract,
 )
-
+from tests.live_probe_helpers import wait_for_grok_completion
 from tests.test_adapters import CASES
 
 PUBLIC_PROVIDER_IDS = {
@@ -43,6 +44,18 @@ PUBLIC_PROVIDER_IDS = {
     "inworld",
 }
 REPO_ROOT = Path(__file__).resolve().parents[1]
+
+
+class _OfflineWebSocket:
+    def __init__(self, events: list[dict]) -> None:
+        self.events = iter(events)
+
+    async def recv(self) -> str:
+        try:
+            return json.dumps(next(self.events))
+        except StopIteration:
+            await asyncio.sleep(60)
+            raise AssertionError("unreachable")
 
 
 def _instruction_text(payload: dict) -> str:
@@ -84,16 +97,6 @@ def _assert_native_shape(
             "type": "response.create",
             "response": {"instructions": expected_text},
         }
-        return
-    if provider == "gemini_live":
-        content = payload["clientContent"]
-        assert content["turnComplete"] is False
-        assert content["turns"] == [
-            {
-                "role": "user",
-                "parts": [{"text": expected_text}],
-            }
-        ]
         return
     if provider == "elevenlabs":
         assert payload == {
@@ -182,7 +185,53 @@ def test_every_public_runtime_has_an_explicit_live_probe_policy():
     )
 
 
-def test_native_external_channels_have_eight_credentialed_acceptance_probes():
+def test_gemini_developer_live_does_not_reclassify_user_content_as_hidden_control():
+    contract = CONTRACT_BY_PROVIDER["gemini_live"]
+    case = CASES["gemini_live"]
+    capabilities = case.adapter.capabilities()
+
+    assert contract.injection_mode == "tap_only"
+    assert contract.action_kind is None
+    assert contract.live_probe == "not_applicable"
+    assert "ordinary conversation context" in (contract.native_message or "")
+    assert capabilities.supports_hidden_instruction_injection is False
+    assert capabilities.supports_mid_call_prompt_patch is False
+    assert capabilities.supports_stageful_session_updates is False
+
+
+async def test_grok_probe_requires_created_then_done():
+    websocket = _OfflineWebSocket(
+        [
+            {"type": "response.created"},
+            {"type": "response.output_audio.delta", "delta": "audio"},
+            {"type": "response.done", "response": {"status": "completed"}},
+        ]
+    )
+    completed = await wait_for_grok_completion(websocket, timeout=0.1)
+    assert completed["type"] == "response.done"
+
+
+@pytest.mark.parametrize(
+    "terminal",
+    [
+        {"type": "error", "error": {"message": "rejected"}},
+        {"type": "response.failed", "response": {"status": "failed"}},
+        {"type": "response.done", "response": {"status": "failed"}},
+    ],
+)
+async def test_grok_probe_rejects_failure_after_response_created(terminal):
+    websocket = _OfflineWebSocket([{"type": "response.created"}, terminal])
+    with pytest.raises(pytest.fail.Exception):
+        await wait_for_grok_completion(websocket, timeout=0.1)
+
+
+async def test_grok_probe_does_not_accept_response_created_without_done():
+    websocket = _OfflineWebSocket([{"type": "response.created"}])
+    with pytest.raises(pytest.fail.Exception, match="did not acknowledge"):
+        await wait_for_grok_completion(websocket, timeout=0.01)
+
+
+def test_native_external_channels_have_seven_credentialed_acceptance_probes():
     providers = {
         contract.provider_id
         for contract in PROVIDER_INJECTION_CONTRACTS
@@ -193,7 +242,6 @@ def test_native_external_channels_have_eight_credentialed_acceptance_probes():
         "vapi",
         "gpt_realtime",
         "grok",
-        "gemini_live",
         "elevenlabs",
         "deepgram",
         "inworld",

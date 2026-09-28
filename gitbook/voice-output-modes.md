@@ -8,9 +8,10 @@ shared `SupafoneS2S` offering and keep the same saved agent and phone assignment
 | **Ultravox + custom TTS** | Ultravox runs the conversation; a compatible TTS provider supplies speech. |
 | **Native S2S** | OpenAI, Gemini, Grok, or Hydra uses its own audio output and supported voices. |
 
-Choose Ultravox when you need a specific TTS voice and its broader managed
-planner, compatible Supervisor, and hosted features. Choose native S2S for the
-selected model's native conversation behavior.
+Choose Ultravox when you need a compatible external TTS voice. Choose native
+S2S for the selected model's own voice and conversation behavior. Both use the
+shared hosted planner, Manager, specialists and Supervisor within their
+provider capabilities.
 
 The Ultravox option is the existing default Agent Factory runtime. It remains
 a supported choice within the shared interface. “Managed compatibility” in

@@ -64,10 +64,11 @@ only for self-healing directives and logs.
 ## Managed compatibility and native S2S runtime
 
 Hosted Agent Factory has two direct speaking-runtime lanes. The managed
-Ultravox-compatible lane supplies the full recording, Supervisor, transfer,
-DTMF, widget, and arbitrary planner feature set. The native realtime lane lets
-you swap among the six native catalog S2S models while keeping the browser and phone
-provider contract stable. Both lanes keep telephony and credentials server-side.
+Ultravox-compatible lane retains external TTS and language/voice profiles.
+The native realtime lane selects among six native catalog S2S models. Both
+share the custom stage planner, Manager, specialists and Supervisor, while
+recording, carrier controls and live model handoff have explicit limits.
+Telephony and credentials stay server-side.
 
 ### Managed Ultravox-compatible runtime
 
@@ -130,12 +131,13 @@ create/runtime contract and the runtime block returned on agent create.
 
 Native realtime uses `realtime: { provider, model, voice }` with
 `gpt-realtime-2.1`, `gpt-live-1`, `gemini-3.1-flash-live-preview`, `grok-voice-latest`,
-`hydra-v1.0`, or `hydra-v1.1`, `hydra-v1.0`, and `hydra-v1.1`. Use a configured platform key or optionally connect an
+`hydra-v1.0`, or `hydra-v1.1`. Use a configured platform key or optionally connect an
 OpenAI, Google, xAI, or Smallest AI account key through `PUT /api/v1/labs/runtime`, then use
 Supafone-managed, Twilio, Telnyx, Plivo,
-or SIP phone transport. The native path has fixed intake → booking →
-confirmation stages and does not currently provide recording, transfer, DTMF, or public widgets. See [Native Realtime Agent
-Factory](realtime-agent-factory.md).
+or SIP phone transport. The native path shares the custom stage planner,
+Manager, specialist consultations and Supervisor, with opt-in recording,
+widgets and configured carrier controls. Keys and model access still need
+verification. See [Shared runtime, Manager and teams](shared-agent-runtime.md).
 
 All five Agent Factory speaking families support Supervisor coaching when
 enabled and configured. The native `check_guidance` tool returns guidance;

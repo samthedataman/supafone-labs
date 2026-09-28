@@ -32,8 +32,10 @@ Both SDKs preserve the same catalog values and return `transport: "supafone_real
 
 The native S2S harness uses configured Supafone platform model keys unless an
 account BYOK key overrides them. Both SDKs send the same provider/model/voice
-selection to the hosted API. Native stages are fixed; the broader planner
-examples below apply to the managed Ultravox compatibility runtime.
+selection to the hosted API. Both SDKs serialize custom `call_stages`, structured
+requirements, `manager`, `agent_team`, `capture_fields`, opt-in `recording` and
+`runtime_routing`. Explicit empty permission/edge arrays remain meaningful.
+See [Shared runtime, Manager and teams](shared-agent-runtime.md) for the shared contract and provider limits.
 
 ## Separate Supervisor integration
 

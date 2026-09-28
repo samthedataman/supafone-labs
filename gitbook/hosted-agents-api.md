@@ -2,9 +2,10 @@
 
 Hosted agents have two speaking-runtime choices: select a native realtime S2S
 model for direct browser and phone audio, or use the managed Ultravox-compatible
-path for the full recordings, widget, transfer, and Supervisor feature set. In
-both cases, the API keeps multistage state, managed voice provider accounts,
-tools, transcripts, recordings, and account controls together. Start with
+path for its compatible external TTS and language/voice profiles. Both paths
+share custom stages, Manager, specialists, Supervisor and configured tools.
+Recording, transcripts and carrier controls retain explicit limits; see
+[Shared runtime, Manager and teams](shared-agent-runtime.md). Start with
 [Native Realtime Agent Factory](realtime-agent-factory.md) when the main
 requirement is swapping the speaking model while keeping the phone provider
 contract stable.
@@ -209,7 +210,7 @@ telephony, BYOK, billing, and provider credentials do not.
 
 ## Native realtime request fields
 
-Add `realtime: {provider, model?, voice?}` to an agent create/update request. Discover valid combinations from `/api/v1/agents/catalog` or `/api/v1/labs/capabilities`; start a browser preview with `POST /api/v1/labs/agents/{agent_key}/test-call`. The native path uses fixed stages and reports its transport capabilities separately. See [Native Realtime Agent Factory](realtime-agent-factory.md).
+Add `realtime: {provider, model?, voice?}` to an agent create/update request. Discover valid combinations from `/api/v1/agents/catalog` or `/api/v1/labs/capabilities`; start a browser preview with `POST /api/v1/labs/agents/{agent_key}/test-call`. The native path uses the shared generated/custom stage plan and reports transport capabilities separately. See [Native Realtime Agent Factory](realtime-agent-factory.md).
 
 ## Create an Agent
 

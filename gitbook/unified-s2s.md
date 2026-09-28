@@ -115,10 +115,10 @@ number. Existing phone assignment and tools stay on the agent; only tools
 supported by the selected runtime are available during that call. Check the
 new provider's credentials, then preview before using it with callers.
 
-Moving from the broader Ultravox planner to native S2S uses the supported
-intake → booking → confirmation stage contract. Native-to-native switches
-retain those stages and their instructions. Returning to Ultravox does not
-restore an earlier arbitrary stage plan automatically.
+The same generated/custom stage plan and team remain on the agent when its
+speaking selection changes. Active calls keep their frozen workflow. Opt-in
+native live switching uses a separate allowed-model broker policy; it does not
+change what `apply` means. See [Shared runtime, Manager and teams](shared-agent-runtime.md).
 
 ## Method contract
 
@@ -164,16 +164,19 @@ Ultravox browser sessions use its managed transport. Native choices use
 sample rates instead of guessing from the provider name.
 
 Hydra currently supports English only. It has no native transcript stream; its persona and voice are fixed for
-the connection. Supafone advances its fixed stages through validated tool
+the connection. Supafone advances its shared custom stages through validated tool
 results, not a persona rewrite. All five hosted speaking families support
-Supervisor coaching when enabled and configured. Native models receive
-guidance through `check_guidance`; Hydra supplies model-reported context,
-not transcripts. Native recording, human
-transfer, specialist-team handoff, DTMF, public widgets, and live language/voice
-profile switching remain unavailable. Ultravox retains its broader compatible
-hosted features. See the [native model matrix and limits](realtime-agent-factory.md).
+Supervisor when enabled and configured. Native guidance uses `check_guidance`;
+Hydra supplies model-reported context, not live transcripts. The shared runtime
+adds custom stages, Manager reasoning and specialist consultation across all
+five speaking families. Native sessions support opt-in recording, public
+widgets, carrier controls and an opt-in broker for allowed native-model
+handoffs. Post-call transcription needs recorded audio and the server's
+Deepgram connection. Ultravox retains compatible external TTS and its opt-in
+language/voice profile router. See [Shared runtime, Manager and teams](shared-agent-runtime.md) for the exact limits;
+provider support is not a promise of identical voice or carrier capabilities. See the [native model matrix and limits](realtime-agent-factory.md).
 
 A key's presence is not proof of model permissions or successful calls. Check
 runtime status and validate browser and carrier behavior in the actual
-deployment. [Managed credentials and BYOK](byok-providers.md) explain who
+deployment. [Managed credentials and BYOK](https://labs.supafone.ai/docs/byok-providers/) explain who
 supplies the selected provider's key.

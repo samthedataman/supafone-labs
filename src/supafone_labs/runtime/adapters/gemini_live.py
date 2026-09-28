@@ -1,8 +1,9 @@
-"""Gemini Live adapter for bidirectional Live API sessions.
+"""Gemini Developer Live adapter for bidirectional Live API sessions.
 
-Gemini content roles are ``user`` and ``model``. Mid-session control updates
-therefore use an incomplete ``user`` turn rather than an invalid ``system``
-turn.
+The Developer Live API defines ``clientContent`` as ordinary incremental
+conversation content. An incomplete ``user`` turn is therefore not a hidden,
+persistent system instruction. This adapter parses live events but deliberately
+does not compile Watcher directives into ``clientContent``.
 """
 from __future__ import annotations
 
@@ -24,9 +25,9 @@ class GeminiLiveAdapter(BaseAdapter):
 
     def capabilities(self) -> ProviderCapabilities:
         return ProviderCapabilities(
-            supports_hidden_instruction_injection=True,
-            supports_mid_call_prompt_patch=True,
-            supports_stageful_session_updates=True,
+            supports_hidden_instruction_injection=False,
+            supports_mid_call_prompt_patch=False,
+            supports_stageful_session_updates=False,
             supports_tool_call_interception=True,
             supports_server_side_transcript_stream=True,
             supports_native_recording=False,
@@ -164,60 +165,12 @@ class GeminiLiveAdapter(BaseAdapter):
         if decision.kind in {
             DecisionKinds.INJECT_HIDDEN_INSTRUCTION,
             DecisionKinds.REQUEST_FIELD_REPAIR,
+            DecisionKinds.FORCE_STAGE_TRANSITION,
+            DecisionKinds.REQUEST_AVAILABILITY_WINDOW,
         }:
-            text = decision.payload.get("text") or decision.payload.get("message") or ""
-            return [
-                ProviderAction(
-                    provider=self.provider_name,
-                    kind="client_content",
-                    payload={
-                        "clientContent": {
-                            "turns": [{"role": "user", "parts": [{"text": text}]}],
-                            "turnComplete": False,
-                        }
-                    },
-                )
-            ]
-        if decision.kind == DecisionKinds.FORCE_STAGE_TRANSITION:
-            return [
-                ProviderAction(
-                    provider=self.provider_name,
-                    kind="client_content",
-                    payload={
-                        "clientContent": {
-                            "turns": [
-                                {
-                                    "role": "user",
-                                    "parts": [
-                                        {
-                                            "text": f"Conversation stage is now: {decision.payload['stage']}"
-                                        }
-                                    ],
-                                }
-                            ],
-                            "turnComplete": False,
-                        }
-                    },
-                )
-            ]
-        if decision.kind == DecisionKinds.REQUEST_AVAILABILITY_WINDOW:
-            return [
-                ProviderAction(
-                    provider=self.provider_name,
-                    kind="client_content",
-                    payload={
-                        "clientContent": {
-                            "turns": [
-                                {
-                                    "role": "user",
-                                    "parts": [{"text": str(decision.payload)}],
-                                }
-                            ],
-                            "turnComplete": False,
-                        }
-                    },
-                )
-            ]
+            # Safe no-op: clientContent is visible conversation context, not a
+            # documented hidden instruction channel in Gemini Developer Live.
+            return []
         if decision.kind == DecisionKinds.BLOCK_DELIVERY_UNTIL_CONSENT:
             return [
                 ProviderAction(

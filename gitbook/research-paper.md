@@ -50,7 +50,7 @@ One abstract decision compiles across fourteen audited runtime integrations:
 | Supafone / Ultravox | managed / S2S | deferred `user_text_message` |
 | OpenAI Realtime / Inworld Realtime | S2S | system `conversation.item.create` |
 | Grok Voice | S2S | per-response `response.create.instructions` |
-| Gemini Live | S2S | `clientContent` user turn (system is invalid mid-session) |
+| Gemini Developer Live | S2S | observation only in the default SDK adapter; ordinary `clientContent` is not hidden system control |
 | Vapi | pipeline | system `add-message` via live-call `controlUrl` |
 | Retell (custom LLM) | pipeline | system message prepended to next turn |
 | ElevenLabs Agents | pipeline | `contextual_update` (read, never spoken) |

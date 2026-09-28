@@ -2427,18 +2427,22 @@ def _list_query(**values: Any) -> str:
     return f"?{parse.urlencode(query)}" if query else ""
 
 
-def _compact(value: Any) -> Any:
+def _compact(value: Any, *, preserve_workflow_empty: bool = False) -> Any:
     if isinstance(value, list):
         out = []
         for item in value:
-            next_value = _compact(item)
+            next_value = _compact(item, preserve_workflow_empty=preserve_workflow_empty)
             if next_value is not None:
                 out.append(next_value)
         return out or None
     if isinstance(value, dict):
         out = {}
         for key, val in value.items():
-            next_value = _compact(val)
+            next_value = _compact(val, preserve_workflow_empty=preserve_workflow_empty)
+            if preserve_workflow_empty and isinstance(val, list) and not val and key in {
+                "call_stages", "next_stages", "tools", "required_fields", "successful_tools", "stage_keys", "members", "allowed_models", "capture_fields",
+            }:
+                next_value = []
             if next_value is not None and next_value != "":
                 out[key] = next_value
         return out or None
@@ -2533,6 +2537,12 @@ def _labs_agent_payload(data: Mapping[str, Any]) -> dict[str, Any]:
             "preset_key": _pick(data, "preset_key", "presetKey"),
             "runtime_mode": _pick(data, "runtime_mode", "runtimeMode"),
             "realtime": data.get("realtime"),
+            "manager": _manager_payload(data.get("manager")),
+            "agent_team": _agent_team_payload(_pick(data, "agent_team", "agentTeam")),
+            "runtime_routing": _runtime_routing_payload(_pick(data, "runtime_routing", "runtimeRouting")),
+            "capture_fields": _pick(data, "capture_fields", "captureFields"),
+            "timezone": _pick(data, "timezone", "businessTimezone", "business_timezone"),
+            "time_awareness": _pick(data, "time_awareness", "timeAwareness"),
             "call_stages": _call_stages_payload(data),
             "stage_generation": _pick(data, "stage_generation", "stageGeneration"),
             "stage_count": _pick(data, "stage_count", "stageCount"),
@@ -2560,7 +2570,7 @@ def _labs_agent_payload(data: Mapping[str, Any]) -> dict[str, Any]:
             ),
             "byok": _byok_payload(data.get("byok") or {}),
             "telephony": _telephony_payload(data["telephony"]) if data.get("telephony") else None,
-            "recording": _recording_payload(data["recording"]) if data.get("recording") else None,
+            "recording": _recording_payload(data["recording"]) if "recording" in data else None,
             "transcription": _transcription_payload(data["transcription"]) if data.get("transcription") else None,
             "artifacts": _artifacts_payload(data["artifacts"]) if data.get("artifacts") else None,
             "compliance": data.get("compliance"),
@@ -2573,7 +2583,7 @@ def _labs_agent_payload(data: Mapping[str, Any]) -> dict[str, Any]:
             "voice_watcher": supervisor_enabled,
             "voice_watcher_model": _pick(data, "voice_watcher_model", "voiceWatcherModel"),
             "metadata": _agent_metadata_payload(data),
-        }
+        }, preserve_workflow_empty=True,
     )
 
 
@@ -2583,6 +2593,44 @@ def _agent_metadata_payload(data: Mapping[str, Any]) -> dict[str, Any] | None:
     if call_mode is not None:
         metadata["outbound_call_mode"] = _normalize_outbound_call_mode(call_mode)
     return metadata or None
+
+
+def _manager_payload(data: Any) -> Any:
+    if not isinstance(data, Mapping):
+        return data
+    return _compact({
+        "enabled": data.get("enabled"), "reasoning": data.get("reasoning"), "model": data.get("model"),
+        "max_tasks": _pick(data, "max_tasks", "maxTasks"),
+        "max_parallel": _pick(data, "max_parallel", "maxParallel"),
+        "timeout_seconds": _pick(data, "timeout_seconds", "timeoutSeconds"),
+    })
+
+
+def _agent_team_payload(data: Any) -> Any:
+    if not isinstance(data, Mapping):
+        return data
+    members = data.get("members")
+    return _compact({
+        "enabled": data.get("enabled"), "routing_mode": _pick(data, "routing_mode", "routingMode"),
+        "fallback_member_id": _pick(data, "fallback_member_id", "fallbackMemberId"),
+        "routing_rules": _pick(data, "routing_rules", "routingRules"),
+        "members": [{
+            **{key: member[key] for key in ("id", "role", "label", "description", "instructions", "enabled", "tools") if key in member},
+            "stage_keys": _pick(member, "stage_keys", "stageKeys"),
+        } for member in members if isinstance(member, Mapping)] if isinstance(members, list) else members,
+    }, preserve_workflow_empty=True)
+
+
+def _runtime_routing_payload(data: Any) -> Any:
+    if not isinstance(data, Mapping):
+        return data
+    return _compact({
+        "enabled": data.get("enabled"),
+        "allowed_models": _pick(data, "allowed_models", "allowedModels"),
+        "max_handoffs": _pick(data, "max_handoffs", "maxHandoffs"),
+        "recover_on_disconnect": _pick(data, "recover_on_disconnect", "recoverOnDisconnect"),
+        "allowed_languages": _pick(data, "allowed_languages", "allowedLanguages"),
+    }, preserve_workflow_empty=True)
 
 
 def _labs_agent_update_payload(data: Mapping[str, Any]) -> dict[str, Any]:
@@ -2821,10 +2869,13 @@ def _email_payload(data: Mapping[str, Any]) -> dict[str, Any]:
     )
 
 
-def _recording_payload(data: Mapping[str, Any]) -> dict[str, Any]:
+def _recording_payload(data: Mapping[str, Any] | bool) -> dict[str, Any] | bool:
+    if isinstance(data, bool):
+        return data
     return _compact(
         {
             "enabled": data.get("enabled"),
+            "transcribe": data.get("transcribe"),
             "record_audio": _pick(data, "record_audio", "recordAudio"),
             "consent_required": _pick(data, "consent_required", "consentRequired"),
             "announcement": data.get("announcement"),
@@ -3039,9 +3090,6 @@ def _call_stages_payload(data: Mapping[str, Any]) -> Any:
         return False
     if str(explicit or "").lower() in {"oracle", "template", "off"}:
         return str(explicit).lower()
-    if data.get("realtime"):
-        # The S2S backend owns its validated intake → booking → confirmation flow.
-        return None
     # Omitted means "generate on the private Supafone backend".  This keeps
     # the server-side Haiku credential private and makes the generated plan the
     # exact one compiled into the runtime.
@@ -3062,11 +3110,11 @@ def _stage_plan_payload(data: Mapping[str, Any]) -> dict[str, Any]:
             "goal": data.get("goal"),
             "system_prompt": _pick(data, "system_prompt", "systemPrompt"),
             "tools": _tools_payload(data["tools"]) if data.get("tools") else None,
-            "call_stages": _pick(data, "call_stages", "callStages", "stages"),
+            "call_stages": _call_stages_payload(data),
             "stage_generation": _pick(data, "stage_generation", "stageGeneration"),
             "stage_count": _pick(data, "stage_count", "stageCount"),
             "stage_detail": _pick(data, "stage_detail", "stageDetail"),
-        }
+        }, preserve_workflow_empty=True,
     )
 
 
@@ -3079,9 +3127,23 @@ def _call_stage_payload(data: Mapping[str, Any]) -> dict[str, Any]:
             "instructions": data.get("instructions"),
             "exit_criteria": _pick(data, "exit_criteria", "exitCriteria"),
             "tools": data.get("tools"),
+            "temperature": data.get("temperature"),
+            "next_stages": _pick(data, "next_stages", "nextStages"),
+            "requirements": _stage_requirements_payload(data.get("requirements")),
+            "role": data.get("role"),
+            "specialist_id": _pick(data, "specialist_id", "specialistId"),
             "metadata": data.get("metadata"),
-        }
+        }, preserve_workflow_empty=True,
     )
+
+
+def _stage_requirements_payload(data: Any) -> Any:
+    if not isinstance(data, Mapping):
+        return data
+    return _compact({
+        "required_fields": _pick(data, "required_fields", "requiredFields"),
+        "successful_tools": _pick(data, "successful_tools", "successfulTools"),
+    }, preserve_workflow_empty=True)
 
 
 def _generate_call_stages(data: Mapping[str, Any]) -> list[dict[str, Any]]:

@@ -105,7 +105,7 @@ adapters are introduced.
 
 - Do not embed a long-lived Supafone account token in a public website. Create
   the session on your server and return only the short-lived browser contract.
-- Native realtime browser sessions are available through the Agent Factory test-call route. Supervisor coaching is supported across OpenAI, Gemini, Grok, and Hydra when enabled and configured. Guidance is returned through `check_guidance`; Hydra uses model-reported context, not transcripts. Recording and transfer remain unavailable on this transport.
+- Native realtime browser sessions are available through the Agent Factory test-call route. Supervisor coaching is supported across OpenAI, Gemini, Grok, and Hydra when enabled and configured. Guidance is returned through `check_guidance`; Hydra uses model-reported context, not transcripts. Opt-in relay recording is available. Phone transfer and DTMF need a live carrier identity; a browser-only session does not supply one. See [Shared runtime, Manager and teams](shared-agent-runtime.md).
 - Pure WebRTC sessions cannot perform a native telephone cold/warm transfer.
   Use the Twilio Voice SDK or a PSTN call path when a human phone transfer is
   required.

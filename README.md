@@ -59,21 +59,26 @@ const preview = await openai.testCall("intake");
 
 `create`, `apply`, and `testCall` (Python `test_call`) work across all five
 provider classes. Preview does not apply a selection automatically. Switching
-keeps the agent and its phone assignment; native-to-native switches retain
-supported tools and fixed intake → booking → confirmation stages. Moving from
-Ultravox to native S2S uses that fixed stage contract. Phone delivery supports
+keeps the agent, phone assignment, custom stage plan, team and configured tools.
+All five speaking families use the same shared call runtime. Phone delivery supports
 Supafone-managed, Twilio, Telnyx, Plivo, and SIP with separate carrier setup.
 
 All five hosted speaking families support Supervisor coaching when enabled
 and configured. Native models request guidance through `check_guidance`;
 Hydra supplies labeled model-reported context, not transcripts.
 
-Capabilities differ by runtime. Hydra has no native transcripts and cannot
-change persona or voice mid-session. Native S2S currently excludes recording,
-human transfer, specialist-team handoff, DTMF, public
-widgets, and live language/voice profile switching. `UltravoxS2S` selects the
-managed default and its broader compatible hosted features; omitting
-`realtime` on creation also preserves that default.
+The shared runtime adds generated/custom stages, saved facts, tool receipts,
+Manager reasoning and specialist consultations. Native calls support public
+widgets, opt-in recording, configured carrier controls and opt-in native model
+handoff. Handoff opens a replacement session; it is not seamless provider
+resumption. Hydra has no live transcript stream. External TTS and the existing
+language/voice profile router remain on the compatible Ultravox path.
+`UltravoxS2S` selects that default; omitting `realtime` does the same.
+
+[Shared runtime, Manager and teams](gitbook/shared-agent-runtime.md) documents
+request fields, server-enforced gates, reasoning budgets, recording and exact
+capability limits. These are implementation contracts, not evidence that every
+model/carrier combination has passed a live deployment test.
 
 [Shared Python and TypeScript interface](gitbook/unified-s2s.md) ·
 [Quickstart](gitbook/quickstart.md) · [Native runtime contract](gitbook/realtime-agent-factory.md) ·
@@ -98,8 +103,8 @@ silently corrects the agent when it detects tool failures, unsafe claims,
 language changes, missed intent, or a broken workflow. If the Supervisor has
 nothing useful to add—or cannot respond in time—the call continues unchanged.
 
-The managed compatibility runtime can use it through both SDKs. It is not
-currently attached to the native S2S transport:
+All five hosted speaking families can enable Supervisor coaching through both
+SDKs. Standalone framework adapters have their own delivery capabilities:
 
 ```python
 from supafone_labs import Supafone
@@ -286,12 +291,12 @@ is temporarily unavailable.
 ## S2S Agent Factory and Supafone Supervisor
 
 The native Agent Factory creates an agent for the shared S2S harness. Choose
-its speaking model while retaining the supported tools, fixed stages, and
+its speaking model while retaining the configured tools, custom stages, team, and
 browser or carrier transport. Supafone Supervisor can coach all five hosted
 speaking families and supported existing stacks. Native models request bounded
 guidance through `check_guidance`; Hydra supplies model-reported context, not
 transcripts. The managed Ultravox runtime keeps its deferred guidance delivery
-and broader hosted features.
+and compatible external TTS/language profiles.
 
 The supervisor is model agnostic by construction. Provider adapters normalize
 each stack into one call-state contract and compile one abstract directive back
@@ -457,8 +462,8 @@ speech browser previews and managed or BYO phone agents:
 The selection is available from both the Python and TypeScript clients and from
 the [Supafone agent dashboard](https://app.supafone.ai/app/agents). Every model exposes the same five phone transports:
 Supafone-managed, BYO Twilio, BYO Telnyx, BYO Plivo, and BYO SIP. The native path
-installs a fixed intake → booking → confirmation contract; arbitrary planner
-stages are not used. A configured platform model key or account BYOK key,
+uses the shared generated/custom stage plan with server-enforced transitions
+and tool permissions. A configured platform model key or account BYOK key,
 plus managed or BYO carrier readiness, is required for a live call.
 
 ```ts

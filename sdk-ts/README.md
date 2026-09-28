@@ -52,43 +52,32 @@ silent directive, and the exact primitive for each, is in
 
 ## Supported frameworks
 
-Silent injection feeds the live agent hidden guidance it acts on but never
-speaks. Two mechanisms cover every supported framework:
+Supervisor delivers approved guidance through the control surface exposed by
+the selected adapter. The standalone SDK and hosted Agent Factory have separate
+capability contracts:
 
-- **Mode A — native silent event:** speech-to-speech models take a vendor event
-  that adds context without triggering speech.
-- **Mode B — own the LLM:** for STT→LLM→TTS pipelines, Supafone plugs in as the
-  LLM and splices a `system`/`developer` message into the prompt.
+- **Native control adapters:** Supafone/Ultravox, OpenAI Realtime, Grok,
+  Vapi, ElevenLabs Agents, Deepgram Voice Agent and Inworld Realtime.
+  For example, Ultravox uses a deferred data message; Grok uses
+  `response.create.instructions`, with `response.created` followed by
+  `response.done` as protocol acknowledgement.
+- **Developer-owned conversation context:** Retell custom LLM, LiveKit Agents
+  and Pipecat apply guidance inside the loop the integrator controls.
+- **Observation-only by default:** Gemini Developer Live and Bland emit no
+  hidden instruction through the default standalone adapter. Ordinary Gemini
+  `clientContent` is conversation history, not privileged system control.
+  Cartesia Line needs an explicit custom-event hook in the target agent.
 
-**Possible — 10 frameworks**, each with a real injection door:
+Hosted Agent Factory supports coaching across Ultravox, OpenAI, Gemini, Grok
+and Hydra through its managed call paths. Native calls use `check_guidance`
+tool results; Hydra's live observations are model-reported because it supplies
+no native transcript stream. This does not change the standalone adapter's
+capabilities or prove that a model followed the guidance.
 
-| Framework | Mode | Exact primitive |
-| --- | :--: | --- |
-| Ultravox | A | `send_data_message` (`urgency:"later"`) — **live/proven today** |
-| OpenAI Realtime | A | `conversation.item.create` (role `system`, no `response.create`) |
-| Grok (xAI) | A | OpenAI-Realtime-compatible item inject |
-| Gemini Live | A | `clientContent` (`turnComplete:false`, role `user`) |
-| ElevenLabs | A | `contextual_update` |
-| Inworld | A | OpenAI-Realtime-compatible item inject |
-| Vapi | A+B | `add-message` (`triggerResponseEnabled:false`) or custom-LLM splice |
-| Retell | B | `system` message into the custom-LLM turn |
-| Deepgram | A+B | `UpdatePrompt`, or own the `think` LLM |
-| LiveKit | B | inject into `chat_ctx` in-process |
-
-**Impossible — Bland:** its live-call API is stop/listen/transfer only, with no
-mid-call inject channel and no custom-LLM. Observe and score it, but you cannot
-whisper to it live — a permanent vendor limitation, not a Supafone gap.
-**Cartesia** (a TTS voice) and **Pipecat** (a DIY framework you own end to end)
-are not conversational agents, so there is nothing to inject into.
-
-Injection is *possible* for all 10, but managed delivery is wired end-to-end
-**only for the legacy managed Supervisor delivery path**; the other nine are
-supported via their native primitive with managed delivery rolling out / BYO.
-Native realtime Agent Factory delivery is a separate first-class path. A live test against any vendor
-needs that vendor's key — free/trial tiers exist for all except OpenAI Realtime
-(paid, no free tier). Full matrix:
-[gitbook/framework-support.md](../gitbook/framework-support.md). *(The npm
-package-page copy updates on the next release.)*
+See the [framework matrix](../gitbook/framework-support.md) and
+[provider contracts](../docs/providers.md) for delivery and acceptance details.
+Live validation requires configured provider access; local contract tests do
+not certify a production call.
 
 ## One S2S interface, five providers
 
@@ -130,7 +119,8 @@ agent and does not implicitly switch providers. The same constructors and
 | Smallest AI | `hydra-v1.0` | `sterling` |
 
 The existing `realtime: { provider, model, voice }` API remains supported.
-Native models use the fixed intake → booking → confirmation flow. The phone
+All five speaking families use the shared generated/custom stage plan, Manager
+and specialist consultations. The phone
 paths are Supafone-managed numbers, BYO Twilio, Telnyx, Plivo, and SIP through
 LiveKit. Carrier provisioning and credentials still determine call readiness.
 
@@ -140,15 +130,23 @@ provider key when Supafone has one configured. Missing keys produce an
 unavailable preview instead of a live provider call.
 
 Hydra supports English audio and tools, without transcript events or mutable
-mid-session persona/voice. Supafone supplies its fixed stages at session start
+mid-session persona/voice. Supafone supplies the frozen call plan at session start
 and advances the stage using tool results. Hydra 1.1 uses 16 kHz input / 24 kHz
 output; 1.0 uses 16 kHz / 48 kHz and a different voice roster. Native sessions
-do not claim Ultravox's recording, transfer, or agent-team parity.
+support opt-in recording, public widgets, configured carrier controls and
+allowed-model handoff. A handoff opens a replacement session; a carrier transfer
+acknowledgement does not mean a human answered. Hydra has no live transcript
+stream; optional post-call transcription needs a recording and server Deepgram
+credentials. Ultravox retains compatible external TTS and its profile router.
 All five hosted speaking families support optional Supervisor coaching. Native
 models receive guidance through `check_guidance`; Hydra supplies explicitly
 labeled model-reported context rather than transcripts.
 See the [unified S2S guide](https://labs.supafone.ai/docs/unified-s2s/) and
 [capability matrix](https://labs.supafone.ai/docs/realtime-agent-factory/).
+See [Shared runtime, Manager and teams](https://labs.supafone.ai/docs/shared-agent-runtime/)
+for `manager`, `agentTeam`, structured stage requirements, `recording` and
+`runtimeRouting`. Both SDKs preserve explicit empty stage-tool and edge arrays.
+
 ## Spawn a hosted Supafone agent
 
 Use the same package to create finished Supafone agents from code. This hits the
@@ -260,11 +258,7 @@ const inbound = await supafone.labs.agents.createInboundWithNumber({
   },
   recording: {
     enabled: true,
-    recordAudio: true,
-    consentRequired: true,
-    announcement: "This call may be recorded for quality and training.",
-    retentionDays: 30,
-    redactPii: true,
+    transcribe: true,
   },
   transcription: {
     enabled: true,

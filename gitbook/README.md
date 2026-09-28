@@ -67,7 +67,7 @@ not prove provider permissions or call quality.
 | Layer | Your choice | Supafone's job |
 | --- | --- | --- |
 | Agent | Name, instructions, business knowledge, supported tools | Save one account-scoped agent and enforce tool authority |
-| Stages | Intake → booking → confirmation | Preserve the fixed native stage contract and validate transitions |
+| Stages and team | Generated/custom stages, Manager and specialists | Validate legal transitions, saved facts, tool receipts and active permissions |
 | Speaking model | OpenAI, Google, xAI, or Smallest AI catalog selection | Translate audio, model events, and tool calls through its adapter |
 | Credentials | Managed platform key or optional BYOK | Keep secrets on the server and return masked readiness |
 | Delivery | Browser, managed phone, or a supported BYO carrier | Connect the same agent through the selected transport |
@@ -78,13 +78,15 @@ A switch takes effect on a new session. Select a voice offered by the new model;
 voices, latency, and model behavior are provider-specific. The harness does not
 make every feature identical across providers.
 
+See [Shared runtime, Manager and teams](shared-agent-runtime.md) for executable configuration and capability limits.
+
 ## Choose the runtime for the job
 
 | Path | Use it for | Current boundary |
 | --- | --- | --- |
-| **Native S2S Agent Factory** | Choose the speaking model and reuse supported stages/tools across browser and phone | Fixed three stages; no native recording, human transfer, specialist-team handoff, DTMF, or public widget |
-| **Managed compatibility Agent Factory** | Existing Ultravox-backed agents and workflows needing the broader hosted feature set | Used when `realtime` is omitted; managed or BYOK Ultravox |
-| **Supafone Supervisor** | Coach all five hosted speaking families or an existing supported stack | Enable and configure separately; native guidance uses tools, and standalone adapter capabilities vary |
+| **Native S2S Agent Factory** | Choose the speaking model and share the workflow across browser and phone | Custom stages, Manager, coaching, widgets, opt-in recording and native handoff; carrier and provider limits apply |
+| **Managed compatibility Agent Factory** | Existing Ultravox-backed agents and compatible external TTS or live language/voice profiles | Used when `realtime` is omitted; managed or BYOK Ultravox |
+| **Supafone Supervisor** | Coach all five hosted speaking families or an existing supported stack | Enable and configure separately; native delivery uses tools, while standalone adapter capabilities vary |
 
 The native harness supports knowledge lookup, lead capture, scheduling,
 SMS/email, and configured custom tools through the server's allowed tools.

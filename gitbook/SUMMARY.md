@@ -38,6 +38,7 @@
 * [Native Realtime Agent Factory](realtime-agent-factory.md)
 * [Hosted Agent Builder](hosted-agent-builder.md)
 * [Hosted Agents API](hosted-agents-api.md)
+* [Shared Runtime, Manager and Teams](shared-agent-runtime.md)
 * [Call Stages](call-stages.md)
 * [Custom Tools](custom-tools.md)
 * [SMTP and Email](smtp-and-email.md)

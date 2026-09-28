@@ -57,7 +57,11 @@ CARTESIA_API_KEY
 ELEVENLABS_API_KEY
 INWORLD_API_KEY
 STRIPE_WEBHOOK_SECRET
-STRIPE_SUBSCRIBE_URL
+STRIPE_SECRET_KEY
+STRIPE_DEVELOPER_PRICE_ID
+STRIPE_GROWTH_PRICE_ID
+STRIPE_SCALE_PRICE_ID
+STRIPE_CREDITS_PRICE_ID
 STRIPE_DEVELOPER_URL
 STRIPE_GROWTH_URL
 STRIPE_SCALE_URL
@@ -66,7 +70,10 @@ FROM_EMAIL
 DATA_DIR
 ```
 
-Only set variables that the deployment actually uses. Never commit real values.
+The Price IDs power account-bound Checkout sessions. The optional plan URLs must
+each point to that exact plan on an HTTPS Stripe host; there is no shared
+subscription or credit-pack fallback URL. Only set variables that the deployment
+actually uses. Never commit secret values.
 
 ## Verification After Deploy
 

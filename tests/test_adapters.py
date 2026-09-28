@@ -216,7 +216,7 @@ CASES: dict[str, ProviderCase] = {
             "session_id": "c-gemini",
         },
         end={"goAway": {"timeLeft": "0s"}, "session_id": "c-gemini"},
-        inject_kind="client_content",
+        inject_kind=None,
     ),
     "elevenlabs": ProviderCase(
         adapter=ElevenLabsAdapter(),
@@ -660,16 +660,23 @@ async def test_gemini_preserves_all_events_in_one_server_frame():
     ]
 
 
-async def test_gemini_compiles_non_injection_decisions():
+async def test_gemini_is_tap_only_for_prompt_and_stage_decisions():
     adapter = GeminiLiveAdapter()
     state = build_initial_state(provider="gemini_live", session_id="s1")
 
     availability = RuntimeDecision.request_availability_window(
         "next week", "2026-07-13", "2026-07-19"
     )
-    actions = await adapter.compile(availability, state)
-    assert actions[0].kind == "client_content"
-    assert actions[0].payload["clientContent"]["turns"][0]["role"] == "user"
+    assert await adapter.compile(availability, state) == []
+
+    stage = RuntimeDecision.force_stage_transition("qualification")
+    assert await adapter.compile(stage, state) == []
+
+    repair = RuntimeDecision.request_field_repair("email", "Please repeat the email.")
+    assert await adapter.compile(repair, state) == []
+
+    hidden = RuntimeDecision.inject_hidden_instruction("whisper")
+    assert await adapter.compile(hidden, state) == []
 
     consent = RuntimeDecision.block_delivery_until_consent("sms", "follow-up")
     actions = await adapter.compile(consent, state)

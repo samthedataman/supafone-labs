@@ -16,7 +16,7 @@ compatibility builder and links to these S2S controls.
 
 Build a durable agent with Agent Factory, then choose its speech-to-speech
 model through Supafone's S2S harness. The harness reuses the same prompt,
-supported tools, fixed stages, and browser/carrier contracts when you switch
+supported tools, custom stages, team, and browser/carrier contracts when you switch
 among supported models.
 
 ## Choose the speaking model
@@ -107,11 +107,10 @@ Use the same methods with `GeminiS2S`, `GrokS2S`, or `HydraS2S`. Applying
 call `apply` before testing a new selection.**
 
 A model change takes effect on a new session and keeps the agent's phone
-assignment. Native-to-native switches preserve supported tools and fixed
-stages. Entering native S2S from the Ultravox planner uses the fixed native
-stage contract; returning to Ultravox does not restore an older arbitrary
-stage plan. Select a voice valid for the new model and compare behavior with
-the same tasks. Speech, timing, and tool decisions can differ by provider.
+assignment, configured tools, custom stages and team. Select a voice valid for
+the new model and compare behavior with the same tasks. Speech, timing and tool
+decisions can differ by provider. An active call uses its frozen workflow;
+opt-in native broker handoff is a separate control.
 
 ## Move from browser to phone
 
@@ -131,27 +130,26 @@ model-reported context because it does not emit transcripts. The Supervisor
 model needs its own configured credentials. An enabled setting is not proof
 of a running coach. See [hosted coaching](realtime-agent-factory.md#supervisor-coaching-across-all-five-speaking-families).
 
-## Understand the native feature boundary
+## Configure the shared workflow
 
-Native agents use fixed intake → booking → confirmation stages and allowed
-knowledge, lead capture, scheduling, SMS/email, and custom tools. Supafone runs
-the tools server-side with agent and account authority.
+All five speaking families share the 3–8 stage planner, server-side tools,
+durable facts and tool receipts, execution gates, Manager reasoning, specialist
+consultations and Supervisor coaching. The server checks account ownership and
+active stage/role permissions before tool execution.
 
-The native transport currently has no recording, human
-transfer, specialist-team handoff, DTMF navigation, public widget, or live language/voice profile
-switching. Hydra has no native transcript stream and cannot change persona or voice
-mid-session. Its fixed stages advance through validated tool results. The
-large managed TTS catalog does not replace native model voices.
-Use the [native guide](realtime-agent-factory.md#feature-boundaries) as the
-feature contract.
+Native sessions also support public widgets, opt-in recording, optional
+post-call transcription, configured carrier controls and opt-in native model
+handoff. These controls have explicit limits: a transfer acknowledgement is not
+an answered call, media pause is not carrier hold music, and a model handoff
+opens a replacement session rather than restoring provider-hidden state.
+Hydra has no live transcript stream. See [Shared runtime, Manager and teams](shared-agent-runtime.md).
 
-## Use the broader hosted feature set
+## Keep compatible Ultravox voice features
 
-Omitting `realtime` keeps the managed Ultravox compatibility runtime. This is
-the path for the full hosted planner, compatible TTS voices, recording,
-Supervisor attachment, transfer, widgets, and opt-in
-[live language/voice routing](live-language-voice-routing.md).
-These capabilities should not be inferred from native S2S model support.
+Omitting `realtime` keeps the managed Ultravox runtime, including compatible
+external TTS and opt-in [live language/voice routing](live-language-voice-routing.md).
+Native providers use their own voices and configured handoff languages;
+they do not use that same external-TTS profile router.
 
 [Agent Factory](agent-factory.md), [custom tools](custom-tools.md), and
 [campaigns as code](outbound-call-campaigns.md) describe their own setup and

@@ -5,7 +5,7 @@ not because developers need another prompt wrapper.
 
 ## Change the speaking model without rebuilding the agent
 
-The S2S harness keeps a native agent's prompt, supported tools, fixed stages,
+The S2S harness keeps a native agent's prompt, supported tools, custom stages,
 server-side model credentials, and browser or phone transport together. Agent
 Factory creates that agent, then the shared `SupafoneS2S` provider classes
 choose Ultravox, OpenAI, Gemini, Grok, or Smallest AI Hydra. The native catalog
@@ -13,9 +13,10 @@ has six model choices; Ultravox retains its default managed runtime. Configured 
 sessions, with a voice valid for the selected model.
 
 See the [shared interface](unified-s2s.md) and [native model support and limits](realtime-agent-factory.md).
-Hydra has no native transcripts and keeps its persona and voice fixed per session. The broader
-capabilities below include Supafone Supervisor and the managed compatibility
-runtime; they are not all available in the native S2S transport.
+Hydra has no live transcript stream and keeps its persona and voice fixed per
+provider session. All five families share the workflow and reasoning layers;
+external TTS, language profiles and carrier controls retain their own limits.
+See [Shared runtime, Manager and teams](shared-agent-runtime.md).
 
 ## Problems we repeatedly encountered
 

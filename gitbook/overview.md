@@ -13,7 +13,8 @@ Factory keeps the agent and phone identity. Ultravox stays the default; the
 native catalog offers six model choices. See [the common interface](unified-s2s.md)
 for the class contract and switching examples.
 
-Model changes apply to new calls, not a live-call handoff. Capabilities remain
+Ordinary model updates apply to new calls; native live handoff requires a
+separate opt-in runtime policy. Capabilities remain
 provider-specific: Hydra has no native transcripts and cannot change its
 persona or voice mid-session. Check credentials and test the selected provider
 before a customer call.
@@ -39,7 +40,7 @@ native catalog includes OpenAI `gpt-realtime-2.1`, OpenAI `gpt-live-1`, Google
 The same agent can use authenticated browser previews, Supafone-managed phone,
 BYO Twilio, BYO Telnyx, BYO Plivo, or BYO SIP. Update the selection before a new
 session to compare another model. Your agent identity, instructions, supported
-tools, fixed intake → booking → confirmation stages, and carrier configuration
+tools, custom stage plan, and carrier configuration
 stay together; choose a model-compatible voice with each switch.
 
 ## Managed keys first
@@ -58,8 +59,8 @@ checked separately from model readiness.
 
 | Surface | Purpose | Runtime boundary |
 | --- | --- | --- |
-| Native realtime Agent Factory | Build and switch S2S agents through the hosted API and dashboard | Six native catalog models, fixed native stages, supported server tools, browser and phone |
-| Managed compatibility Agent Factory | Continue existing Ultravox-backed hosted workflows | Selected when `realtime` is omitted; includes the broader planner and compatible recording, transfer, widgets, and supervision features |
+| Native realtime Agent Factory | Build and switch S2S agents through the hosted API and dashboard | Six native catalog models, shared custom stages, supported server tools, browser and phone |
+| Managed compatibility Agent Factory | Continue existing Ultravox-backed hosted workflows | Selected when `realtime` is omitted; shares the planner and workflow; retains compatible external TTS and live language/voice profiles |
 | Supafone Supervisor | Observe and coach agents you already run | Separate SDK/runtime with provider-specific guidance and observation capabilities |
 
 Supafone Supervisor is an independent reasoning layer available on all five

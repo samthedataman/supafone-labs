@@ -3,9 +3,10 @@
 Use the Supafone Labs API when you want Supafone to host the voice/web/campaign
 agent for you. Hosted agents have two speaking-runtime choices: select a native
 realtime S2S model for direct browser and phone audio, or use the managed
-Ultravox-compatible path for the full recordings, widget, transfer, and
-Supervisor feature set. In both cases, multistage state, managed voice provider
-accounts, tools, transcripts, recordings, and account controls stay attached.
+Ultravox-compatible path for its external TTS and language/voice profiles.
+Both paths share custom stages, Manager, specialists, Supervisor and configured
+tools. Recording, transcripts and carrier controls retain explicit runtime
+limits; see [Shared runtime, Manager and teams](shared-agent-runtime.md).
 
 Start with [Native Realtime Agent Factory](realtime-agent-factory.md) when the
 main requirement is swapping the speaking model while keeping the phone

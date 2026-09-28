@@ -13,7 +13,8 @@ Factory keeps the agent and phone identity. Ultravox stays the default; the
 native catalog offers six model choices. See [the common interface](unified-s2s.md)
 for the class contract and switching examples.
 
-Model changes apply to new calls, not a live-call handoff. Capabilities remain
+Ordinary model updates apply to new calls. Opt-in native session handoff is a
+separate runtime control. Capabilities remain
 provider-specific: Hydra has no native transcripts and cannot change its
 persona or voice mid-session. Check credentials and test the selected provider
 before a customer call.
@@ -90,21 +91,32 @@ const preview = await next.testCall("northline-intake");
 
 Apply the selection before previewing: `testCall` uses the saved agent.
 The next session uses the new model. The agent identity, instructions,
-supported tools, fixed intake → booking → confirmation stages, and phone
-configuration remain together. Use a voice supported by the selected model.
-The native harness does not support arbitrary planner stages, recording, human transfer, specialist-team handoff, DTMF, public widgets, or live
-language/voice profile switching today.
+configured tools, team, custom stages and phone configuration remain together.
+Use a voice supported by the selected model. An active call keeps its frozen
+workflow even if the saved agent changes.
+
+## Manager, specialists and execution gates
+
+Enable `manager: true` for bounded reasoning about the next permitted stage or
+specialist. Configure `agent_team` with stage-scoped specialists; consultations
+return advice to the single speaking model. The Manager cannot invent a
+successful booking or bypass a stage gate. The server validates required saved
+fields, successful tool receipts, legal next stages and active permissions.
+
+Read [Shared runtime, Manager and teams](shared-agent-runtime.md) for a complete booking-team example, budgets,
+recording, carrier controls and opt-in native model handoff.
 
 The [native S2S guide](realtime-agent-factory.md) contains Python examples,
 credential status, browser audio, and carrier setup. The
 [developer workflow](developer-workflows.md) covers creation and switching.
 
-## Ultravox + custom TTS: the managed runtime
+## Keep compatible external voices with Ultravox
 
-Omitting `realtime` retains the managed Ultravox compatibility runtime. The
-rest of this page describes that runtime's generated planner, compatible TTS
-voices, Supervisor attachment, widgets, and language-routing features. These
-are distinct from the native S2S feature set above.
+Omitting `realtime` retains the managed Ultravox runtime. The planner, Manager,
+stage gates and tools are shared with native S2S. Ultravox additionally retains
+its compatible external TTS voices and opt-in language/voice profile router.
+Native providers use their own supported voices. Switching models does not
+make arbitrary external TTS or voice cloning available on every provider.
 
 ## Managed compatibility workflow
 

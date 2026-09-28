@@ -224,7 +224,68 @@ export interface LabsCallStage {
   temperature?: number;
   nextStages?: string[];
   next_stages?: string[];
+  /** Server-enforced exit gates, independent of conversational exit criteria. */
+  requirements?: LabsStageRequirements;
+  role?: string;
+  specialistId?: string;
+  specialist_id?: string;
   metadata?: Record<string, unknown>;
+}
+
+export interface LabsStageRequirements {
+  requiredFields?: string[];
+  required_fields?: string[];
+  successfulTools?: string[];
+  successful_tools?: string[];
+}
+
+export interface LabsManagerConfig {
+  enabled?: boolean;
+  /** Reuse the existing encrypted Supervisor profile, or use managed reasoning. */
+  reasoning?: "managed" | "supervisor";
+  model?: "supafone-manager" | "supafone-manager-pro";
+  maxTasks?: number;
+  max_tasks?: number;
+  maxParallel?: number;
+  max_parallel?: number;
+  timeoutSeconds?: number;
+  timeout_seconds?: number;
+}
+
+export interface LabsSpecialist {
+  id: string;
+  role?: string;
+  label?: string;
+  description?: string;
+  instructions?: string;
+  enabled?: boolean;
+  stageKeys?: string[];
+  stage_keys?: string[];
+  tools?: string[];
+}
+
+export interface LabsAgentTeam {
+  enabled?: boolean;
+  routingMode?: "auto" | "sequential";
+  routing_mode?: "auto" | "sequential";
+  fallbackMemberId?: string;
+  fallback_member_id?: string;
+  members?: LabsSpecialist[];
+  routingRules?: Array<{ intent: string; member_id: string; priority?: string; action?: string }>;
+  routing_rules?: Array<{ intent: string; member_id: string; priority?: string; action?: string }>;
+}
+
+export interface LabsRuntimeRoutingConfig {
+  enabled?: boolean;
+  allowedModels?: LabsRealtimeSelection[];
+  allowed_models?: LabsRealtimeSelection[];
+  /** Server-supported range is 1–3 handoffs per call. */
+  maxHandoffs?: number;
+  max_handoffs?: number;
+  recoverOnDisconnect?: boolean;
+  recover_on_disconnect?: boolean;
+  allowedLanguages?: string[];
+  allowed_languages?: string[];
 }
 
 export type LabsStageGeneration = "managed" | "template" | "off" | "oracle";
@@ -692,6 +753,8 @@ export interface LabsEmailConfig {
 
 export interface LabsRecordingConfig {
   enabled?: boolean;
+  /** Request post-call transcription of the recording where configured. */
+  transcribe?: boolean;
   recordAudio?: boolean;
   record_audio?: boolean;
   consentRequired?: boolean;
@@ -1044,6 +1107,17 @@ export interface CreateLabsAgentRequest {
   presetKey?: string;
   preset_key?: string;
   realtime?: LabsRealtimeSelection;
+  manager?: boolean | LabsManagerConfig;
+  agentTeam?: LabsAgentTeam;
+  agent_team?: LabsAgentTeam;
+  runtimeRouting?: LabsRuntimeRoutingConfig;
+  runtime_routing?: LabsRuntimeRoutingConfig;
+  captureFields?: string[];
+  capture_fields?: string[];
+  timezone?: string;
+  businessTimezone?: string;
+  timeAwareness?: boolean;
+  time_awareness?: boolean;
   runtimeMode?: LabsRuntimeMode;
   runtime_mode?: LabsRuntimeMode;
   /** Defaults to Supafone's hosted planner; model credentials remain server-side. */
@@ -1086,7 +1160,7 @@ export interface CreateLabsAgentRequest {
   customSip?: LabsCustomSipConfig;
   custom_sip?: LabsCustomSipConfig;
   sip?: LabsCustomSipConfig;
-  recording?: LabsRecordingConfig;
+  recording?: boolean | LabsRecordingConfig;
   transcription?: LabsTranscriptionConfig;
   artifacts?: LabsArtifactsConfig;
   compliance?: Record<string, unknown>;
@@ -4363,6 +4437,40 @@ function outboundCallModeRequiredCapabilities(payload: Record<string, unknown>):
   return required;
 }
 
+function managerPayload(input?: boolean | LabsManagerConfig): boolean | Record<string, unknown> | undefined {
+  if (typeof input !== "object" || input === null) return input;
+  return compact({
+    enabled: input.enabled, reasoning: input.reasoning, model: input.model,
+    max_tasks: input.max_tasks ?? input.maxTasks,
+    max_parallel: input.max_parallel ?? input.maxParallel,
+    timeout_seconds: input.timeout_seconds ?? input.timeoutSeconds,
+  });
+}
+
+function agentTeamPayload(input?: LabsAgentTeam): Record<string, unknown> | undefined {
+  if (!input) return undefined;
+  return compact({
+    enabled: input.enabled, routing_mode: input.routing_mode ?? input.routingMode,
+    fallback_member_id: input.fallback_member_id ?? input.fallbackMemberId,
+    routing_rules: input.routing_rules ?? input.routingRules,
+    members: input.members?.map((member) => compact({
+      id: member.id, role: member.role, label: member.label, description: member.description,
+      instructions: member.instructions, enabled: member.enabled, tools: member.tools,
+      stage_keys: member.stage_keys ?? member.stageKeys,
+    })),
+  });
+}
+
+function runtimeRoutingPayload(input?: LabsRuntimeRoutingConfig): Record<string, unknown> | undefined {
+  if (!input) return undefined;
+  return compact({
+    enabled: input.enabled, allowed_models: input.allowed_models ?? input.allowedModels,
+    max_handoffs: input.max_handoffs ?? input.maxHandoffs,
+    recover_on_disconnect: input.recover_on_disconnect ?? input.recoverOnDisconnect,
+    allowed_languages: input.allowed_languages ?? input.allowedLanguages,
+  });
+}
+
 function labsAgentMetadataPayload(input: CreateLabsAgentRequest): Record<string, unknown> | undefined {
   const metadata = { ...(input.metadata ?? {}) };
   const mode = input.outboundCallMode ?? input.outbound_call_mode;
@@ -4407,6 +4515,12 @@ function labsAgentPayload(input: CreateLabsAgentRequest): Record<string, unknown
     preset_key: input.preset_key ?? input.presetKey,
     runtime_mode: input.runtime_mode ?? input.runtimeMode,
     realtime: input.realtime,
+    manager: managerPayload(input.manager),
+    agent_team: agentTeamPayload(input.agent_team ?? input.agentTeam),
+    runtime_routing: runtimeRoutingPayload(input.runtime_routing ?? input.runtimeRouting),
+    capture_fields: input.capture_fields ?? input.captureFields,
+    timezone: input.timezone ?? input.businessTimezone,
+    time_awareness: input.time_awareness ?? input.timeAwareness,
     call_stages: callStagesPayload(input),
     stage_generation: input.stage_generation ?? input.stageGeneration,
     stage_count: input.stage_count ?? input.stageCount,
@@ -4427,7 +4541,7 @@ function labsAgentPayload(input: CreateLabsAgentRequest): Record<string, unknown
     byok: input.byok ? byokPayload(input.byok) : undefined,
     telephony: input.telephony ? telephonyPayload(input.telephony) : undefined,
     custom_sip: customSipPayload(input.custom_sip ?? input.customSip ?? input.sip),
-    recording: input.recording ? recordingPayload(input.recording) : undefined,
+    recording: input.recording !== undefined ? recordingPayload(input.recording) : undefined,
     transcription: input.transcription ? transcriptionPayload(input.transcription) : undefined,
     artifacts: input.artifacts ? artifactsPayload(input.artifacts) : undefined,
     compliance: input.compliance,
@@ -4575,8 +4689,6 @@ function callStagesPayload(
   if (explicit === false || auto === false) return false;
   if (explicit === "managed" || explicit === "template" || explicit === "off") return explicit;
   if (explicit === "oracle") return "managed";
-  // The S2S backend owns its validated intake → booking → confirmation flow.
-  if (input.realtime) return undefined;
   // Omitted means the private Supafone API generates and compiles the plan.
   return undefined;
 }
@@ -4596,8 +4708,7 @@ function stagePlanPayload(
     system_prompt: input.system_prompt ?? input.systemPrompt,
     tools: input.tools ? toolsPayload(input.tools) : undefined,
     call_stages: Array.isArray(input.call_stages ?? input.callStages ?? input.stages)
-      ? (input.call_stages ?? input.callStages ?? input.stages)
-      : undefined,
+      ? callStagesPayload(input) : undefined,
     stage_generation: input.stage_generation ?? input.stageGeneration,
     stage_count: input.stage_count ?? input.stageCount,
     stage_detail: input.stage_detail ?? input.stageDetail,
@@ -4614,6 +4725,12 @@ function callStagePayload(input: LabsCallStage): Record<string, unknown> {
     tools: input.tools,
     temperature: input.temperature,
     next_stages: input.next_stages ?? input.nextStages,
+    requirements: input.requirements ? compact({
+      required_fields: input.requirements.required_fields ?? input.requirements.requiredFields,
+      successful_tools: input.requirements.successful_tools ?? input.requirements.successfulTools,
+    }) : undefined,
+    role: input.role,
+    specialist_id: input.specialist_id ?? input.specialistId,
     metadata: input.metadata,
   });
 }
@@ -4856,9 +4973,11 @@ function emailPayload(input: LabsEmailConfig): Record<string, unknown> {
   });
 }
 
-function recordingPayload(input: LabsRecordingConfig): Record<string, unknown> {
+function recordingPayload(input: LabsRecordingConfig | boolean): Record<string, unknown> | boolean {
+  if (typeof input === "boolean") return input;
   return compact({
     enabled: input.enabled,
+    transcribe: input.transcribe,
     record_audio: input.record_audio ?? input.recordAudio,
     consent_required: input.consent_required ?? input.consentRequired,
     announcement: input.announcement,

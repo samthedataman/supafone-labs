@@ -7,9 +7,9 @@ compatibility builder and links to these S2S controls.
 
 The hosted Agent Factory builder creates agents for Supafone's S2S harness.
 Choose the speaking model, its native voice, and a browser or phone transport;
-Supafone retains the agent prompt, supported tools, and fixed native stages.
-The managed Ultravox compatibility runtime separately provides the broader
-planner, compatible TTS voices, recording, widgets, and Supervisor attachment.
+Supafone retains the prompt, configured tools, custom stages and team. All five
+speaking families share Manager reasoning and Supervisor coaching. Ultravox
+also retains compatible external TTS and its language/voice profile router.
 
 There are two builder modes:
 
@@ -40,8 +40,9 @@ When users open BYOK, split hosted-delivery settings into three drawers:
 | Telephony | Twilio, Telnyx, Plivo, SignalWire, SIP/custom trunks |
 | TTS | Cartesia, ElevenLabs, Inworld, Deepgram, custom TTS |
 
-Recording and transcription should be explicit controls: audio recording,
-transcription, PII redaction, retention days, and consent announcement.
+Recording and post-call transcription are explicit controls. Legacy consent,
+PII and retention metadata should not be presented as active enforcement without
+a corresponding application policy. See [recording and artifacts](call-recording-artifacts.md).
 
 ## Native realtime builder path
 
@@ -53,13 +54,14 @@ readiness before launch, and surface missing setup without requiring BYOK
 when a platform key exists.
 
 Native agents use the authenticated `supafone_realtime` browser transport and
-fixed intake → booking → confirmation stages. Model switching applies to new
-sessions. Hydra has no native transcripts and keeps its voice and persona
-fixed per session. All five speaking families support Supervisor coaching when
-enabled and configured. Native models receive `check_guidance` tool results;
-Hydra supplies model-reported context, not transcripts. Recording, transfer, specialist-team
-handoff, DTMF, public widgets, and live language/voice profile switching are
-not available on this transport.
+the same generated/custom stage plan as Ultravox. Model updates apply to new
+sessions. An active call uses its frozen plan and team.
+
+Enable Manager and stage-scoped specialists through the shared contract. Native
+sessions also support public widgets, opt-in recording, configured carrier
+controls and an explicit allowed-model handoff policy. Hydra has no live
+transcript stream and keeps its voice/persona for each provider session.
+See [Shared runtime, Manager and teams](shared-agent-runtime.md) for exact fields and capability limits.
 
 Open the agent, choose its provider/model/voice, inspect readiness, save, and
 start a fresh preview. The shared SDK classes follow the same flow: `create`,

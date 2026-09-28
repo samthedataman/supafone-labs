@@ -20,7 +20,7 @@ export SUPAFONE_TOKEN=sl_live_...
 
 [Create a Supafone key](https://labs.supafone.ai/console.html?mode=register).
 One `sl_` key authenticates Labs Cloud and the hosted-agent API when your
-Supafone product account uses the same email. See [API keys](api-keys-and-auth.md)
+Supafone product account uses the same email. See [API keys](https://labs.supafone.ai/docs/api-keys-and-auth/)
 for account linking and scoped `sf_` keys.
 
 ## 2. Check the selected model's readiness
@@ -105,7 +105,7 @@ check [all five classes and their defaults](unified-s2s.md#provider-classes).
 
 `apply` changes the next session; `testCall` / `test_call` previews the saved
 agent without applying a selection itself. The same agent keeps its number,
-supported tools, and fixed native stages. Model voices and capabilities vary:
+supported tools, team, and custom stage plan. Model voices and capabilities vary:
 Hydra has no native transcripts and cannot change persona or voice mid-session.
 
 ## 5. Connect a phone transport
@@ -116,21 +116,23 @@ BYO carriers use the account's own credentials and caller ID. Verify inbound
 webhooks or outbound routing before testing a real call. Follow the
 [carrier setup guide](realtime-agent-factory.md#phone-calls-and-carrier-selection).
 
-Native S2S supports intake → booking → confirmation and allowed server tools.
-Set `supervisor: true` on the agent to enable coaching across all five speaking
-families. Native guidance arrives through `check_guidance`; Hydra uses
-model-reported context, not transcripts. Configure the Supervisor model
-credentials separately from the speaking model.
-It does not currently support recording, human transfer,
-specialist-team handoff, DTMF navigation, public widgets, or live language/voice
-profile switching.
+Native S2S and Ultravox share the 3–8 stage planner, configured server tools,
+saved facts and successful tool receipts. Set `supervisor: true` to request
+coaching and `manager: true` for bounded workflow reasoning. Both require
+configured reasoning credentials. Native guidance uses `check_guidance`;
+Hydra supplies model-reported context, not transcripts.
+
+Native calls support opt-in recording, public widgets, configured carrier
+controls and separate opt-in native-model handoff. Hydra has no live transcript
+stream; post-call transcription requires recorded audio and the server's
+Deepgram connection. See [Shared runtime, Manager and teams](shared-agent-runtime.md) before enabling these features.
 
 ## Managed compatibility Agent Factory Agent
 
-Omitting `realtime` keeps the existing managed Ultravox runtime. Use that path
-when you need its broader planner, compatible voice catalog, recording,
-Supervisor, transfer, or widget features. See [Agent Factory](agent-factory.md)
-and [Hosted Agent Builder](hosted-agent-builder.md).
+Omitting `realtime` keeps the existing managed Ultravox runtime. It uses the
+shared Agent Factory workflow and retains compatible external TTS voices and
+its opt-in language/voice profile routing. See [Agent Factory](https://labs.supafone.ai/docs/agent-factory/)
+and [Hosted Agent Builder](https://labs.supafone.ai/docs/hosted-agent-builder/).
 
 ## Supervise an Existing Familiar Framework
 
@@ -143,7 +145,7 @@ brain = supafone_labs.supercharge(my_agent)
 result = await brain.observe(raw_platform_event)
 ```
 
-Use the [framework coverage matrix](framework-support.md) to determine whether
+Use the [framework coverage matrix](https://labs.supafone.ai/docs/framework-support/) to determine whether
 your adapter can send guidance or only observe. For hosted native S2S, use
 the agent's `supervisor` setting instead; the shared relay delivers coaching
 through `check_guidance` when supervision is enabled and credentials are ready.

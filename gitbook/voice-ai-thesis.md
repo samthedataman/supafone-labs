@@ -51,8 +51,8 @@ The coding agent should complete that workflow through MCP tools or the Supafone
 ## A shared S2S harness and a separate Supervisor
 
 Agent Factory creates the agent. The native S2S harness connects its prompt,
-supported tools, fixed stages, model credentials, and browser or phone delivery.
-Choose OpenAI GPT Realtime 2.1, GPT Live 1, Gemini Live 3.1, or Grok Voice and
+supported tools, custom stages, model credentials, and browser or phone delivery.
+Choose OpenAI GPT Realtime 2.1, GPT Live 1, Gemini Live 3.1, Grok Voice, or Hydra and
 reuse the same supported native agent contract for a new session. Configured
 Supafone platform keys supply each model by default; account BYOK overrides
 are optional. See [the native guide](realtime-agent-factory.md).
@@ -63,10 +63,12 @@ guidance through `check_guidance`; Hydra provides model-reported context
 rather than transcripts. External adapter capabilities remain provider-specific.
 
 The managed Ultravox compatibility path remains available when `realtime` is
-omitted. It supports the broader hosted planner and compatible recording,
-Supervisor, transfer, widget, and language-routing features. The production
-capabilities below describe the broader product vision and these existing
-surfaces; they are not a claim that every capability works on native S2S.
+omitted. It shares the planner and reasoning workflow while retaining compatible
+external TTS and language/voice profiles. Native calls add recording, widgets,
+carrier controls and native-model handoff with explicit limits. See
+[Shared runtime, Manager and teams](shared-agent-runtime.md). The production
+capabilities below also describe product direction; they are not a claim that
+every provider or carrier supports every feature.
 
 ## The Built-In Production Surface
 

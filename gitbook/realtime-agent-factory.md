@@ -1,7 +1,7 @@
 # Native realtime Agent Factory
 
 Supafone's S2S harness connects a provider-native speech-to-speech model to
-one agent's prompt, supported tools, fixed stages, and browser or phone audio.
+one agent's prompt, supported tools, custom stages, and browser or phone audio.
 Agent Factory creates that durable agent; its `realtime` selection chooses
 the speaking model. Updating the selection reuses the native agent contract
 for the next session. Model voices and behavior remain provider-specific.
@@ -13,7 +13,7 @@ runtime. Apply `UltravoxS2S` (or update `realtime: null`) to switch an existing
 native agent back to that runtime.
 
 Use this guide when the speaking model itself should own the live audio loop.
-Use [Supafone Supervisor](supafone-supervisor.md) when you want to keep another
+Use [Supafone Supervisor](https://labs.supafone.ai/docs/supafone-supervisor/) when you want to keep another
 agent stack and add supervision.
 
 Want to keep your own TTS voice? Choose [Ultravox + custom TTS](voice-output-modes.md) through the same shared interface. This native guide covers models that own their audio output; external TTS is not supported on these native paths.
@@ -117,10 +117,11 @@ agent = supafone.labs.agents.create_outbound({
 })
 ```
 
-Native realtime agents use a fixed three-stage contract: intake, booking, and
-confirmation. The hosted call planner is skipped because provider-native audio
-sessions cannot safely accept arbitrary client-generated stage payloads. The
-selected model, voice, and tools remain account-scoped and durable.
+Native realtime and Ultravox use the same hosted planner: 3–8 generated stages
+or a reviewed custom plan. Each call freezes its plan and team. The server
+validates transitions, active tool permissions, saved capture fields and
+successful tool receipts. Prose exit criteria guide the model; structured
+`requirements` enforce completion. See [Shared runtime, Manager and teams](shared-agent-runtime.md).
 
 ## Managed credentials and optional BYOK
 
@@ -237,7 +238,7 @@ separate admin step:
   `/api/v1/realtime/sip/events`.
 
 Twilio inbound and outbound use the existing managed/BYOK telephony setup and
-its carrier webhook checks. See [Phone Numbers](phone-numbers.md) and the
+its carrier webhook checks. See [Phone Numbers](https://labs.supafone.ai/docs/phone-numbers/) and the
 private product's [SIP architecture guide](https://github.com/samthedataman/supafone/blob/master/docs/architecture/realtime-sip.md)
 for carrier-specific infrastructure.
 
@@ -298,6 +299,8 @@ Configure `SMALLEST_API_KEY` on the Supafone server for managed Hydra access,
 or store an optional account key with provider `smallest`. Missing credentials
 remain setup required. Adding the adapter does not configure a production key
 or establish successful live calls.
+
+<a id="hosted-supervisor-coaching"></a>
 
 ## Supervisor coaching across all five speaking families
 
@@ -375,22 +378,34 @@ Supervisor adapter exists.
 
 ## Feature boundaries
 
-Native realtime is intentionally explicit. Current runtime responses report:
+All five speaking families share generated/custom stages, configured server
+tools, durable facts and receipts, optional Manager reasoning and specialist
+consultations, and Supervisor coaching. A specialist advises the active
+speaker; it is not another simultaneous voice session.
 
-- browser preview and carrier phone transport: supported;
-- fixed intake → booking → confirmation stages: supported;
-- provider-native tools and account-scoped agent configuration: supported;
-- Supervisor coaching: supported when enabled and configured; native delivery uses `check_guidance`;
-- transcripts: provider-dependent; Hydra has no native transcript events;
-- recording, human transfer, DTMF navigation, and
-  specialist-team handoff, public web widgets, and live language/voice profile switching: not implemented
-  on this transport;
-- live carrier quality, regional reachability, and model access: require a
-  deployment test with real credentials.
+Native realtime additionally supports:
 
-When recording, transfer, or a full planner is required, use the
-managed Ultravox path or bring an existing compatible stack to Supafone
-Supervisor instead.
+- browser previews and public widgets through the native audio relay;
+- opt-in relay recording and optional post-call Deepgram transcription;
+- end call, a short media pause and DTMF on configured phone transports;
+- configured cold transfer through Twilio, Telnyx, Plivo or LiveKit SIP;
+- opt-in native model handoff to exact allowed provider/model/voice targets.
+
+Transfer acceptance does not prove that a human answered. A media pause is not
+carrier hold music. Live model handoff creates a new provider session and
+carries saved state plus bounded history; it does not resume a vendor's hidden
+session state. At most three configured handoffs and one opt-in disconnect
+recovery are allowed.
+
+Hydra has no live transcript events and keeps its opening persona and voice
+for the life of each provider session. Optional recording-based transcription
+runs after the call. Native voicemail detection/message tools, arbitrary
+external TTS replacement, Ultravox-to-native live handoff, and the Ultravox
+language/voice profile router are not implemented on this transport.
+
+Read [Shared runtime, Manager and teams](shared-agent-runtime.md) for request examples, Manager budgets, execution
+gates and the detailed matrix. Model access, carrier quality and readiness
+still require a deployment test with real credentials.
 
 ## Troubleshooting checklist
 

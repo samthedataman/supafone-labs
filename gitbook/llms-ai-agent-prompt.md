@@ -40,14 +40,17 @@ helping developers integrate Supafone Labs.
 - Ultravox remains the default. Native choices are six models across four families; do not claim every S2S model is supported.
 - Hydra defaults to `hydra-v1.1` with `maya`; v1.0 defaults to `sterling`. It has no native transcripts and cannot change persona or voice mid-session. Fixed stage transitions use validated tool-result instructions.
 - `SMALLEST_API_KEY` supplies managed Hydra credentials when configured; account BYOK overrides it. Never claim credentials or live calls are verified from the catalog alone.
-- The S2S harness connects one agent prompt, supported tools, fixed stages, and audio transport to its selected speaking model.
+- The S2S harness connects one agent prompt, supported tools, custom stages, and audio transport to its selected speaking model.
 - Native model credentials resolve server-side: account BYOK overrides a configured platform key. Customers need no vendor key when managed credentials exist.
 - Check runtime status per selected provider; credential presence does not establish model entitlement or live-call quality. Phone calls also need carrier readiness.
 - Changing realtime applies to new sessions; it is not a mid-call model handoff.
 - Phone transports: Supafone-managed, BYO Twilio, BYO Telnyx, BYO Plivo, and BYO SIP.
 - Browser preview uses `labs.agents.testCall()` / `test_call()` and `transport: "supafone_realtime"`.
-- All five hosted speaking families support Supervisor coaching when enabled and configured. Native delivery uses model-invoked `check_guidance` tool results; Hydra uses model-reported context, never fabricated transcripts. Distinguish supported, enabled, and credential-ready.
-- Native realtime agents use fixed intake → booking → confirmation stages and do not currently expose recording, transfer, specialist-team handoff, DTMF navigation, public widgets, or live language/voice profile switching.
+- All five hosted speaking families support Supervisor coaching when enabled and configured. Native delivery uses `check_guidance` tool results; Hydra supplies model-reported context, never transcripts. Capability, enabled setting, and credential readiness are separate.
+- All five speaking families share generated/custom stages, Manager reasoning, specialist consultations, saved facts and successful tool receipts. Structured requirements and server permissions enforce transitions; prose is not execution authority.
+- Native sessions support public widgets, opt-in relay recording, configured carrier controls and opt-in native model handoff. A transfer acknowledgement is not proof of answer; media pause is not carrier hold music; a model handoff is a replacement session.
+- Hydra has no live transcript stream. Post-call transcription requires a recording and a configured server Deepgram key. Native voicemail and arbitrary external TTS remain unsupported; Ultravox retains its compatible external TTS/profile router.
+- Use [Shared runtime, Manager and teams](shared-agent-runtime.md) for configuration limits. Catalog support and credential presence are not live verification.
 - The standard managed Agent Factory/Ultravox path and the native realtime path are separate choices.
 
 ## Do Not Confuse These
@@ -80,8 +83,9 @@ Use these facts:
   [framework coverage matrix](framework-support.md).
 - Never include real secrets in code examples.
 - Present native realtime Agent Factory and Supafone Supervisor as the two
-  first-class paths. Describe managed Ultravox-compatible provisioning as the
-  compatibility lane for its broader hosted features; native S2S agents are also hosted by Supafone.
+  first-class paths. Managed Ultravox and native S2S share the workflow; Ultravox
+  retains compatible external TTS and language/voice profiles. Native S2S agents
+  are also hosted by Supafone.
 
 When giving TypeScript examples, import:
 import { Supafone } from "supafone-labs";

@@ -67,10 +67,11 @@ make test-provider-contracts PY=python3.12
 ```
 
 The audited set is Supafone, Ultravox, Vapi, Retell, Bland, OpenAI Realtime,
-Grok, Gemini Live, ElevenLabs, Deepgram Voice Agent, LiveKit Agents, Pipecat,
-Cartesia Line, and Inworld Realtime. Bland and Cartesia deliberately assert a
-safe no-action result because they do not expose a universal prompt-injection
-channel. That is not counted as an injection pass.
+Grok, Gemini Developer Live, ElevenLabs, Deepgram Voice Agent, LiveKit Agents,
+Pipecat, Cartesia Line, and Inworld Realtime. Bland, Gemini Developer Live, and
+Cartesia deliberately assert a safe no-action result because their default
+adapters do not expose a documented universal hidden prompt-injection channel.
+That is not counted as an injection pass.
 
 `tests/test_cloud_phone_tester.py` separately runs the fourteen runtime labels
 against all ten console telephony targets. Those 140 combinations must route

@@ -17,7 +17,6 @@ import pytest
 
 from supafone_labs.runtime.adapters import (
     DeepgramAdapter,
-    GeminiLiveAdapter,
     GPTRealtimeAdapter,
     GrokAdapter,
     InworldAdapter,
@@ -26,6 +25,7 @@ from supafone_labs.runtime.adapters import (
 )
 from supafone_labs.runtime.core.decision import RuntimeDecision
 from supafone_labs.runtime.core.state import build_initial_state
+from tests.live_probe_helpers import wait_for_grok_completion
 
 pytestmark = [pytest.mark.live, pytest.mark.live_injection]
 
@@ -135,8 +135,8 @@ async def test_live_grok_accepts_per_response_instructions():
             lambda event: event.get("type") in {"conversation.created", "session.created"},
         )
         await ws.send(json.dumps(action.payload))
-        accepted = await _wait_json(ws, lambda event: event.get("type") == "response.created")
-    assert accepted["type"] == "response.created"
+        completed = await wait_for_grok_completion(ws)
+    assert completed["type"] == "response.done"
 
 
 @needs("INWORLD_API_KEY")
@@ -197,44 +197,3 @@ async def test_live_deepgram_update_prompt_receives_prompt_updated():
         await ws.send(json.dumps(action.payload))
         accepted = await _wait_json(ws, lambda event: event.get("type") == "PromptUpdated")
     assert accepted["type"] == "PromptUpdated"
-
-
-@needs("GOOGLE_CLOUD_PROJECT", "GOOGLE_CLOUD_LOCATION", "GEMINI_LIVE_MODEL")
-async def test_live_gemini_system_turn_changes_next_response():
-    google = pytest.importorskip("google.genai")
-    types = pytest.importorskip("google.genai.types")
-    action = await _action(GeminiLiveAdapter())
-    turn = action.payload["clientContent"]["turns"][0]
-    client = google.Client(
-        vertexai=True,
-        project=os.environ["GOOGLE_CLOUD_PROJECT"],
-        location=os.environ["GOOGLE_CLOUD_LOCATION"],
-    )
-    model = os.environ["GEMINI_LIVE_MODEL"]
-    async with client.aio.live.connect(
-        model=model,
-        config={"response_modalities": ["AUDIO"], "output_audio_transcription": {}},
-    ) as session:
-        await session.send_client_content(
-            turns=types.Content(
-                role=turn["role"],
-                parts=[types.Part(text=turn["parts"][0]["text"])],
-            ),
-            turn_complete=False,
-        )
-        await session.send_client_content(
-            turns=types.Content(
-                role="user",
-                parts=[types.Part(text="Say hello in five words or fewer.")],
-            ),
-            turn_complete=True,
-        )
-        saw_output = False
-        async for message in session.receive():
-            if message.text or (
-                message.server_content and message.server_content.output_transcription
-            ):
-                saw_output = True
-            if message.server_content and message.server_content.turn_complete:
-                break
-    assert saw_output
