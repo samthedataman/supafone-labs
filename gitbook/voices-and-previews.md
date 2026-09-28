@@ -1,123 +1,94 @@
 # Voices and Previews
 
-The builder and SDKs should make voice selection feel instant: list all voices,
-filter by provider, preview audio, then export the selected voice into code.
+Choose the conversation runtime first, then a voice it can actually use.
+The shared S2S interface includes both [Ultravox + custom TTS and native S2S](voice-output-modes.md).
 
-## Model-native realtime voices
+## Two different voice catalogs
 
-Realtime model voices are not the same catalog as Cartesia/ElevenLabs/Inworld TTS voices. Use the model catalog and the `voice` field in [Native Realtime Agent Factory](realtime-agent-factory.md) for `marin`, Gemini voices such as `Puck`, `eve`, and the GPT Live voice set.
+| Runtime | Voice source | Where to select it |
+| --- | --- | --- |
+| Managed Ultravox | Compatible Ultravox, Cartesia, ElevenLabs, or Inworld catalog voices | The saved agent's `voice` object |
+| Native OpenAI, Gemini, Grok, or Hydra | The selected model's own supported voices | `realtime.voice`, or the native provider class's `voice` option |
 
-## Hosted Agent Voice Catalog
+External TTS is not a voice override for the current native S2S harness.
+Deepgram catalog previews and custom SDK TTS synthesis do not imply a hosted
+Ultravox call bridge. Check the [runtime support details](voice-output-modes.md#what-works-today).
 
-Use the hosted-agent API when the voice belongs to the durable agent:
+## Find a compatible managed voice
 
-```ts
-const voices = await supafone.labs.voices.list({ provider: "cartesia" });
-```
-
-REST:
-
-```bash
-curl "https://api.supafone.ai/api/v1/labs/voices?provider=cartesia" \
-  -H "Authorization: Bearer $SUPAFONE_API_KEY"
-```
-
-The response includes provider metadata, whether the account is
-Supafone-managed, and whether developer provider keys are required.
-
-For the normalized metadata contract, model language ceilings, live-runtime
-intersection, filtering, and plain-language matching, see
-[Dynamic Voice Catalog and Selection](voice-catalog-and-selection.md).
+TypeScript:
 
 ```ts
-const match = await supafone.labs.voices.recommend({
-  description: "warm Spanish patient-support voice",
-  language: "es-MX",
-  configuredOnly: true,
-});
-
-const voice = match.matches[0].voice;
-await supafone.labs.agents.createInbound({
-  name: "Patient intake",
-  voice: supafone.labs.voices.selection(voice),
-});
+const page = await supafone.labs.voices.list({ provider: "cartesia" });
+console.log(page.voices);
 ```
 
-## Labs Cloud Voice Catalog
-
-Use Labs Cloud when the UI is previewing speech or building a playground:
-
-```ts
-const voiceIds = await supafone.voices();
-```
-
-REST:
-
-```bash
-curl https://api.labs.supafone.ai/v1/voices
-```
-
-## Preview in TypeScript
-
-```ts
-const audio = await supafone.tts(
-  "Hi, this is Maya from Northline. How can I help?",
-  "cartesia:sonic-warm"
-);
-
-await fs.promises.writeFile("preview.wav", audio);
-```
-
-Browser preview:
-
-```ts
-const bytes = await supafone.tts("How can I help?", selectedVoice);
-const blob = new Blob([bytes], { type: "audio/mpeg" });
-const url = URL.createObjectURL(blob);
-new Audio(url).play();
-```
-
-## Preview in Python
-
-Python can use the hosted TTS provider surface:
+Python:
 
 ```python
-import asyncio
+page = supafone.labs.voices.list(provider="cartesia")
+print(page["voices"])
+```
+
+REST supports additional filters and pagination:
+
+```bash
+curl "https://api.supafone.ai/api/v1/labs/voices?provider=cartesia&configured_only=true" \
+  -H "Authorization: Bearer $SUPAFONE_TOKEN"
+```
+
+Read `configured`, `runtime_selectable`, `runtime_support_reason`, and provider
+capabilities where returned. A configured voice can still be preview-only.
+Follow `next_cursor` to read more pages. Use actual catalog IDs, not example
+names, for live configuration.
+
+[Dynamic Voice Catalog](voice-catalog-and-selection.md) documents brand metadata,
+language compatibility, REST recommendations, and the published SDK boundary.
+
+## Preview the voice, then preview the agent
+
+A catalog preview tests synthesis of a sample phrase:
+
+```bash
+curl --get "https://api.supafone.ai/api/v1/labs/voices/preview" \
+  -H "Authorization: Bearer $SUPAFONE_TOKEN" \
+  --data-urlencode "voice=$CATALOG_VOICE_ID" \
+  --output voice-preview.mp3
+```
+
+A full agent preview also exercises the conversation runtime and selected voice:
+
+```ts
+import { UltravoxS2S } from "supafone-labs";
+
+await new UltravoxS2S(supafone).apply("northline-intake");
+await supafone.labs.agents.update("northline-intake", {
+  voice: { provider: "cartesia", voiceId: process.env.CARTESIA_VOICE_ID! },
+});
+const preview = await new UltravoxS2S(supafone).testCall("northline-intake");
+```
+
+```python
+from supafone_labs import UltravoxS2S
 import os
-from supafone_labs import SupafoneLabsTTS
 
-async def main():
-    os.environ["SUPAFONE_LABS_API_KEY"] = "sl_live_..."
-    tts = SupafoneLabsTTS(voice="cartesia:sonic-warm")
-    audio = await tts.synthesize(
-        "Hi, this is Maya from Northline. How can I help?"
-    )
-    with open("preview.wav", "wb") as f:
-        f.write(audio)
-
-asyncio.run(main())
+UltravoxS2S(supafone).apply("northline-intake")
+supafone.labs.agents.update(
+    "northline-intake",
+    voice={"provider": "cartesia", "voiceId": os.environ["CARTESIA_VOICE_ID"]},
+)
+preview = UltravoxS2S(supafone).test_call("northline-intake")
 ```
 
-If a Python app only needs the catalog today, call the REST endpoint directly:
+`testCall`/`test_call` returns connection information for the saved agent.
+Complete the browser session to hear it. Synthesis alone does not validate
+interruptions, tools, stages, or your phone carrier.
 
-```python
-import json
-import urllib.request
+## Standalone TTS is a separate surface
 
-with urllib.request.urlopen("https://api.labs.supafone.ai/v1/voices") as response:
-    voices = json.loads(response.read().decode("utf-8"))["voices"]
-```
-
-## Provider Labels
-
-Use stable provider keys in exported config:
-
-| Provider | Voice config example |
-| --- | --- |
-| Cartesia | `{ "provider": "cartesia", "voiceId": "sonic-warm" }` |
-| ElevenLabs | `{ "provider": "elevenlabs", "voiceId": "rachel" }` |
-| Inworld | `{ "provider": "inworld", "voiceId": "inworld-voice" }` |
-| Deepgram | `{ "provider": "deepgram", "voiceId": "aura-2-thalia-en" }` |
-
-The frontend can show logos and friendly names, but exported code should use
-stable provider ids and voice ids.
+Labs Cloud's `/v1/voices`, `/v1/tts`, the client's `tts` method, and Python's
+`TTSProvider` implementations support speech synthesis outside a hosted phone
+call. They are useful for audio previews and developer-owned applications.
+Choosing one of these backends does not replace an S2S model's native output or
+install it into Agent Factory. Hosted support is listed in
+[the voice-output guide](voice-output-modes.md#what-works-today).

@@ -61,6 +61,14 @@ The matrix below describes Supervisor adapters for existing stacks. It does not 
 systems. It is deliberately not counted as one of the fourteen audited
 runtimes.
 
+## Runtime selection versus voice selection
+
+Ultravox supports a separate compatible TTS voice in the managed Agent Factory.
+The native OpenAI, Gemini, Grok, and Hydra paths use model-native voices.
+Standalone TTS adapters in the package are not automatically available on live
+managed calls; Deepgram is currently preview-only in the hosted Ultravox catalog.
+See [Ultravox + Custom TTS and Native S2S](voice-output-modes.md).
+
 ## What the package covers around the runtime
 
 The voice runtime is one layer. Supafone Labs also normalizes the infrastructure

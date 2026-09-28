@@ -34,6 +34,7 @@ nav:
   - Framework Coverage: providers.md
   - Hosted Agents API: hosted-agents-api.md
   - Unified S2S Interface: unified-s2s.md
+  - Ultravox + Custom TTS and Native S2S: voice-output-modes.md
   - Native Realtime Agent Factory: realtime-agent-factory.md
   - Outbound IVR Call Mode: outbound-ivr-call-mode.md
   - Language and Voice Routing: live-language-voice-routing.md

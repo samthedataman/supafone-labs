@@ -18,6 +18,16 @@ provider-specific: Hydra has no native transcripts and cannot change its
 persona or voice mid-session. Check credentials and test the selected provider
 before a customer call.
 
+## Two voice-output choices in one Agent Factory
+
+**Ultravox + custom TTS** keeps the existing managed phone agent and lets a
+compatible Cartesia, ElevenLabs, Inworld, or Ultravox catalog voice supply its
+speech. **Native S2S** selects OpenAI, Gemini, Grok, or Hydra and uses that
+model's own voice list. Both are available through `SupafoneS2S`; external TTS
+is not a universal voice override for native models.
+
+[Compare both paths and create an Ultravox agent with custom TTS](voice-output-modes.md).
+
 ## Build once, choose the model
 
 Create an agent with a `realtime: { provider, model, voice }` selection. The

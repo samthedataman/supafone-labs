@@ -18,6 +18,16 @@ provider-specific: Hydra has no native transcripts and cannot change its
 persona or voice mid-session. Check credentials and test the selected provider
 before a customer call.
 
+## Two voice-output choices in one Agent Factory
+
+**Ultravox + custom TTS** keeps the existing managed phone agent and lets a
+compatible Cartesia, ElevenLabs, Inworld, or Ultravox catalog voice supply its
+speech. **Native S2S** selects OpenAI, Gemini, Grok, or Hydra and uses that
+model's own voice list. Both are available through `SupafoneS2S`; external TTS
+is not a universal voice override for native models.
+
+[Compare both paths and create an Ultravox agent with custom TTS](voice-output-modes.md).
+
 ## Choose an S2S option
 
 | Provider | Model | Default voice |
@@ -80,7 +90,7 @@ The [native S2S guide](realtime-agent-factory.md) contains Python examples,
 credential status, browser audio, and carrier setup. The
 [developer workflow](developer-workflows.md) covers creation and switching.
 
-## Choose the broader managed runtime when needed
+## Ultravox + custom TTS: the managed runtime
 
 Omitting `realtime` retains the managed Ultravox compatibility runtime. The
 rest of this page describes that runtime's generated planner, compatible TTS
@@ -251,7 +261,7 @@ BYOK must keep hosted-delivery credentials in separate advanced lanes:
 | --- | --- |
 | Agent/provider stack | [Fourteen audited runtime adapters](framework-support.md) plus custom runtime |
 | Telephony | Twilio, Telnyx, Plivo, SignalWire, SIP/custom trunks |
-| TTS | Cartesia, ElevenLabs, Inworld, Deepgram, custom TTS |
+| TTS | Hosted Ultravox: compatible Cartesia, ElevenLabs, Inworld, and catalog voices. Deepgram previews and custom SDK TTS are separate capabilities; see [voice-output choices](voice-output-modes.md). |
 
 Do not make users paste provider keys to use the default Agent Factory path.
 Only reveal those inputs when they choose BYOK for that lane.
@@ -356,8 +366,9 @@ See [Dynamic Voice Catalog and Selection](voice-catalog-and-selection.md).
 
 ## Advanced BYOK Agent Factory
 
-Developers can bring any combination of their own runtime, telephony, and TTS
-providers while still using the same agent creation method:
+Configure runtime, telephony, and TTS credentials in separate lanes. A provider
+key does not add a hosted runtime bridge: use only combinations supported by
+the selected runtime. The example below uses the Ultravox path with Cartesia TTS:
 
 ```ts
 await supafone.labs.agents.createOutbound({
