@@ -1,5 +1,5 @@
 site_name: Supafone Labs
-site_description: Production infrastructure for building, supervising, testing, and operating voice agents across providers.
+site_description: The S2S routing hub with a Supervisor harness. One Supafone key or your own provider keys.
 site_url: https://labs.supafone.ai/
 repo_url: https://github.com/samthedataman/supafone-labs
 repo_name: supafone/labs
@@ -33,7 +33,7 @@ nav:
   - Supervisor Models: supervisor-models.md
   - Framework Coverage: providers.md
   - Hosted Agents API: hosted-agents-api.md
-  - Unified S2S Interface: unified-s2s.md
+  - S2S Routing Hub: unified-s2s.md
   - Ultravox + Custom TTS and Native S2S: voice-output-modes.md
   - Native Realtime Agent Factory: realtime-agent-factory.md
   - Shared Runtime, Manager and Teams: shared-agent-runtime.md

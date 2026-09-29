@@ -1,8 +1,61 @@
 # BYOK Providers
 
-BYOK means "bring your own keys." It is powerful, but it should not be the
-default path. The default path is Supafone-managed infrastructure with one
-Supafone key.
+Use **one Supafone API key**, or bring your own keys for the speaking model,
+the Supervisor, or both. BYOK means “bring your own key.”
+
+| Choice | Speaking model | Supervisor |
+| --- | --- | --- |
+| **One Supafone key** | Supafone's configured provider key | Supafone's managed reasoning |
+| **Your keys** | Your Ultravox, OpenAI, Gemini, Grok or Hydra key | Your supported reasoning-provider key |
+| **Mix them** | Your key or Supafone's key | Choose independently of the speaking model |
+
+## Bring both keys: a short example
+
+This example uses your OpenAI key for speech and your Anthropic key for
+Supervisor. Your Supafone account key still authenticates both configuration
+requests.
+
+```python
+import os
+from supafone_labs import Supafone, SupafoneS2S
+
+client = Supafone(api_key=os.environ["SUPAFONE_API_KEY"])
+client.labs.runtime.configure(
+    provider="openai", mode="byok",
+    credentials={"api_key": os.environ["OPENAI_API_KEY"]},
+)
+agent = SupafoneS2S(client, provider="openai").create(
+    name="Front desk",
+    supervisor={"enabled": True, "mode": "byok", "provider": "anthropic",
+                "api_key": os.environ["ANTHROPIC_API_KEY"]},
+)
+```
+
+```ts
+import { Supafone, SupafoneS2S } from "supafone-labs";
+
+const client = new Supafone({ apiKey: process.env.SUPAFONE_API_KEY! });
+await client.labs.runtime.configure({
+  provider: "openai", mode: "byok", credentials: { apiKey: process.env.OPENAI_API_KEY! },
+});
+const agent = await new SupafoneS2S(client, { provider: "openai" }).create({
+  name: "Front desk",
+  supervisor: { enabled: true, mode: "byok", provider: "anthropic",
+                apiKey: process.env.ANTHROPIC_API_KEY! },
+});
+```
+
+To use Supafone-managed Supervisor with your speaking key, replace the
+Supervisor object with `{enabled: true, mode: "managed"}` (Python:
+`{"enabled": True, "mode": "managed"}`). To use Supafone's speaking key with
+your Supervisor key, omit the runtime configuration request on an account
+without a speaking-key override.
+
+The managed path needs configured platform credentials. A saved speaking key
+takes priority across the account; Supervisor BYOK belongs to the agent.
+Runtime changes require account-admin permission and apply to future calls.
+Usage is billed according to the selected provider and Supafone services. [Supervisor providers and models](supervisor-models.md)
+lists the supported reasoning choices.
 
 ## Choose speaking keys for all five S2S families
 

@@ -5,9 +5,10 @@
 ## Start Building
 
 * [Quickstart](quickstart.md)
-* [Shared S2S Interface](unified-s2s.md)
+* [S2S Routing Hub](unified-s2s.md)
 * [Ultravox + Custom TTS and Native S2S](voice-output-modes.md)
 * [SDK Installation](sdk-installation.md)
+* [Managed or BYOK Keys](byok-providers.md)
 * [Command-line Agent Factory](cli.md)
 * [Developer Workflows](developer-workflows.md)
 * [API Keys and Authentication](api-keys-and-auth.md)
@@ -30,7 +31,6 @@
 * [Generated Provider Contracts](provider-contracts.md)
 * [Oracle Models and Controls](oracle-models-and-controls.md)
 * [Provider-Agnostic Runtime](provider-agnostic-framework.md)
-* [BYOK Providers](byok-providers.md)
 * [LLMs and Agent Prompts](llms-ai-agent-prompt.md)
 
 ## Build Complete Agents

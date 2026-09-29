@@ -1,13 +1,11 @@
 # supafone-labs
 
-**The TypeScript client for the Supafone agent framework.**
+**The S2S routing hub with a Supervisor harness, for TypeScript and JavaScript.**
 
-Use this package to create hosted Supafone agents from code: inbound
-receptionists, outbound sales agents, web agents, Supafone-managed phone
-numbers, built-in stages, tools, recordings, transcripts, widgets, and Supafone
-Pro watcher. It also includes the [Supafone Labs cloud](https://labs.supafone.ai)
-Supervisor, hosted TTS/STT, live multilingual transcription, the builder,
-and the adversarial QA suite.
+Choose Ultravox, OpenAI, Gemini, Grok or Hydra through one client. Keep the
+agent's stages, tools, knowledge, Manager and specialist team. Use one Supafone
+API key for managed speaking models and Supervisor, or bring separate keys for
+both. Browser and phone delivery use the same hosted Agent Factory.
 
 Dependency-free. Works in Node 18+ and the browser (native `fetch` / `WebSocket`).
 
@@ -15,18 +13,15 @@ Dependency-free. Works in Node 18+ and the browser (native `fetch` / `WebSocket`
 npm i supafone-labs
 ```
 
-## Keys
+## One key, or bring your own
 
-The SDK talks to two related APIs:
+Set `SUPAFONE_API_KEY` to your Supafone account key. This is the only application
+key needed for managed S2S agents and their hosted Supervisor. The selected
+speaking model and Supervisor must be configured on Supafone's server.
 
-| Environment variable | Key shape | Used for |
-| --- | --- | --- |
-| `SUPAFONE_LABS_API_KEY` | `sl_live_...` | Labs Cloud Supervisor, hosted TTS/STT, logs, usage, QA, optimizer |
-| `SUPAFONE_API_KEY` | `sf_live_...` | Hosted Supafone agents on `/api/v1/labs/*` |
-
-If you only use hosted-agent methods, `SUPAFONE_API_KEY` is enough. If you use
-both products from one SDK instance, pass `SUPAFONE_API_KEY` as
-`supafoneApiKey`.
+BYOK is optional: save a speaking-provider key for your account, a separate
+reasoning-provider key for Supervisor, or both. See
+[managed and BYOK setup](https://labs.supafone.ai/docs/byok-providers/).
 
 ## Quick start: S2S with Supervisor
 
@@ -69,6 +64,11 @@ controls. Switching providers with `apply` preserves the saved Supervisor
 configuration and changes only the speaking selection.
 
 ## Standalone supervision
+
+A stack you host yourself can use the separate Labs Cloud supervision API with
+`SUPAFONE_LABS_API_KEY` (`sl_live_...`). That separate service key is not required
+for the hosted Agent Factory examples above. If you use both API surfaces from
+one client, pass the hosted `sf_live_...` key as `supafoneApiKey`.
 
 For a voice stack you already operate, request and deliver guidance yourself:
 

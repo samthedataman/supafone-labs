@@ -1,36 +1,26 @@
-# Shared S2S Interface
+# S2S Routing Hub
 
-Use one `SupafoneS2S` interface to create and switch a Supafone voice agent
-across **Ultravox, OpenAI, Gemini, Grok, and Smallest AI Hydra**. The exported
-provider classes share the same creation, selection, and preview methods in
-Python and TypeScript. Your application keeps the same Supafone agent and
-phone number when it changes the speaking provider.
+`SupafoneS2S` is the shared interface for Supafone's **S2S routing hub with
+Supervisor**. Choose **Ultravox, OpenAI, Gemini, Grok or Smallest AI Hydra**,
+then create an agent with coaching enabled. Switching models keeps the same
+agent, phone assignment and Supervisor profile.
 
-The SDK selects and configures a hosted runtime. It does not put vendor keys
-in a browser or start a provider connection on its own. The server owns audio,
-allowed tools, stages, and credential resolution.
+Start with **one Supafone API key**, or connect your own speaking-model and
+Supervisor keys independently. The constructor chooses the speaking provider;
+`create` saves the agent's job, tools, stages and Supervisor setting.
 
 ## Create a supervised S2S agent
 
-**Hosted requirements:** the selected speaking model and Supervisor need
-configured credentials. Native models use the shared call relay and guidance
-tools. See [SDK installation and readiness](https://labs.supafone.ai/docs/sdk-installation/)
-before testing a provider.
-
-Pass `supervisor` to **`create` on the base class**. The constructor selects the
-speaking provider, model and voice; `create` configures the hosted agent,
-including its Supervisor. You do not need a separate Supervisor client or
-standalone adapter for a hosted S2S agent.
+Pass `supervisor=True` / `true` to `create`. Hosted coaching uses the same
+client as your agent.
 
 TypeScript:
 
 ```ts
 import { Supafone, SupafoneS2S } from "supafone-labs";
 
-const client = new Supafone({ apiKey: process.env.SUPAFONE_TOKEN! });
-const engine = new SupafoneS2S(client, {
-  provider: "smallest", model: "hydra-v1.1", voice: "maya",
-});
+const client = new Supafone({ apiKey: process.env.SUPAFONE_API_KEY! });
+const engine = new SupafoneS2S(client, { provider: "smallest" });
 
 const agent = await engine.create({
   agentKey: "northline-intake",
@@ -46,8 +36,8 @@ Python:
 import os
 from supafone_labs import Supafone, SupafoneS2S
 
-client = Supafone(api_key=os.environ["SUPAFONE_TOKEN"])
-engine = SupafoneS2S(client, provider="smallest", model="hydra-v1.1", voice="maya")
+client = Supafone(api_key=os.environ["SUPAFONE_API_KEY"])
+engine = SupafoneS2S(client, provider="smallest")
 agent = engine.create(
     agent_key="northline-intake",
     name="Northline intake",

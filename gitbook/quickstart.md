@@ -1,112 +1,107 @@
 # Quickstart
 
-**Dashboard:** open [Supafone agents](https://app.supafone.ai/app/agents),
-select your agent, and use its native realtime model controls. The older
-[Labs workspace](https://labs.supafone.ai/builder.html) is the managed Ultravox
-compatibility builder and links to these S2S controls.
+**One S2S routing hub, with Supervisor alongside your speaking model.**
+Create a supervised agent with one Supafone key, then choose Ultravox, OpenAI,
+Gemini, Grok or Smallest AI Hydra. Prefer your own provider accounts? You can
+[bring speaking and Supervisor keys independently](https://labs.supafone.ai/docs/byok-providers/).
 
-Create an Agent Factory agent, preview it in the browser, then switch its
-speech-to-speech model through the same Supafone harness.
+## 1. Install and add your Supafone key
 
-Need a specific Cartesia, ElevenLabs, or Inworld voice? Start with [Ultravox + custom TTS](voice-output-modes.md). It uses the same shared S2S interface and preserves the existing managed-agent option. The native example below uses its model’s own voice.
-
-## 1. Install and authenticate
+Choose your SDK:
 
 ```bash
-pip install supafone-labs
-npm i supafone-labs
-export SUPAFONE_TOKEN=sl_live_...
+pip install supafone-labs==0.7.2
+npm install supafone-labs@0.7.2
 ```
 
-[Create a Supafone key](https://labs.supafone.ai/console.html?mode=register).
-One `sl_` key authenticates Labs Cloud and the hosted-agent API when your
-Supafone product account uses the same email. See [API keys](https://labs.supafone.ai/docs/api-keys-and-auth/)
-for account linking and scoped `sf_` keys.
+[Create a Supafone key](https://labs.supafone.ai/console.html?mode=register)
+and set `SUPAFONE_API_KEY` in your server environment.
 
-## 2. Check the selected model's readiness
-
-```bash
-curl 'https://api.supafone.ai/api/v1/labs/runtime?provider=smallest' \
-  -H "Authorization: Bearer $SUPAFONE_TOKEN"
-```
-
-Use the configured Supafone platform key by default. An existing account BYOK
-key overrides it for the selected provider. Status reports `source: platform`,
-`account`, `none`, or `invalid`; a missing key requires setup before a live
-call. You only need to supply an OpenAI, Google, xAI, or Smallest AI key when choosing BYOK
-or when the platform has no key for that provider. Provider access still needs
-a live preview test.
-
-## 3. Create a native S2S agent
-
-All five speaking families use the shared `SupafoneS2S` interface. Start with
-Hydra here, or choose `OpenAIS2S`, `GeminiS2S`, `GrokS2S`, or the default
-`UltravoxS2S`. The provider object creates an ordinary Agent Factory agent.
-See [the shared interface](unified-s2s.md) for the complete contract.
-
-TypeScript:
-
-```ts
-import { Supafone, HydraS2S } from "supafone-labs";
-
-const supafone = new Supafone({ apiKey: process.env.SUPAFONE_TOKEN! });
-const engine = new HydraS2S(supafone, { model: "hydra-v1.1", voice: "maya" });
-const agent = await engine.create({
-  agentKey: "northline-intake",
-  name: "Northline intake",
-  description: "Understand the request and book the right next step.",
-});
-const preview = await engine.testCall("northline-intake");
-```
+## 2. Create a supervised agent
 
 Python:
 
 ```python
 import os
-from supafone_labs import Supafone, HydraS2S
+from supafone_labs import Supafone, SupafoneS2S
 
-supafone = Supafone(api_key=os.environ["SUPAFONE_TOKEN"])
-engine = HydraS2S(supafone, model="hydra-v1.1", voice="maya")
+client = Supafone(api_key=os.environ["SUPAFONE_API_KEY"])
+engine = SupafoneS2S(client, provider="openai")
 agent = engine.create(
-    agentKey="northline-intake",
-    name="Northline intake",
-    description="Understand the request and book the right next step.",
+    agent_key="front-desk", name="Front desk",
+    description="Help callers and book the right next step.",
+    supervisor=True,
 )
-preview = engine.test_call("northline-intake")
 ```
 
-`testCall` creates a session ticket; it does not play audio by itself. Open the
-agent's browser preview in the dashboard, or connect your audio client using
-the [native browser transport contract](realtime-agent-factory.md#browser-preview).
-Provider keys remain on the server. Creating a browser preview does not buy a
-number or place a phone call.
+TypeScript:
+
+```ts
+import { Supafone, SupafoneS2S } from "supafone-labs";
+
+const client = new Supafone({ apiKey: process.env.SUPAFONE_API_KEY! });
+const engine = new SupafoneS2S(client, { provider: "openai" });
+const agent = await engine.create({
+  agentKey: "front-desk", name: "Front desk",
+  description: "Help callers and book the right next step.",
+  supervisor: true,
+});
+```
+
+The constructor chooses the speaking model. `supervisor=True` / `true` adds
+hosted coaching to the agent; no separate Supervisor client is needed.
+Creating the agent saves its configuration without starting a call.
+
+## 3. Check readiness and try a browser call
+
+The one-key path uses Supafone's configured provider and Supervisor credentials.
+An existing account speaking key takes priority. Check the selected provider
+before connecting audio:
+
+```python
+status = client.labs.runtime.get(provider="openai")
+preview = engine.test_call("front-desk")
+```
+
+```ts
+const status = await client.labs.runtime.get({ provider: "openai" });
+const preview = await engine.testCall("front-desk");
+```
+
+Read `source` and `connected` in the returned status. Missing platform keys
+require setup or [BYOK](https://labs.supafone.ai/docs/byok-providers/) before a
+live call. A configured key still needs the provider's model permissions.
+Supervisor credentials and carrier readiness are checked separately.
+
+`testCall` / `test_call` creates a browser-session ticket. Use the agent's
+preview in [Agent Factory](https://app.supafone.ai/app/agents) or connect an
+audio client with the [browser transport contract](realtime-agent-factory.md#browser-preview).
+The ticket does not play audio by itself, buy a number or place a phone call.
+Browser sessions can consume managed minutes.
 
 ## 4. Switch the speaking model
 
-```ts
-import { OpenAIS2S } from "supafone-labs";
-
-const next = new OpenAIS2S(supafone, { model: "gpt-realtime-2.1", voice: "marin" });
-await next.apply("northline-intake");
-const nextPreview = await next.testCall("northline-intake");
-```
-
 ```python
-from supafone_labs import OpenAIS2S
-
-next_engine = OpenAIS2S(supafone, model="gpt-realtime-2.1", voice="marin")
-next_engine.apply("northline-intake")
-next_preview = next_engine.test_call("northline-intake")
+next_engine = SupafoneS2S(client, provider="google")
+next_engine.apply("front-desk")
+next_preview = next_engine.test_call("front-desk")
 ```
 
-The same method selects Gemini, Grok, or another Hydra version. To return to
-the managed default, apply `UltravoxS2S`. Provider objects share `SupafoneS2S`;
-check [all five classes and their defaults](unified-s2s.md#provider-classes).
+```ts
+const next = new SupafoneS2S(client, { provider: "google" });
+await next.apply("front-desk");
+const nextPreview = await next.testCall("front-desk");
+```
 
-`apply` changes the next session; `testCall` / `test_call` previews the saved
-agent without applying a selection itself. The same agent keeps its number,
-supported tools, team, and custom stage plan. Model voices and capabilities vary:
-Hydra has no native transcripts and cannot change persona or voice mid-session.
+Use `ultravox`, `openai`, `google`, `xai` or `smallest`. `apply` changes the
+saved selection for the next session and keeps the agent's Supervisor profile,
+number, supported tools, team and custom stages. Preview uses the saved
+selection; it does not apply a model change itself.
+
+Choose a voice supported by the new model. Hydra has no native transcripts
+and keeps its persona and voice fixed during a session. For Cartesia,
+ElevenLabs or Inworld voices, use [Ultravox + custom TTS](voice-output-modes.md).
+See [all provider classes and defaults](unified-s2s.md#provider-classes).
 
 ## 5. Connect a phone transport
 

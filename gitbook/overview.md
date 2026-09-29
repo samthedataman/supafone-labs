@@ -1,9 +1,25 @@
 # Product Overview
 
-Supafone Labs gives developers a shared **speech-to-speech (S2S) harness** and
-an **Agent Factory**. The harness connects the speaking model to the agent's
-prompt, allowed tools, stages, credentials, and audio transport. Agent Factory
-creates and manages the agent configuration used by that harness.
+Supafone is an **S2S routing hub with Supervisor**. Choose the model that talks
+to callers, then use a separate reasoning model to observe the call and guide
+it. One API connects **Ultravox, OpenAI, Gemini, Grok and Smallest AI Hydra**.
+
+Agent Factory saves your agent's instructions, tools and call stages. Switching
+the speaking model keeps that setup together. You choose the saved model;
+Supafone connects the call to it.
+
+## Choose how to connect
+
+| Option | What you supply |
+| --- | --- |
+| **One Supafone API key** | Your account key; Supafone supplies the configured speaking and Supervisor credentials |
+| **Bring your own keys** | A speaking-provider key, a Supervisor reasoning key, or both |
+
+Speaking and Supervisor choices are independent. For example, use your OpenAI
+key for speech and your Anthropic key for Supervisor, or use Supafone's managed
+Supervisor with your own speaking key.
+
+[Create a supervised agent](quickstart.md) · [Connect your own keys](byok-providers.md)
 
 ## Shared S2S interface
 
@@ -61,7 +77,7 @@ checked separately from model readiness.
 | --- | --- | --- |
 | Native realtime Agent Factory | Build and switch S2S agents through the hosted API and dashboard | Six native catalog models, shared custom stages, supported server tools, browser and phone |
 | Managed compatibility Agent Factory | Continue existing Ultravox-backed hosted workflows | Selected when `realtime` is omitted; shares the planner and workflow; retains compatible external TTS and live language/voice profiles |
-| Supafone Supervisor | Observe and coach agents you already run | Separate SDK/runtime with provider-specific guidance and observation capabilities |
+| Supafone Supervisor | Observe the call and guide the speaking agent | Hosted agents use the `supervisor` setting; external stacks use a separate adapter |
 
 Supafone Supervisor is an independent reasoning layer available on all five
 Agent Factory speaking families, as well as supported external stacks. Native

@@ -1,14 +1,16 @@
 # SDK Installation
 
-## Add Supervisor to your S2S agent
+Use Supafone as an **S2S routing hub with Supervisor**: choose the speaking
+model, then let a separate reasoning model guide the call. The supported
+families are **Ultravox, OpenAI, Gemini, Grok and Smallest AI Hydra**.
 
-Pass `supervisor=True` in Python or `supervisor: true` in TypeScript to
-**`SupafoneS2S.create()`**. The same option works with `UltravoxS2S`,
-`OpenAIS2S`, `GeminiS2S`, `GrokS2S`, and `HydraS2S`.
+Start with **one Supafone API key**, or [bring your own speaking-model and
+Supervisor keys](byok-providers.md). You choose each independently.
 
-The constructor chooses the speaking model. `create()` saves the agent's job,
-Supervisor setting, stages, and tools. You do not need a separate
-`SupafoneLabs` object to supervise this hosted agent.
+## Create a supervised S2S agent
+
+Pass `supervisor=True` / `true` to `SupafoneS2S.create()`. The constructor
+chooses the speaking provider; `create` saves the agent and its coaching setting.
 
 ### Install
 
@@ -19,8 +21,7 @@ python -m pip install --upgrade supafone-labs==0.7.2
 npm install supafone-labs@0.7.2
 ```
 
-Use your Supafone account key as `SUPAFONE_API_KEY`. Provider and managed
-Supervisor keys stay on Supafone's server.
+Set your Supafone account key as `SUPAFONE_API_KEY` in your server environment.
 
 ### Python
 

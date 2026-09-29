@@ -4,9 +4,9 @@
 
 # Supafone Labs
 
-**One speech-to-speech harness. Build an agent once, then choose its speaking
-model.** Agent Factory connects supported S2S models to shared prompts, tools,
-stages, and browser/phone delivery through Python, TypeScript, and REST.
+**Your S2S routing hub, with a Supervisor harness.** Choose Ultravox, OpenAI,
+Gemini, Grok or Hydra. Keep one agent, its tools and its workflow. Use one
+Supafone API key for managed models and supervision, or bring your own keys.
 
 [![CI](https://github.com/samthedataman/supafone-labs/actions/workflows/ci.yml/badge.svg)](https://github.com/samthedataman/supafone-labs/actions/workflows/ci.yml)
 [![PyPI](https://img.shields.io/pypi/v/supafone-labs)](https://pypi.org/project/supafone-labs/)
@@ -16,7 +16,7 @@ stages, and browser/phone delivery through Python, TypeScript, and REST.
 
 [**Website**](https://labs.supafone.ai) ·
 [**Docs**](https://labs.supafone.ai/docs/) ·
-[**Shared S2S interface**](gitbook/unified-s2s.md) ·
+[**S2S routing hub**](gitbook/unified-s2s.md) ·
 [**Agent Factory**](https://app.supafone.ai/app/agents) ·
 [**Get a free API key**](https://labs.supafone.ai/console.html?mode=register) ·
 [**API reference**](https://api.labs.supafone.ai/docs)
@@ -25,24 +25,20 @@ stages, and browser/phone delivery through Python, TypeScript, and REST.
 
 ---
 
-## Start here: the S2S harness
+## One hub. Your choice of speaking model.
 
-**Hosted requirements:** Supervisor uses the hosted call runtime. Configure the
-selected speaking provider and Supervisor credentials, then check readiness
-before starting a call. See [SDK installation](https://labs.supafone.ai/docs/sdk-installation/).
+`SupafoneS2S` gives Python and TypeScript the same interface for **Ultravox,
+OpenAI, Gemini, Grok and Smallest AI Hydra**. Agent Factory keeps the call
+stages, tools, knowledge, Manager and specialist team around your chosen model.
+Supervisor observes the call and supplies guidance when enabled and ready.
 
-Agent Factory creates the agent; the harness runs its selected speaking model
-with supported tools, stages, and browser or phone delivery. The exported
-`SupafoneS2S` superclass gives Python and TypeScript one interface for five
-provider families: **Ultravox, OpenAI, Gemini, Grok, and Smallest AI Hydra**.
-Ultravox remains the default. The native catalog adds six choices: OpenAI
-`gpt-realtime-2.1` and `gpt-live-1`, Google `gemini-3.1-flash-live-preview`,
-xAI `grok-voice-latest`, and Smallest AI `hydra-v1.0` and `hydra-v1.1`.
+- **One Supafone key:** use managed speaking models and managed Supervisor.
+- **Your own keys:** connect any of the five speaking providers and choose a
+  separate BYOK reasoning model for Supervisor. Mix managed and BYOK as needed.
 
-Use one Supafone application key. A configured platform key supplies the
-selected model unless the account has an encrypted BYOK override. Check the
-provider's runtime status before launch; catalog support and key presence do
-not establish model access or successful carrier calls.
+The routing hub saves your speaking-model selection for the next call. A
+separate opt-in policy supports handoffs among approved native sessions.
+[Managed keys and BYOK](gitbook/byok-providers.md) explains setup and readiness.
 
 ```ts
 import { Supafone, SupafoneS2S, OpenAIS2S } from "supafone-labs";

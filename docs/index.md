@@ -4,18 +4,31 @@
 
 # Supafone Labs
 
-**One speech-to-speech harness. Build an agent once, then choose its speaking model.**
+**An S2S routing hub with Supervisor. Choose the voice model. Keep the agent.**
 
-Supafone's S2S harness is the shared runtime around a live speaking model: the
-agent prompt, supported tools, conversation stages, server-side credentials,
-and browser or phone connection. Agent Factory creates the durable agent that
-runs inside that harness. Change its `realtime` selection to use another
-supported model while keeping the same agent and phone configuration.
+Supafone gives you one API for **Ultravox, OpenAI, Gemini, Grok and Smallest AI
+Hydra**, with a separate Supervisor that observes the call and guides the
+speaking agent. Choose a model, build your agent, then switch models without
+rebuilding its instructions, tools or call stages.
+
+Start with **one Supafone API key**, or bring your own keys for the speaking
+model and the Supervisor. You can choose who supplies each key independently.
 
 [Build your first S2S agent](quickstart.md) ·
 [Open Agent Factory](https://app.supafone.ai/app/agents) ·
 [Install Python or TypeScript](https://labs.supafone.ai/docs/sdk-installation/) ·
 [Get a Supafone API key](https://labs.supafone.ai/console.html?mode=register)
+
+## How it fits together
+
+1. **Choose a speaking model.** It listens and talks to the caller.
+2. **Enable Supervisor.** A separate reasoning model sends guidance during the call.
+3. **Build in Agent Factory.** Keep the agent's job, tools and stages together for browser or phone calls.
+
+You select the model; Supafone routes calls to that saved selection. Use the
+[quickstart](quickstart.md) for a supervised agent or the
+[BYOK guide](https://labs.supafone.ai/docs/byok-providers/) for your own speaking
+and reasoning keys.
 
 ## Shared S2S interface
 

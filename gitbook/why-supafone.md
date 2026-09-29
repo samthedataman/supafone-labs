@@ -1,7 +1,16 @@
 # Why Supafone
 
-Supafone Labs exists because production voice agents fail at system boundaries,
-not because developers need another prompt wrapper.
+**Choose the speaking model without rebuilding the agent. Keep Supervisor
+alongside it.**
+
+Supafone brings Ultravox, OpenAI, Gemini, Grok and Smallest AI Hydra into one
+S2S routing hub. Agent Factory keeps your instructions, tools and call stages;
+Supervisor adds a separate reasoning model that can guide the conversation.
+
+Use one Supafone API key, or bring your own speaking-model and Supervisor
+keys. The two choices are independent, so you can mix your own provider access
+with Supafone's managed services. [Start with a supervised agent](quickstart.md)
+or [connect your keys](byok-providers.md).
 
 ## Change the speaking model without rebuilding the agent
 
