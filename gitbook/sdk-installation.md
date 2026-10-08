@@ -17,11 +17,26 @@ chooses the speaking provider; `create` saves the agent and its coaching setting
 
 ### Install
 
-The Python SDK, CLI and TypeScript SDK use **0.8.0**.
+Python **0.8.0** is published on PyPI. TypeScript **0.8.0** is available as a direct package download; publication to the npm registry is pending.
 
 ```bash
 python -m pip install --upgrade supafone-labs==0.8.0
+npm install https://labs.supafone.ai/downloads/supafone-labs-0.8.0.tgz
+```
+
+The download is the tested npm package, including TypeScript declarations and
+ESM/CommonJS builds. See the [SHA-256 and SHA-512 integrity manifest](https://labs.supafone.ai/downloads/supafone-labs-0.8.0.integrity.json).
+
+After publication to the npm registry, the equivalent command will be:
+
+```bash
 npm install supafone-labs@0.8.0
+```
+
+The Labs builders load this same release from the first-party browser bundle:
+
+```js
+import { Supafone, SupafoneRouter } from "https://labs.supafone.ai/sdk/0.8.0/dist/index.js";
 ```
 
 Set your Supafone account key as `SUPAFONE_API_KEY` in your server environment.

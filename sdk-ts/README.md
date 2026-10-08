@@ -19,9 +19,15 @@ both. Browser and phone delivery use the same hosted Agent Factory.
 
 Dependency-free. Works in Node 18+ and the browser (native `fetch` / `WebSocket`).
 
+Python **0.8.0** is published on PyPI. TypeScript **0.8.0** is available as a direct package download; publication to the npm registry is pending.
+
 ```bash
-npm i supafone-labs
+npm install https://labs.supafone.ai/downloads/supafone-labs-0.8.0.tgz
 ```
+
+[Package integrity manifest](https://labs.supafone.ai/downloads/supafone-labs-0.8.0.integrity.json). After npm publication, use `npm install supafone-labs@0.8.0`.
+
+Browsers can import the same release from `https://labs.supafone.ai/sdk/0.8.0/dist/index.js`.
 
 ## One key, or bring your own
 

@@ -1,7 +1,7 @@
 # Testing Voice Agents and the QA Landscape
 
-🐍 [Python — `pip install "supafone-labs[all]"`](https://pypi.org/project/supafone-labs/) ·
-🟦 [TypeScript — `npm i supafone-labs`](https://www.npmjs.com/package/supafone-labs) ·
+🐍 [Python 0.8.0 — PyPI](https://pypi.org/project/supafone-labs/0.8.0/) ·
+🟦 [TypeScript 0.8.0 — installation](https://labs.supafone.ai/docs/sdk-installation/) ·
 ⭐ [GitHub — samthedataman/supafone-labs](https://github.com/samthedataman/supafone-labs) ·
 🌐 [labs.supafone.ai](https://labs.supafone.ai) ·
 📄 [*Grading the Call* (paper)](https://labs.supafone.ai/research.html)

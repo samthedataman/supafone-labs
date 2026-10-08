@@ -15,9 +15,11 @@ the payload concepts identical.
 
 ## Install
 
+Python **0.8.0** is published on PyPI. TypeScript **0.8.0** is available as a direct package download while npm registry publication is pending. See the [current installation guide and integrity manifest](sdk-installation.md).
+
 ```bash
-pip install "supafone-labs[all]"
-npm i supafone-labs
+pip install "supafone-labs[all]==0.8.0"
+npm install https://labs.supafone.ai/downloads/supafone-labs-0.8.0.tgz
 ```
 
 ## Native realtime parity

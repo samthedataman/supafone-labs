@@ -7,11 +7,13 @@ Gemini, Grok or Smallest AI Hydra. Prefer your own provider accounts? You can
 
 ## 1. Install and add your Supafone key
 
+Python **0.8.0** is published on PyPI. TypeScript **0.8.0** is available as a direct package download; publication to the npm registry is pending.
+
 Choose your SDK:
 
 ```bash
 pip install supafone-labs==0.8.0
-npm install supafone-labs@0.8.0
+npm install https://labs.supafone.ai/downloads/supafone-labs-0.8.0.tgz
 ```
 
 [Create a Supafone key](https://labs.supafone.ai/console.html?mode=register)

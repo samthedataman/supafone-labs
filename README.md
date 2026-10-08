@@ -154,9 +154,16 @@ supafone agents plan --description "Capture details, book a slot, then confirm."
 Use `--config-file` for reviewed stages, tool gates, teams and routing policies.
 Switch back with `--s2s-provider ultravox` to keep compatible custom TTS.
 [CLI reference and complete workflow example](docs/cli.md) covers all commands.
-The npm SDK is **0.8.0** and does not install a CLI executable. Hosted
-workflow features require the corresponding backend deployment and configured
-server-side provider keys.
+Python **0.8.0** is published on PyPI. TypeScript **0.8.0** is available as a direct package download; publication to the npm registry is pending.
+
+```bash
+npm install https://labs.supafone.ai/downloads/supafone-labs-0.8.0.tgz
+```
+
+The TypeScript SDK does not install a CLI executable. See the
+[installation guide and integrity manifest](https://labs.supafone.ai/docs/sdk-installation/).
+Hosted workflow features require the corresponding backend deployment and
+configured server-side provider keys.
 
 ## Keep custom TTS alongside native S2S
 

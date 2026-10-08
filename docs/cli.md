@@ -24,8 +24,9 @@ supafone --help
 request. If the command is not on your shell's path, run
 `python -m supafone_labs.cli --version` using the same Python environment.
 
-The npm package is `supafone-labs@0.8.0` and provides the TypeScript/JavaScript
-SDK; it does not install a CLI executable. The public Python distribution does
+The TypeScript/JavaScript SDK is **0.8.0**, available as a
+[direct package download](https://labs.supafone.ai/downloads/supafone-labs-0.8.0.tgz).
+Publication to the npm registry is pending. It does not install a CLI executable. The public Python distribution does
 not ship the separate internal `supafone-campaign` or `supafone-studio` commands.
 
 ## Authentication
