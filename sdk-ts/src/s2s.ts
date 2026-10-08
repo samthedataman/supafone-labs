@@ -1,6 +1,5 @@
+import { SupafoneVoice } from "./voice.js";
 import type {
-  CreateLabsAgentRequest,
-  GetLabsAgentOptions,
   LabsRealtimeSelection,
   SupafoneLabs,
 } from "./index.js";
@@ -15,11 +14,12 @@ export interface S2SOptions extends S2SModelOptions {
 }
 
 /** Shared parent for Supafone-hosted S2S agents. Vendor keys stay on the server. */
-export class SupafoneS2S {
+export class SupafoneS2S extends SupafoneVoice {
   readonly provider: S2SProviderName;
   private readonly selection: LabsRealtimeSelection | null;
 
-  constructor(protected readonly client: SupafoneLabs, options: S2SOptions = {}) {
+  constructor(client: SupafoneLabs, options: S2SOptions = {}) {
+    super(client);
     const provider = options.provider ?? "ultravox";
     if (!["ultravox", "openai", "google", "xai", "smallest"].includes(provider)) {
       throw new Error("Unsupported Supafone S2S provider");
@@ -46,32 +46,11 @@ export class SupafoneS2S {
     return this.selection ? { ...this.selection } : null;
   }
 
-  /** Create through the normal hosted agent factory with this provider. */
-  create(input: Omit<CreateLabsAgentRequest, "realtime">) {
-    if ("realtime" in input) {
-      throw new Error("Set provider/model/voice on the S2S adapter, not create({realtime: ...})");
-    }
-    return this.client.labs.agents.create({
-      ...input,
-      ...(this.realtime ? { realtime: this.realtime } : {}),
-    });
+  routePayload(creating = false) {
+    // Explicit realtime (including null) clears a saved pipeline server-side.
+    return creating && !this.realtime ? {} : { realtime: this.realtime };
   }
 
-  /** Change the saved selection for subsequent calls, preserving the agent and number. */
-  apply(agentKey: string, options: GetLabsAgentOptions = {}) {
-    this.checkAgentKey(agentKey);
-    return this.client.labs.agents.update(agentKey, { realtime: this.realtime }, options);
-  }
-
-  /** Preview the saved agent. Call apply first when switching providers. */
-  testCall(agentKey: string, options: GetLabsAgentOptions = {}) {
-    this.checkAgentKey(agentKey);
-    return this.client.labs.agents.testCall(agentKey, options);
-  }
-
-  private checkAgentKey(agentKey: string): void {
-    if (typeof agentKey !== "string" || !agentKey.trim()) throw new Error("agentKey is required");
-  }
 }
 
 export class UltravoxS2S extends SupafoneS2S {

@@ -10,8 +10,8 @@ Gemini, Grok or Smallest AI Hydra. Prefer your own provider accounts? You can
 Choose your SDK:
 
 ```bash
-pip install supafone-labs==0.7.2
-npm install supafone-labs@0.7.2
+pip install supafone-labs==0.8.0
+npm install supafone-labs@0.8.0
 ```
 
 [Create a Supafone key](https://labs.supafone.ai/console.html?mode=register)

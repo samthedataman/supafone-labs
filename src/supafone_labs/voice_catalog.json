@@ -1,0 +1,3005 @@
+{
+  "registry_version": "2026-10-08.1",
+  "registry_hash": "ff98ab64c1345b22a94bc4b0c5d622c1d1cb0ed7d673baec69e624adc470bd1a",
+  "version": "2026-10-08.1",
+  "components": [
+    {
+      "id": "stt/cartesia/ink-2",
+      "layer": "stt",
+      "provider": "cartesia",
+      "model": "ink-2",
+      "canonical_model": "cartesia/ink-2",
+      "protocol": "speech-stream",
+      "status": "experimental",
+      "capabilities": {
+        "languages": [
+          "en"
+        ],
+        "transports": [
+          "browser",
+          "phone",
+          "native",
+          "byo_twilio",
+          "byo_telnyx",
+          "byo_plivo",
+          "byo_sip"
+        ],
+        "tools": false,
+        "streaming": true,
+        "cancel": true
+      },
+      "evidence": {
+        "contract_verified": false,
+        "live_verified": false
+      },
+      "docs_url": "https://docs.cartesia.ai/build-with-cartesia/stt/latest"
+    },
+    {
+      "id": "stt/inworld/inworld/inworld-stt-1",
+      "layer": "stt",
+      "provider": "inworld",
+      "model": "inworld/inworld-stt-1",
+      "canonical_model": "inworld/inworld-stt-1",
+      "protocol": "speech-stream",
+      "status": "experimental",
+      "capabilities": {
+        "languages": [
+          "en"
+        ],
+        "transports": [
+          "browser",
+          "phone",
+          "native",
+          "byo_twilio",
+          "byo_telnyx",
+          "byo_plivo",
+          "byo_sip"
+        ],
+        "tools": false,
+        "streaming": true,
+        "cancel": true
+      },
+      "evidence": {
+        "contract_verified": false,
+        "live_verified": false
+      },
+      "docs_url": "https://docs.inworld.ai/stt/overview"
+    },
+    {
+      "id": "stt/deepgram/flux-general-en",
+      "layer": "stt",
+      "provider": "deepgram",
+      "model": "flux-general-en",
+      "canonical_model": "deepgram/flux-general-en",
+      "protocol": "speech-stream",
+      "status": "experimental",
+      "capabilities": {
+        "languages": [
+          "en"
+        ],
+        "transports": [
+          "browser",
+          "phone",
+          "native",
+          "byo_twilio",
+          "byo_telnyx",
+          "byo_plivo",
+          "byo_sip"
+        ],
+        "tools": false,
+        "streaming": true,
+        "cancel": true
+      },
+      "evidence": {
+        "contract_verified": false,
+        "live_verified": false
+      },
+      "docs_url": "https://developers.deepgram.com/docs/flux/quickstart"
+    },
+    {
+      "id": "stt/deepgram/flux-general-multi",
+      "layer": "stt",
+      "provider": "deepgram",
+      "model": "flux-general-multi",
+      "canonical_model": "deepgram/flux-general-multi",
+      "protocol": "speech-stream",
+      "status": "experimental",
+      "capabilities": {
+        "languages": [
+          "en"
+        ],
+        "transports": [
+          "browser",
+          "phone",
+          "native",
+          "byo_twilio",
+          "byo_telnyx",
+          "byo_plivo",
+          "byo_sip"
+        ],
+        "tools": false,
+        "streaming": true,
+        "cancel": true
+      },
+      "evidence": {
+        "contract_verified": false,
+        "live_verified": false
+      },
+      "docs_url": "https://developers.deepgram.com/docs/flux/quickstart"
+    },
+    {
+      "id": "stt/deepgram/nova-3",
+      "layer": "stt",
+      "provider": "deepgram",
+      "model": "nova-3",
+      "canonical_model": "deepgram/nova-3",
+      "protocol": "speech-stream",
+      "status": "experimental",
+      "capabilities": {
+        "languages": [
+          "en"
+        ],
+        "transports": [
+          "browser",
+          "phone",
+          "native",
+          "byo_twilio",
+          "byo_telnyx",
+          "byo_plivo",
+          "byo_sip"
+        ],
+        "tools": false,
+        "streaming": true,
+        "cancel": true
+      },
+      "evidence": {
+        "contract_verified": false,
+        "live_verified": false
+      },
+      "docs_url": "https://developers.deepgram.com/docs/flux/quickstart"
+    },
+    {
+      "id": "stt/assemblyai/universal-streaming-english",
+      "layer": "stt",
+      "provider": "assemblyai",
+      "model": "universal-streaming-english",
+      "canonical_model": "assemblyai/universal-streaming-english",
+      "protocol": "speech-stream",
+      "status": "experimental",
+      "capabilities": {
+        "languages": [
+          "en"
+        ],
+        "transports": [
+          "browser",
+          "phone",
+          "native",
+          "byo_twilio",
+          "byo_telnyx",
+          "byo_plivo",
+          "byo_sip"
+        ],
+        "tools": false,
+        "streaming": true,
+        "cancel": true
+      },
+      "evidence": {
+        "contract_verified": false,
+        "live_verified": false
+      },
+      "docs_url": "https://www.assemblyai.com/docs/getting-started/models"
+    },
+    {
+      "id": "stt/assemblyai/universal-streaming-multilingual",
+      "layer": "stt",
+      "provider": "assemblyai",
+      "model": "universal-streaming-multilingual",
+      "canonical_model": "assemblyai/universal-streaming-multilingual",
+      "protocol": "speech-stream",
+      "status": "experimental",
+      "capabilities": {
+        "languages": [
+          "en"
+        ],
+        "transports": [
+          "browser",
+          "phone",
+          "native",
+          "byo_twilio",
+          "byo_telnyx",
+          "byo_plivo",
+          "byo_sip"
+        ],
+        "tools": false,
+        "streaming": true,
+        "cancel": true
+      },
+      "evidence": {
+        "contract_verified": false,
+        "live_verified": false
+      },
+      "docs_url": "https://www.assemblyai.com/docs/getting-started/models"
+    },
+    {
+      "id": "stt/openai/gpt-4o-transcribe",
+      "layer": "stt",
+      "provider": "openai",
+      "model": "gpt-4o-transcribe",
+      "canonical_model": "openai/gpt-4o-transcribe",
+      "protocol": "speech-stream",
+      "status": "experimental",
+      "capabilities": {
+        "languages": [
+          "en"
+        ],
+        "transports": [
+          "browser",
+          "phone",
+          "native",
+          "byo_twilio",
+          "byo_telnyx",
+          "byo_plivo",
+          "byo_sip"
+        ],
+        "tools": false,
+        "streaming": true,
+        "cancel": true
+      },
+      "evidence": {
+        "contract_verified": false,
+        "live_verified": false
+      },
+      "docs_url": "https://developers.openai.com/api/docs/guides/realtime-transcription"
+    },
+    {
+      "id": "stt/openai/gpt-4o-mini-transcribe",
+      "layer": "stt",
+      "provider": "openai",
+      "model": "gpt-4o-mini-transcribe",
+      "canonical_model": "openai/gpt-4o-mini-transcribe",
+      "protocol": "speech-stream",
+      "status": "experimental",
+      "capabilities": {
+        "languages": [
+          "en"
+        ],
+        "transports": [
+          "browser",
+          "phone",
+          "native",
+          "byo_twilio",
+          "byo_telnyx",
+          "byo_plivo",
+          "byo_sip"
+        ],
+        "tools": false,
+        "streaming": true,
+        "cancel": true
+      },
+      "evidence": {
+        "contract_verified": false,
+        "live_verified": false
+      },
+      "docs_url": "https://developers.openai.com/api/docs/guides/realtime-transcription"
+    },
+    {
+      "id": "stt/google/chirp_3",
+      "layer": "stt",
+      "provider": "google",
+      "model": "chirp_3",
+      "canonical_model": "google/chirp_3",
+      "protocol": "speech-stream",
+      "status": "experimental",
+      "capabilities": {
+        "languages": [
+          "en"
+        ],
+        "transports": [
+          "browser",
+          "phone",
+          "native",
+          "byo_twilio",
+          "byo_telnyx",
+          "byo_plivo",
+          "byo_sip"
+        ],
+        "tools": false,
+        "streaming": true,
+        "cancel": true
+      },
+      "evidence": {
+        "contract_verified": false,
+        "live_verified": false
+      },
+      "docs_url": "https://docs.cloud.google.com/speech-to-text/docs/models/chirp-3"
+    },
+    {
+      "id": "stt/azure/azure-speech",
+      "layer": "stt",
+      "provider": "azure",
+      "model": "azure-speech",
+      "canonical_model": "azure/azure-speech",
+      "protocol": "speech-stream",
+      "status": "experimental",
+      "capabilities": {
+        "languages": [
+          "en"
+        ],
+        "transports": [
+          "browser",
+          "phone",
+          "native",
+          "byo_twilio",
+          "byo_telnyx",
+          "byo_plivo",
+          "byo_sip"
+        ],
+        "tools": false,
+        "streaming": true,
+        "cancel": true
+      },
+      "evidence": {
+        "contract_verified": false,
+        "live_verified": false
+      },
+      "docs_url": "https://learn.microsoft.com/en-us/azure/ai-services/speech-service/index-speech-to-text"
+    },
+    {
+      "id": "stt/aws/transcribe-streaming",
+      "layer": "stt",
+      "provider": "aws",
+      "model": "transcribe-streaming",
+      "canonical_model": "aws/transcribe-streaming",
+      "protocol": "speech-stream",
+      "status": "experimental",
+      "capabilities": {
+        "languages": [
+          "en"
+        ],
+        "transports": [
+          "browser",
+          "phone",
+          "native",
+          "byo_twilio",
+          "byo_telnyx",
+          "byo_plivo",
+          "byo_sip"
+        ],
+        "tools": false,
+        "streaming": true,
+        "cancel": true
+      },
+      "evidence": {
+        "contract_verified": false,
+        "live_verified": false
+      },
+      "docs_url": "https://docs.aws.amazon.com/transcribe/latest/dg/streaming.html"
+    },
+    {
+      "id": "stt/elevenlabs/scribe_v2_realtime",
+      "layer": "stt",
+      "provider": "elevenlabs",
+      "model": "scribe_v2_realtime",
+      "canonical_model": "elevenlabs/scribe_v2_realtime",
+      "protocol": "speech-stream",
+      "status": "experimental",
+      "capabilities": {
+        "languages": [
+          "en"
+        ],
+        "transports": [
+          "browser",
+          "phone",
+          "native",
+          "byo_twilio",
+          "byo_telnyx",
+          "byo_plivo",
+          "byo_sip"
+        ],
+        "tools": false,
+        "streaming": true,
+        "cancel": true
+      },
+      "evidence": {
+        "contract_verified": false,
+        "live_verified": false
+      },
+      "docs_url": "https://elevenlabs.io/docs/api-reference/speech-to-text/v-1-speech-to-text-realtime"
+    },
+    {
+      "id": "stt/speechmatics/standard",
+      "layer": "stt",
+      "provider": "speechmatics",
+      "model": "standard",
+      "canonical_model": "speechmatics/standard",
+      "protocol": "speech-stream",
+      "status": "experimental",
+      "capabilities": {
+        "languages": [
+          "en"
+        ],
+        "transports": [
+          "browser",
+          "phone",
+          "native",
+          "byo_twilio",
+          "byo_telnyx",
+          "byo_plivo",
+          "byo_sip"
+        ],
+        "tools": false,
+        "streaming": true,
+        "cancel": true
+      },
+      "evidence": {
+        "contract_verified": false,
+        "live_verified": false
+      },
+      "docs_url": "https://docs.speechmatics.com/speech-to-text/models"
+    },
+    {
+      "id": "stt/speechmatics/enhanced",
+      "layer": "stt",
+      "provider": "speechmatics",
+      "model": "enhanced",
+      "canonical_model": "speechmatics/enhanced",
+      "protocol": "speech-stream",
+      "status": "experimental",
+      "capabilities": {
+        "languages": [
+          "en"
+        ],
+        "transports": [
+          "browser",
+          "phone",
+          "native",
+          "byo_twilio",
+          "byo_telnyx",
+          "byo_plivo",
+          "byo_sip"
+        ],
+        "tools": false,
+        "streaming": true,
+        "cancel": true
+      },
+      "evidence": {
+        "contract_verified": false,
+        "live_verified": false
+      },
+      "docs_url": "https://docs.speechmatics.com/speech-to-text/models"
+    },
+    {
+      "id": "stt/gladia/solaria-1",
+      "layer": "stt",
+      "provider": "gladia",
+      "model": "solaria-1",
+      "canonical_model": "gladia/solaria-1",
+      "protocol": "speech-stream",
+      "status": "experimental",
+      "capabilities": {
+        "languages": [
+          "en"
+        ],
+        "transports": [
+          "browser",
+          "phone",
+          "native",
+          "byo_twilio",
+          "byo_telnyx",
+          "byo_plivo",
+          "byo_sip"
+        ],
+        "tools": false,
+        "streaming": true,
+        "cancel": true
+      },
+      "evidence": {
+        "contract_verified": false,
+        "live_verified": false
+      },
+      "docs_url": "https://docs.gladia.io/chapters/introduction/models"
+    },
+    {
+      "id": "stt/mistral/voxtral-mini-transcribe-realtime-2602",
+      "layer": "stt",
+      "provider": "mistral",
+      "model": "voxtral-mini-transcribe-realtime-2602",
+      "canonical_model": "mistral/voxtral-mini-transcribe-realtime-2602",
+      "protocol": "speech-stream",
+      "status": "experimental",
+      "capabilities": {
+        "languages": [
+          "en"
+        ],
+        "transports": [
+          "browser",
+          "phone",
+          "native",
+          "byo_twilio",
+          "byo_telnyx",
+          "byo_plivo",
+          "byo_sip"
+        ],
+        "tools": false,
+        "streaming": true,
+        "cancel": true
+      },
+      "evidence": {
+        "contract_verified": false,
+        "live_verified": false
+      },
+      "docs_url": "https://docs.mistral.ai/studio/audio/speech_to_text/realtime_transcription"
+    },
+    {
+      "id": "stt/nvidia/parakeet-1.1b-en-US-asr-streaming",
+      "layer": "stt",
+      "provider": "nvidia",
+      "model": "parakeet-1.1b-en-US-asr-streaming",
+      "canonical_model": "nvidia/parakeet-1.1b-en-US-asr-streaming",
+      "protocol": "speech-stream",
+      "status": "experimental",
+      "capabilities": {
+        "languages": [
+          "en"
+        ],
+        "transports": [
+          "browser",
+          "phone",
+          "native",
+          "byo_twilio",
+          "byo_telnyx",
+          "byo_plivo",
+          "byo_sip"
+        ],
+        "tools": false,
+        "streaming": true,
+        "cancel": true
+      },
+      "evidence": {
+        "contract_verified": false,
+        "live_verified": false
+      },
+      "docs_url": "https://docs.nvidia.com/nim/speech/latest/about/index.html"
+    },
+    {
+      "id": "stt/sarvam/saaras:v3-realtime",
+      "layer": "stt",
+      "provider": "sarvam",
+      "model": "saaras:v3-realtime",
+      "canonical_model": "sarvam/saaras:v3-realtime",
+      "protocol": "speech-stream",
+      "status": "experimental",
+      "capabilities": {
+        "languages": [
+          "en"
+        ],
+        "transports": [
+          "browser",
+          "phone",
+          "native",
+          "byo_twilio",
+          "byo_telnyx",
+          "byo_plivo",
+          "byo_sip"
+        ],
+        "tools": false,
+        "streaming": true,
+        "cancel": true
+      },
+      "evidence": {
+        "contract_verified": false,
+        "live_verified": false
+      },
+      "docs_url": "https://docs.sarvam.ai/api-reference-docs/changelog"
+    },
+    {
+      "id": "llm/openai/gpt-4.1-mini",
+      "layer": "llm",
+      "provider": "openai",
+      "model": "gpt-4.1-mini",
+      "canonical_model": "openai/gpt-4.1-mini",
+      "protocol": "openai-chat",
+      "status": "experimental",
+      "capabilities": {
+        "languages": [
+          "en"
+        ],
+        "transports": [
+          "browser",
+          "phone",
+          "native",
+          "byo_twilio",
+          "byo_telnyx",
+          "byo_plivo",
+          "byo_sip"
+        ],
+        "tools": true,
+        "streaming": true,
+        "cancel": true
+      },
+      "evidence": {
+        "contract_verified": false,
+        "live_verified": false
+      },
+      "docs_url": "https://docs.pipecat.ai/server/services/llm/openai"
+    },
+    {
+      "id": "llm/openai/gpt-4.1",
+      "layer": "llm",
+      "provider": "openai",
+      "model": "gpt-4.1",
+      "canonical_model": "openai/gpt-4.1",
+      "protocol": "openai-chat",
+      "status": "experimental",
+      "capabilities": {
+        "languages": [
+          "en"
+        ],
+        "transports": [
+          "browser",
+          "phone",
+          "native",
+          "byo_twilio",
+          "byo_telnyx",
+          "byo_plivo",
+          "byo_sip"
+        ],
+        "tools": true,
+        "streaming": true,
+        "cancel": true
+      },
+      "evidence": {
+        "contract_verified": false,
+        "live_verified": false
+      },
+      "docs_url": "https://docs.pipecat.ai/server/services/llm/openai"
+    },
+    {
+      "id": "llm/openai/gpt-5-mini",
+      "layer": "llm",
+      "provider": "openai",
+      "model": "gpt-5-mini",
+      "canonical_model": "openai/gpt-5-mini",
+      "protocol": "openai-chat",
+      "status": "experimental",
+      "capabilities": {
+        "languages": [
+          "en"
+        ],
+        "transports": [
+          "browser",
+          "phone",
+          "native",
+          "byo_twilio",
+          "byo_telnyx",
+          "byo_plivo",
+          "byo_sip"
+        ],
+        "tools": true,
+        "streaming": true,
+        "cancel": true
+      },
+      "evidence": {
+        "contract_verified": false,
+        "live_verified": false
+      },
+      "docs_url": "https://docs.pipecat.ai/server/services/llm/openai"
+    },
+    {
+      "id": "llm/anthropic/claude-sonnet-4-5",
+      "layer": "llm",
+      "provider": "anthropic",
+      "model": "claude-sonnet-4-5",
+      "canonical_model": "anthropic/claude-sonnet-4.5",
+      "protocol": "anthropic-messages",
+      "status": "experimental",
+      "capabilities": {
+        "languages": [
+          "en"
+        ],
+        "transports": [
+          "browser",
+          "phone",
+          "native",
+          "byo_twilio",
+          "byo_telnyx",
+          "byo_plivo",
+          "byo_sip"
+        ],
+        "tools": true,
+        "streaming": true,
+        "cancel": true
+      },
+      "evidence": {
+        "contract_verified": false,
+        "live_verified": false
+      },
+      "docs_url": "https://docs.pipecat.ai/server/services/llm/anthropic"
+    },
+    {
+      "id": "llm/anthropic/claude-haiku-4-5",
+      "layer": "llm",
+      "provider": "anthropic",
+      "model": "claude-haiku-4-5",
+      "canonical_model": "anthropic/claude-haiku-4-5",
+      "protocol": "anthropic-messages",
+      "status": "experimental",
+      "capabilities": {
+        "languages": [
+          "en"
+        ],
+        "transports": [
+          "browser",
+          "phone",
+          "native",
+          "byo_twilio",
+          "byo_telnyx",
+          "byo_plivo",
+          "byo_sip"
+        ],
+        "tools": true,
+        "streaming": true,
+        "cancel": true
+      },
+      "evidence": {
+        "contract_verified": false,
+        "live_verified": false
+      },
+      "docs_url": "https://docs.pipecat.ai/server/services/llm/anthropic"
+    },
+    {
+      "id": "llm/google/gemini-2.5-flash",
+      "layer": "llm",
+      "provider": "google",
+      "model": "gemini-2.5-flash",
+      "canonical_model": "google/gemini-2.5-flash",
+      "protocol": "gemini",
+      "status": "experimental",
+      "capabilities": {
+        "languages": [
+          "en"
+        ],
+        "transports": [
+          "browser",
+          "phone",
+          "native",
+          "byo_twilio",
+          "byo_telnyx",
+          "byo_plivo",
+          "byo_sip"
+        ],
+        "tools": true,
+        "streaming": true,
+        "cancel": true
+      },
+      "evidence": {
+        "contract_verified": false,
+        "live_verified": false
+      },
+      "docs_url": "https://docs.pipecat.ai/server/services/llm/google"
+    },
+    {
+      "id": "llm/google/gemini-2.5-pro",
+      "layer": "llm",
+      "provider": "google",
+      "model": "gemini-2.5-pro",
+      "canonical_model": "google/gemini-2.5-pro",
+      "protocol": "gemini",
+      "status": "experimental",
+      "capabilities": {
+        "languages": [
+          "en"
+        ],
+        "transports": [
+          "browser",
+          "phone",
+          "native",
+          "byo_twilio",
+          "byo_telnyx",
+          "byo_plivo",
+          "byo_sip"
+        ],
+        "tools": true,
+        "streaming": true,
+        "cancel": true
+      },
+      "evidence": {
+        "contract_verified": false,
+        "live_verified": false
+      },
+      "docs_url": "https://docs.pipecat.ai/server/services/llm/google"
+    },
+    {
+      "id": "llm/xai/grok-4",
+      "layer": "llm",
+      "provider": "xai",
+      "model": "grok-4",
+      "canonical_model": "xai/grok-4",
+      "protocol": "openai-chat",
+      "status": "experimental",
+      "capabilities": {
+        "languages": [
+          "en"
+        ],
+        "transports": [
+          "browser",
+          "phone",
+          "native",
+          "byo_twilio",
+          "byo_telnyx",
+          "byo_plivo",
+          "byo_sip"
+        ],
+        "tools": true,
+        "streaming": true,
+        "cancel": true
+      },
+      "evidence": {
+        "contract_verified": false,
+        "live_verified": false
+      },
+      "docs_url": "https://docs.pipecat.ai/server/services/llm/xai"
+    },
+    {
+      "id": "llm/mistral/mistral-small-latest",
+      "layer": "llm",
+      "provider": "mistral",
+      "model": "mistral-small-latest",
+      "canonical_model": "mistral/mistral-small-latest",
+      "protocol": "openai-chat",
+      "status": "experimental",
+      "capabilities": {
+        "languages": [
+          "en"
+        ],
+        "transports": [
+          "browser",
+          "phone",
+          "native",
+          "byo_twilio",
+          "byo_telnyx",
+          "byo_plivo",
+          "byo_sip"
+        ],
+        "tools": true,
+        "streaming": true,
+        "cancel": true
+      },
+      "evidence": {
+        "contract_verified": false,
+        "live_verified": false
+      },
+      "docs_url": "https://docs.pipecat.ai/server/services/llm/mistral"
+    },
+    {
+      "id": "llm/mistral/mistral-large-latest",
+      "layer": "llm",
+      "provider": "mistral",
+      "model": "mistral-large-latest",
+      "canonical_model": "mistral/mistral-large-latest",
+      "protocol": "openai-chat",
+      "status": "experimental",
+      "capabilities": {
+        "languages": [
+          "en"
+        ],
+        "transports": [
+          "browser",
+          "phone",
+          "native",
+          "byo_twilio",
+          "byo_telnyx",
+          "byo_plivo",
+          "byo_sip"
+        ],
+        "tools": true,
+        "streaming": true,
+        "cancel": true
+      },
+      "evidence": {
+        "contract_verified": false,
+        "live_verified": false
+      },
+      "docs_url": "https://docs.pipecat.ai/server/services/llm/mistral"
+    },
+    {
+      "id": "llm/deepseek/deepseek-chat",
+      "layer": "llm",
+      "provider": "deepseek",
+      "model": "deepseek-chat",
+      "canonical_model": "deepseek/deepseek-chat",
+      "protocol": "openai-chat",
+      "status": "experimental",
+      "capabilities": {
+        "languages": [
+          "en"
+        ],
+        "transports": [
+          "browser",
+          "phone",
+          "native",
+          "byo_twilio",
+          "byo_telnyx",
+          "byo_plivo",
+          "byo_sip"
+        ],
+        "tools": true,
+        "streaming": true,
+        "cancel": true
+      },
+      "evidence": {
+        "contract_verified": false,
+        "live_verified": false
+      },
+      "docs_url": "https://docs.pipecat.ai/server/services/llm/deepseek"
+    },
+    {
+      "id": "llm/qwen/qwen-plus",
+      "layer": "llm",
+      "provider": "qwen",
+      "model": "qwen-plus",
+      "canonical_model": "qwen/qwen-plus",
+      "protocol": "openai-chat",
+      "status": "experimental",
+      "capabilities": {
+        "languages": [
+          "en"
+        ],
+        "transports": [
+          "browser",
+          "phone",
+          "native",
+          "byo_twilio",
+          "byo_telnyx",
+          "byo_plivo",
+          "byo_sip"
+        ],
+        "tools": true,
+        "streaming": true,
+        "cancel": true
+      },
+      "evidence": {
+        "contract_verified": false,
+        "live_verified": false
+      },
+      "docs_url": "https://docs.pipecat.ai/server/services/llm/qwen"
+    },
+    {
+      "id": "llm/moonshot/kimi-k2.5",
+      "layer": "llm",
+      "provider": "moonshot",
+      "model": "kimi-k2.5",
+      "canonical_model": "moonshot/kimi-k2.5",
+      "protocol": "openai-chat",
+      "status": "experimental",
+      "capabilities": {
+        "languages": [
+          "en"
+        ],
+        "transports": [
+          "browser",
+          "phone",
+          "native",
+          "byo_twilio",
+          "byo_telnyx",
+          "byo_plivo",
+          "byo_sip"
+        ],
+        "tools": true,
+        "streaming": true,
+        "cancel": true
+      },
+      "evidence": {
+        "contract_verified": false,
+        "live_verified": false
+      },
+      "docs_url": "https://docs.pipecat.ai/server/services/llm/moonshot"
+    },
+    {
+      "id": "llm/zai/glm-5",
+      "layer": "llm",
+      "provider": "zai",
+      "model": "glm-5",
+      "canonical_model": "zai/glm-5",
+      "protocol": "openai-chat",
+      "status": "experimental",
+      "capabilities": {
+        "languages": [
+          "en"
+        ],
+        "transports": [
+          "browser",
+          "phone",
+          "native",
+          "byo_twilio",
+          "byo_telnyx",
+          "byo_plivo",
+          "byo_sip"
+        ],
+        "tools": true,
+        "streaming": true,
+        "cancel": true
+      },
+      "evidence": {
+        "contract_verified": false,
+        "live_verified": false
+      },
+      "docs_url": "https://docs.pipecat.ai/server/services/llm/zai"
+    },
+    {
+      "id": "llm/minimax/MiniMax-M2.5",
+      "layer": "llm",
+      "provider": "minimax",
+      "model": "MiniMax-M2.5",
+      "canonical_model": "minimax/MiniMax-M2.5",
+      "protocol": "openai-chat",
+      "status": "experimental",
+      "capabilities": {
+        "languages": [
+          "en"
+        ],
+        "transports": [
+          "browser",
+          "phone",
+          "native",
+          "byo_twilio",
+          "byo_telnyx",
+          "byo_plivo",
+          "byo_sip"
+        ],
+        "tools": true,
+        "streaming": true,
+        "cancel": true
+      },
+      "evidence": {
+        "contract_verified": false,
+        "live_verified": false
+      },
+      "docs_url": "https://docs.pipecat.ai/server/services/llm/minimax"
+    },
+    {
+      "id": "llm/groq/llama-3.3-70b-versatile",
+      "layer": "llm",
+      "provider": "groq",
+      "model": "llama-3.3-70b-versatile",
+      "canonical_model": "meta-llama/llama-3.3-70b-instruct",
+      "protocol": "openai-chat",
+      "status": "experimental",
+      "capabilities": {
+        "languages": [
+          "en"
+        ],
+        "transports": [
+          "browser",
+          "phone",
+          "native",
+          "byo_twilio",
+          "byo_telnyx",
+          "byo_plivo",
+          "byo_sip"
+        ],
+        "tools": true,
+        "streaming": true,
+        "cancel": true
+      },
+      "evidence": {
+        "contract_verified": false,
+        "live_verified": false
+      },
+      "docs_url": "https://docs.pipecat.ai/server/services/llm/groq"
+    },
+    {
+      "id": "llm/groq/openai/gpt-oss-120b",
+      "layer": "llm",
+      "provider": "groq",
+      "model": "openai/gpt-oss-120b",
+      "canonical_model": "openai/gpt-oss-120b",
+      "protocol": "openai-chat",
+      "status": "experimental",
+      "capabilities": {
+        "languages": [
+          "en"
+        ],
+        "transports": [
+          "browser",
+          "phone",
+          "native",
+          "byo_twilio",
+          "byo_telnyx",
+          "byo_plivo",
+          "byo_sip"
+        ],
+        "tools": true,
+        "streaming": true,
+        "cancel": true
+      },
+      "evidence": {
+        "contract_verified": false,
+        "live_verified": false
+      },
+      "docs_url": "https://docs.pipecat.ai/server/services/llm/groq"
+    },
+    {
+      "id": "llm/cerebras/gpt-oss-120b",
+      "layer": "llm",
+      "provider": "cerebras",
+      "model": "gpt-oss-120b",
+      "canonical_model": "openai/gpt-oss-120b",
+      "protocol": "openai-chat",
+      "status": "experimental",
+      "capabilities": {
+        "languages": [
+          "en"
+        ],
+        "transports": [
+          "browser",
+          "phone",
+          "native",
+          "byo_twilio",
+          "byo_telnyx",
+          "byo_plivo",
+          "byo_sip"
+        ],
+        "tools": true,
+        "streaming": true,
+        "cancel": true
+      },
+      "evidence": {
+        "contract_verified": false,
+        "live_verified": false
+      },
+      "docs_url": "https://docs.pipecat.ai/server/services/llm/cerebras"
+    },
+    {
+      "id": "llm/fireworks/accounts/fireworks/models/llama-v3p3-70b-instruct",
+      "layer": "llm",
+      "provider": "fireworks",
+      "model": "accounts/fireworks/models/llama-v3p3-70b-instruct",
+      "canonical_model": "meta-llama/llama-3.3-70b-instruct",
+      "protocol": "openai-chat",
+      "status": "experimental",
+      "capabilities": {
+        "languages": [
+          "en"
+        ],
+        "transports": [
+          "browser",
+          "phone",
+          "native",
+          "byo_twilio",
+          "byo_telnyx",
+          "byo_plivo",
+          "byo_sip"
+        ],
+        "tools": true,
+        "streaming": true,
+        "cancel": true
+      },
+      "evidence": {
+        "contract_verified": false,
+        "live_verified": false
+      },
+      "docs_url": "https://docs.pipecat.ai/server/services/llm/fireworks"
+    },
+    {
+      "id": "llm/together/meta-llama/Llama-3.3-70B-Instruct-Turbo",
+      "layer": "llm",
+      "provider": "together",
+      "model": "meta-llama/Llama-3.3-70B-Instruct-Turbo",
+      "canonical_model": "meta-llama/llama-3.3-70b-instruct",
+      "protocol": "openai-chat",
+      "status": "experimental",
+      "capabilities": {
+        "languages": [
+          "en"
+        ],
+        "transports": [
+          "browser",
+          "phone",
+          "native",
+          "byo_twilio",
+          "byo_telnyx",
+          "byo_plivo",
+          "byo_sip"
+        ],
+        "tools": true,
+        "streaming": true,
+        "cancel": true
+      },
+      "evidence": {
+        "contract_verified": false,
+        "live_verified": false
+      },
+      "docs_url": "https://docs.together.ai/docs/serverless/models"
+    },
+    {
+      "id": "llm/together/openai/gpt-oss-120b",
+      "layer": "llm",
+      "provider": "together",
+      "model": "openai/gpt-oss-120b",
+      "canonical_model": "openai/gpt-oss-120b",
+      "protocol": "openai-chat",
+      "status": "experimental",
+      "capabilities": {
+        "languages": [
+          "en"
+        ],
+        "transports": [
+          "browser",
+          "phone",
+          "native",
+          "byo_twilio",
+          "byo_telnyx",
+          "byo_plivo",
+          "byo_sip"
+        ],
+        "tools": true,
+        "streaming": true,
+        "cancel": true
+      },
+      "evidence": {
+        "contract_verified": false,
+        "live_verified": false
+      },
+      "docs_url": "https://docs.together.ai/docs/serverless/models"
+    },
+    {
+      "id": "llm/together/Qwen/Qwen3.5-9B",
+      "layer": "llm",
+      "provider": "together",
+      "model": "Qwen/Qwen3.5-9B",
+      "canonical_model": "Qwen/Qwen3.5-9B",
+      "protocol": "openai-chat",
+      "status": "experimental",
+      "capabilities": {
+        "languages": [
+          "en"
+        ],
+        "transports": [
+          "browser",
+          "phone",
+          "native",
+          "byo_twilio",
+          "byo_telnyx",
+          "byo_plivo",
+          "byo_sip"
+        ],
+        "tools": true,
+        "streaming": true,
+        "cancel": true
+      },
+      "evidence": {
+        "contract_verified": false,
+        "live_verified": false
+      },
+      "docs_url": "https://docs.together.ai/docs/serverless/models"
+    },
+    {
+      "id": "llm/together/moonshotai/Kimi-K3",
+      "layer": "llm",
+      "provider": "together",
+      "model": "moonshotai/Kimi-K3",
+      "canonical_model": "moonshotai/Kimi-K3",
+      "protocol": "openai-chat",
+      "status": "experimental",
+      "capabilities": {
+        "languages": [
+          "en"
+        ],
+        "transports": [
+          "browser",
+          "phone",
+          "native",
+          "byo_twilio",
+          "byo_telnyx",
+          "byo_plivo",
+          "byo_sip"
+        ],
+        "tools": true,
+        "streaming": true,
+        "cancel": true
+      },
+      "evidence": {
+        "contract_verified": false,
+        "live_verified": false
+      },
+      "docs_url": "https://docs.together.ai/docs/serverless/models"
+    },
+    {
+      "id": "llm/together/zai-org/GLM-5.3",
+      "layer": "llm",
+      "provider": "together",
+      "model": "zai-org/GLM-5.3",
+      "canonical_model": "zai-org/GLM-5.3",
+      "protocol": "openai-chat",
+      "status": "experimental",
+      "capabilities": {
+        "languages": [
+          "en"
+        ],
+        "transports": [
+          "browser",
+          "phone",
+          "native",
+          "byo_twilio",
+          "byo_telnyx",
+          "byo_plivo",
+          "byo_sip"
+        ],
+        "tools": true,
+        "streaming": true,
+        "cancel": true
+      },
+      "evidence": {
+        "contract_verified": false,
+        "live_verified": false
+      },
+      "docs_url": "https://docs.together.ai/docs/serverless/models"
+    },
+    {
+      "id": "llm/together/MiniMaxAI/MiniMax-M3",
+      "layer": "llm",
+      "provider": "together",
+      "model": "MiniMaxAI/MiniMax-M3",
+      "canonical_model": "MiniMaxAI/MiniMax-M3",
+      "protocol": "openai-chat",
+      "status": "experimental",
+      "capabilities": {
+        "languages": [
+          "en"
+        ],
+        "transports": [
+          "browser",
+          "phone",
+          "native",
+          "byo_twilio",
+          "byo_telnyx",
+          "byo_plivo",
+          "byo_sip"
+        ],
+        "tools": true,
+        "streaming": true,
+        "cancel": true
+      },
+      "evidence": {
+        "contract_verified": false,
+        "live_verified": false
+      },
+      "docs_url": "https://docs.together.ai/docs/serverless/models"
+    },
+    {
+      "id": "llm/together/deepseek-ai/DeepSeek-V4.1-Flash",
+      "layer": "llm",
+      "provider": "together",
+      "model": "deepseek-ai/DeepSeek-V4.1-Flash",
+      "canonical_model": "deepseek-ai/DeepSeek-V4.1-Flash",
+      "protocol": "openai-chat",
+      "status": "experimental",
+      "capabilities": {
+        "languages": [
+          "en"
+        ],
+        "transports": [
+          "browser",
+          "phone",
+          "native",
+          "byo_twilio",
+          "byo_telnyx",
+          "byo_plivo",
+          "byo_sip"
+        ],
+        "tools": true,
+        "streaming": true,
+        "cancel": true
+      },
+      "evidence": {
+        "contract_verified": false,
+        "live_verified": false
+      },
+      "docs_url": "https://docs.together.ai/docs/serverless/models"
+    },
+    {
+      "id": "llm/openrouter/openai/gpt-4.1-mini",
+      "layer": "llm",
+      "provider": "openrouter",
+      "model": "openai/gpt-4.1-mini",
+      "canonical_model": "openai/gpt-4.1-mini",
+      "protocol": "openai-chat",
+      "status": "experimental",
+      "capabilities": {
+        "languages": [
+          "en"
+        ],
+        "transports": [
+          "browser",
+          "phone",
+          "native",
+          "byo_twilio",
+          "byo_telnyx",
+          "byo_plivo",
+          "byo_sip"
+        ],
+        "tools": true,
+        "streaming": true,
+        "cancel": true
+      },
+      "evidence": {
+        "contract_verified": false,
+        "live_verified": false
+      },
+      "docs_url": "https://openrouter.ai/docs/guides/overview/models"
+    },
+    {
+      "id": "llm/openrouter/anthropic/claude-sonnet-4.5",
+      "layer": "llm",
+      "provider": "openrouter",
+      "model": "anthropic/claude-sonnet-4.5",
+      "canonical_model": "anthropic/claude-sonnet-4.5",
+      "protocol": "openai-chat",
+      "status": "experimental",
+      "capabilities": {
+        "languages": [
+          "en"
+        ],
+        "transports": [
+          "browser",
+          "phone",
+          "native",
+          "byo_twilio",
+          "byo_telnyx",
+          "byo_plivo",
+          "byo_sip"
+        ],
+        "tools": true,
+        "streaming": true,
+        "cancel": true
+      },
+      "evidence": {
+        "contract_verified": false,
+        "live_verified": false
+      },
+      "docs_url": "https://openrouter.ai/docs/guides/overview/models"
+    },
+    {
+      "id": "llm/openrouter/google/gemini-2.5-flash",
+      "layer": "llm",
+      "provider": "openrouter",
+      "model": "google/gemini-2.5-flash",
+      "canonical_model": "google/gemini-2.5-flash",
+      "protocol": "openai-chat",
+      "status": "experimental",
+      "capabilities": {
+        "languages": [
+          "en"
+        ],
+        "transports": [
+          "browser",
+          "phone",
+          "native",
+          "byo_twilio",
+          "byo_telnyx",
+          "byo_plivo",
+          "byo_sip"
+        ],
+        "tools": true,
+        "streaming": true,
+        "cancel": true
+      },
+      "evidence": {
+        "contract_verified": false,
+        "live_verified": false
+      },
+      "docs_url": "https://openrouter.ai/docs/guides/overview/models"
+    },
+    {
+      "id": "llm/openrouter/meta-llama/llama-3.3-70b-instruct",
+      "layer": "llm",
+      "provider": "openrouter",
+      "model": "meta-llama/llama-3.3-70b-instruct",
+      "canonical_model": "meta-llama/llama-3.3-70b-instruct",
+      "protocol": "openai-chat",
+      "status": "experimental",
+      "capabilities": {
+        "languages": [
+          "en"
+        ],
+        "transports": [
+          "browser",
+          "phone",
+          "native",
+          "byo_twilio",
+          "byo_telnyx",
+          "byo_plivo",
+          "byo_sip"
+        ],
+        "tools": true,
+        "streaming": true,
+        "cancel": true
+      },
+      "evidence": {
+        "contract_verified": false,
+        "live_verified": false
+      },
+      "docs_url": "https://openrouter.ai/docs/guides/overview/models"
+    },
+    {
+      "id": "llm/openrouter/openai/gpt-oss-120b",
+      "layer": "llm",
+      "provider": "openrouter",
+      "model": "openai/gpt-oss-120b",
+      "canonical_model": "openai/gpt-oss-120b",
+      "protocol": "openai-chat",
+      "status": "experimental",
+      "capabilities": {
+        "languages": [
+          "en"
+        ],
+        "transports": [
+          "browser",
+          "phone",
+          "native",
+          "byo_twilio",
+          "byo_telnyx",
+          "byo_plivo",
+          "byo_sip"
+        ],
+        "tools": true,
+        "streaming": true,
+        "cancel": true
+      },
+      "evidence": {
+        "contract_verified": false,
+        "live_verified": false
+      },
+      "docs_url": "https://openrouter.ai/docs/guides/overview/models"
+    },
+    {
+      "id": "llm/azure/gpt-4.1-mini",
+      "layer": "llm",
+      "provider": "azure",
+      "model": "gpt-4.1-mini",
+      "canonical_model": "openai/gpt-4.1-mini",
+      "protocol": "openai-chat",
+      "status": "experimental",
+      "capabilities": {
+        "languages": [
+          "en"
+        ],
+        "transports": [
+          "browser",
+          "phone",
+          "native",
+          "byo_twilio",
+          "byo_telnyx",
+          "byo_plivo",
+          "byo_sip"
+        ],
+        "tools": true,
+        "streaming": true,
+        "cancel": true
+      },
+      "evidence": {
+        "contract_verified": false,
+        "live_verified": false
+      },
+      "docs_url": "https://docs.pipecat.ai/server/services/llm/azure"
+    },
+    {
+      "id": "llm/aws/anthropic.claude-sonnet-4-5-20250929-v1:0",
+      "layer": "llm",
+      "provider": "aws",
+      "model": "anthropic.claude-sonnet-4-5-20250929-v1:0",
+      "canonical_model": "anthropic/claude-sonnet-4.5",
+      "protocol": "bedrock-converse",
+      "status": "experimental",
+      "capabilities": {
+        "languages": [
+          "en"
+        ],
+        "transports": [
+          "browser",
+          "phone",
+          "native",
+          "byo_twilio",
+          "byo_telnyx",
+          "byo_plivo",
+          "byo_sip"
+        ],
+        "tools": true,
+        "streaming": true,
+        "cancel": true
+      },
+      "evidence": {
+        "contract_verified": false,
+        "live_verified": false
+      },
+      "docs_url": "https://docs.pipecat.ai/server/services/llm/aws"
+    },
+    {
+      "id": "llm/inworld/openai/gpt-4.1-mini",
+      "layer": "llm",
+      "provider": "inworld",
+      "model": "openai/gpt-4.1-mini",
+      "canonical_model": "openai/gpt-4.1-mini",
+      "protocol": "openai-chat",
+      "status": "experimental",
+      "capabilities": {
+        "languages": [
+          "en"
+        ],
+        "transports": [
+          "browser",
+          "phone",
+          "native",
+          "byo_twilio",
+          "byo_telnyx",
+          "byo_plivo",
+          "byo_sip"
+        ],
+        "tools": true,
+        "streaming": true,
+        "cancel": true
+      },
+      "evidence": {
+        "contract_verified": false,
+        "live_verified": false
+      },
+      "docs_url": "https://docs.pipecat.ai/server/services/llm/inworld"
+    },
+    {
+      "id": "llm/sarvam/sarvam-m",
+      "layer": "llm",
+      "provider": "sarvam",
+      "model": "sarvam-m",
+      "canonical_model": "sarvam/sarvam-m",
+      "protocol": "openai-chat",
+      "status": "experimental",
+      "capabilities": {
+        "languages": [
+          "en"
+        ],
+        "transports": [
+          "browser",
+          "phone",
+          "native",
+          "byo_twilio",
+          "byo_telnyx",
+          "byo_plivo",
+          "byo_sip"
+        ],
+        "tools": true,
+        "streaming": true,
+        "cancel": true
+      },
+      "evidence": {
+        "contract_verified": false,
+        "live_verified": false
+      },
+      "docs_url": "https://docs.pipecat.ai/server/services/llm/sarvam"
+    },
+    {
+      "id": "llm/nvidia/meta/llama-3.3-70b-instruct",
+      "layer": "llm",
+      "provider": "nvidia",
+      "model": "meta/llama-3.3-70b-instruct",
+      "canonical_model": "meta-llama/llama-3.3-70b-instruct",
+      "protocol": "openai-chat",
+      "status": "experimental",
+      "capabilities": {
+        "languages": [
+          "en"
+        ],
+        "transports": [
+          "browser",
+          "phone",
+          "native",
+          "byo_twilio",
+          "byo_telnyx",
+          "byo_plivo",
+          "byo_sip"
+        ],
+        "tools": true,
+        "streaming": true,
+        "cancel": true
+      },
+      "evidence": {
+        "contract_verified": false,
+        "live_verified": false
+      },
+      "docs_url": "https://docs.pipecat.ai/server/services/llm/nvidia"
+    },
+    {
+      "id": "tts/cartesia/sonic-3.6",
+      "layer": "tts",
+      "provider": "cartesia",
+      "model": "sonic-3.6",
+      "canonical_model": "cartesia/sonic-3.6",
+      "protocol": "speech-synthesis",
+      "status": "experimental",
+      "capabilities": {
+        "languages": [
+          "en"
+        ],
+        "transports": [
+          "browser",
+          "phone",
+          "native",
+          "byo_twilio",
+          "byo_telnyx",
+          "byo_plivo",
+          "byo_sip"
+        ],
+        "tools": false,
+        "streaming": true,
+        "cancel": true,
+        "text_input": "segmented",
+        "voice_required": true,
+        "provider_generation_cancel": "unknown"
+      },
+      "evidence": {
+        "contract_verified": false,
+        "live_verified": false
+      },
+      "docs_url": "https://docs.cartesia.ai/build-with-cartesia/tts-models/latest"
+    },
+    {
+      "id": "tts/inworld/inworld-tts-2",
+      "layer": "tts",
+      "provider": "inworld",
+      "model": "inworld-tts-2",
+      "canonical_model": "inworld/inworld-tts-2",
+      "protocol": "speech-synthesis",
+      "status": "experimental",
+      "capabilities": {
+        "languages": [
+          "en"
+        ],
+        "transports": [
+          "browser",
+          "phone",
+          "native",
+          "byo_twilio",
+          "byo_telnyx",
+          "byo_plivo",
+          "byo_sip"
+        ],
+        "tools": false,
+        "streaming": true,
+        "cancel": true,
+        "text_input": "segmented",
+        "voice_required": true,
+        "provider_generation_cancel": "unknown"
+      },
+      "evidence": {
+        "contract_verified": false,
+        "live_verified": false
+      },
+      "docs_url": "https://docs.inworld.ai/tts/tts-models"
+    },
+    {
+      "id": "tts/inworld/inworld-tts-2-flash",
+      "layer": "tts",
+      "provider": "inworld",
+      "model": "inworld-tts-2-flash",
+      "canonical_model": "inworld/inworld-tts-2-flash",
+      "protocol": "speech-synthesis",
+      "status": "experimental",
+      "capabilities": {
+        "languages": [
+          "en"
+        ],
+        "transports": [
+          "browser",
+          "phone",
+          "native",
+          "byo_twilio",
+          "byo_telnyx",
+          "byo_plivo",
+          "byo_sip"
+        ],
+        "tools": false,
+        "streaming": true,
+        "cancel": true,
+        "text_input": "segmented",
+        "voice_required": true,
+        "provider_generation_cancel": "unknown"
+      },
+      "evidence": {
+        "contract_verified": false,
+        "live_verified": false
+      },
+      "docs_url": "https://docs.inworld.ai/tts/tts-models"
+    },
+    {
+      "id": "tts/deepgram/aura-2-thalia-en",
+      "layer": "tts",
+      "provider": "deepgram",
+      "model": "aura-2-thalia-en",
+      "canonical_model": "deepgram/aura-2-thalia-en",
+      "protocol": "speech-synthesis",
+      "status": "experimental",
+      "capabilities": {
+        "languages": [
+          "en"
+        ],
+        "transports": [
+          "browser",
+          "phone",
+          "native",
+          "byo_twilio",
+          "byo_telnyx",
+          "byo_plivo",
+          "byo_sip"
+        ],
+        "tools": false,
+        "streaming": true,
+        "cancel": true,
+        "text_input": "segmented",
+        "voice_required": false,
+        "provider_generation_cancel": "unknown"
+      },
+      "evidence": {
+        "contract_verified": false,
+        "live_verified": false
+      },
+      "docs_url": "https://developers.deepgram.com/docs/tts-models-languages-overview"
+    },
+    {
+      "id": "tts/deepgram/aura-2-andromeda-en",
+      "layer": "tts",
+      "provider": "deepgram",
+      "model": "aura-2-andromeda-en",
+      "canonical_model": "deepgram/aura-2-andromeda-en",
+      "protocol": "speech-synthesis",
+      "status": "experimental",
+      "capabilities": {
+        "languages": [
+          "en"
+        ],
+        "transports": [
+          "browser",
+          "phone",
+          "native",
+          "byo_twilio",
+          "byo_telnyx",
+          "byo_plivo",
+          "byo_sip"
+        ],
+        "tools": false,
+        "streaming": true,
+        "cancel": true,
+        "text_input": "segmented",
+        "voice_required": false,
+        "provider_generation_cancel": "unknown"
+      },
+      "evidence": {
+        "contract_verified": false,
+        "live_verified": false
+      },
+      "docs_url": "https://developers.deepgram.com/docs/tts-models-languages-overview"
+    },
+    {
+      "id": "tts/openai/gpt-4o-mini-tts",
+      "layer": "tts",
+      "provider": "openai",
+      "model": "gpt-4o-mini-tts",
+      "canonical_model": "openai/gpt-4o-mini-tts",
+      "protocol": "speech-synthesis",
+      "status": "experimental",
+      "capabilities": {
+        "languages": [
+          "en"
+        ],
+        "transports": [
+          "browser",
+          "phone",
+          "native",
+          "byo_twilio",
+          "byo_telnyx",
+          "byo_plivo",
+          "byo_sip"
+        ],
+        "tools": false,
+        "streaming": true,
+        "cancel": true,
+        "text_input": "segmented",
+        "voice_required": true,
+        "provider_generation_cancel": "unknown"
+      },
+      "evidence": {
+        "contract_verified": false,
+        "live_verified": false
+      },
+      "docs_url": "https://developers.openai.com/api/docs/guides/text-to-speech"
+    },
+    {
+      "id": "tts/google/chirp-3-hd",
+      "layer": "tts",
+      "provider": "google",
+      "model": "chirp-3-hd",
+      "canonical_model": "google/chirp-3-hd",
+      "protocol": "speech-synthesis",
+      "status": "experimental",
+      "capabilities": {
+        "languages": [
+          "en"
+        ],
+        "transports": [
+          "browser",
+          "phone",
+          "native",
+          "byo_twilio",
+          "byo_telnyx",
+          "byo_plivo",
+          "byo_sip"
+        ],
+        "tools": false,
+        "streaming": true,
+        "cancel": true,
+        "text_input": "segmented",
+        "voice_required": true,
+        "model_binding": "voice",
+        "provider_generation_cancel": "unknown"
+      },
+      "evidence": {
+        "contract_verified": false,
+        "live_verified": false
+      },
+      "docs_url": "https://docs.cloud.google.com/text-to-speech/docs/chirp3-hd"
+    },
+    {
+      "id": "tts/azure/neural",
+      "layer": "tts",
+      "provider": "azure",
+      "model": "neural",
+      "canonical_model": "azure/neural",
+      "protocol": "speech-synthesis",
+      "status": "experimental",
+      "capabilities": {
+        "languages": [
+          "en"
+        ],
+        "transports": [
+          "browser",
+          "phone",
+          "native",
+          "byo_twilio",
+          "byo_telnyx",
+          "byo_plivo",
+          "byo_sip"
+        ],
+        "tools": false,
+        "streaming": true,
+        "cancel": true,
+        "text_input": "segmented",
+        "voice_required": true,
+        "model_binding": "voice",
+        "provider_generation_cancel": "unknown"
+      },
+      "evidence": {
+        "contract_verified": false,
+        "live_verified": false
+      },
+      "docs_url": "https://learn.microsoft.com/en-us/azure/ai-services/speech-service/text-to-speech"
+    },
+    {
+      "id": "tts/aws/neural",
+      "layer": "tts",
+      "provider": "aws",
+      "model": "neural",
+      "canonical_model": "aws/neural",
+      "protocol": "speech-synthesis",
+      "status": "experimental",
+      "capabilities": {
+        "languages": [
+          "en"
+        ],
+        "transports": [
+          "browser",
+          "phone",
+          "native",
+          "byo_twilio",
+          "byo_telnyx",
+          "byo_plivo",
+          "byo_sip"
+        ],
+        "tools": false,
+        "streaming": true,
+        "cancel": true,
+        "text_input": "segmented",
+        "voice_required": true,
+        "provider_generation_cancel": "unknown"
+      },
+      "evidence": {
+        "contract_verified": false,
+        "live_verified": false
+      },
+      "docs_url": "https://docs.aws.amazon.com/polly/latest/APIReference/API_SynthesizeSpeech.html"
+    },
+    {
+      "id": "tts/aws/generative",
+      "layer": "tts",
+      "provider": "aws",
+      "model": "generative",
+      "canonical_model": "aws/generative",
+      "protocol": "speech-synthesis",
+      "status": "experimental",
+      "capabilities": {
+        "languages": [
+          "en"
+        ],
+        "transports": [
+          "browser",
+          "phone",
+          "native",
+          "byo_twilio",
+          "byo_telnyx",
+          "byo_plivo",
+          "byo_sip"
+        ],
+        "tools": false,
+        "streaming": true,
+        "cancel": true,
+        "text_input": "segmented",
+        "voice_required": true,
+        "provider_generation_cancel": "unknown"
+      },
+      "evidence": {
+        "contract_verified": false,
+        "live_verified": false
+      },
+      "docs_url": "https://docs.aws.amazon.com/polly/latest/APIReference/API_SynthesizeSpeech.html"
+    },
+    {
+      "id": "tts/elevenlabs/eleven_flash_v2_5",
+      "layer": "tts",
+      "provider": "elevenlabs",
+      "model": "eleven_flash_v2_5",
+      "canonical_model": "elevenlabs/eleven_flash_v2_5",
+      "protocol": "speech-synthesis",
+      "status": "experimental",
+      "capabilities": {
+        "languages": [
+          "en"
+        ],
+        "transports": [
+          "browser",
+          "phone",
+          "native",
+          "byo_twilio",
+          "byo_telnyx",
+          "byo_plivo",
+          "byo_sip"
+        ],
+        "tools": false,
+        "streaming": true,
+        "cancel": true,
+        "text_input": "segmented",
+        "voice_required": true,
+        "provider_generation_cancel": "unknown"
+      },
+      "evidence": {
+        "contract_verified": false,
+        "live_verified": false
+      },
+      "docs_url": "https://elevenlabs.io/docs/overview/models"
+    },
+    {
+      "id": "tts/elevenlabs/eleven_turbo_v2_5",
+      "layer": "tts",
+      "provider": "elevenlabs",
+      "model": "eleven_turbo_v2_5",
+      "canonical_model": "elevenlabs/eleven_turbo_v2_5",
+      "protocol": "speech-synthesis",
+      "status": "experimental",
+      "capabilities": {
+        "languages": [
+          "en"
+        ],
+        "transports": [
+          "browser",
+          "phone",
+          "native",
+          "byo_twilio",
+          "byo_telnyx",
+          "byo_plivo",
+          "byo_sip"
+        ],
+        "tools": false,
+        "streaming": true,
+        "cancel": true,
+        "text_input": "segmented",
+        "voice_required": true,
+        "provider_generation_cancel": "unknown"
+      },
+      "evidence": {
+        "contract_verified": false,
+        "live_verified": false
+      },
+      "docs_url": "https://elevenlabs.io/docs/overview/models"
+    },
+    {
+      "id": "tts/nvidia/magpie-tts-multilingual",
+      "layer": "tts",
+      "provider": "nvidia",
+      "model": "magpie-tts-multilingual",
+      "canonical_model": "nvidia/magpie-tts-multilingual",
+      "protocol": "speech-synthesis",
+      "status": "experimental",
+      "capabilities": {
+        "languages": [
+          "en"
+        ],
+        "transports": [
+          "browser",
+          "phone",
+          "native",
+          "byo_twilio",
+          "byo_telnyx",
+          "byo_plivo",
+          "byo_sip"
+        ],
+        "tools": false,
+        "streaming": true,
+        "cancel": true,
+        "text_input": "segmented",
+        "voice_required": true,
+        "provider_generation_cancel": "unknown"
+      },
+      "evidence": {
+        "contract_verified": false,
+        "live_verified": false
+      },
+      "docs_url": "https://docs.nvidia.com/nim/speech/latest/about/index.html"
+    },
+    {
+      "id": "tts/smallest/lightning_v3.1",
+      "layer": "tts",
+      "provider": "smallest",
+      "model": "lightning_v3.1",
+      "canonical_model": "smallest/lightning_v3.1",
+      "protocol": "speech-synthesis",
+      "status": "experimental",
+      "capabilities": {
+        "languages": [
+          "en"
+        ],
+        "transports": [
+          "browser",
+          "phone",
+          "native",
+          "byo_twilio",
+          "byo_telnyx",
+          "byo_plivo",
+          "byo_sip"
+        ],
+        "tools": false,
+        "streaming": true,
+        "cancel": true,
+        "text_input": "segmented",
+        "voice_required": true,
+        "provider_generation_cancel": "unknown"
+      },
+      "evidence": {
+        "contract_verified": false,
+        "live_verified": false
+      },
+      "docs_url": "https://docs.smallest.ai/models/documentation/text-to-speech-lightning/overview"
+    },
+    {
+      "id": "tts/smallest/lightning_v3.1_pro",
+      "layer": "tts",
+      "provider": "smallest",
+      "model": "lightning_v3.1_pro",
+      "canonical_model": "smallest/lightning_v3.1_pro",
+      "protocol": "speech-synthesis",
+      "status": "experimental",
+      "capabilities": {
+        "languages": [
+          "en"
+        ],
+        "transports": [
+          "browser",
+          "phone",
+          "native",
+          "byo_twilio",
+          "byo_telnyx",
+          "byo_plivo",
+          "byo_sip"
+        ],
+        "tools": false,
+        "streaming": true,
+        "cancel": true,
+        "text_input": "segmented",
+        "voice_required": true,
+        "provider_generation_cancel": "unknown"
+      },
+      "evidence": {
+        "contract_verified": false,
+        "live_verified": false
+      },
+      "docs_url": "https://docs.smallest.ai/models/documentation/text-to-speech-lightning/overview"
+    },
+    {
+      "id": "tts/rime/mistv2",
+      "layer": "tts",
+      "provider": "rime",
+      "model": "mistv2",
+      "canonical_model": "rime/mistv2",
+      "protocol": "speech-synthesis",
+      "status": "experimental",
+      "capabilities": {
+        "languages": [
+          "en"
+        ],
+        "transports": [
+          "browser",
+          "phone",
+          "native",
+          "byo_twilio",
+          "byo_telnyx",
+          "byo_plivo",
+          "byo_sip"
+        ],
+        "tools": false,
+        "streaming": true,
+        "cancel": true,
+        "text_input": "segmented",
+        "voice_required": true,
+        "provider_generation_cancel": "unknown"
+      },
+      "evidence": {
+        "contract_verified": false,
+        "live_verified": false
+      },
+      "docs_url": "https://docs.rime.ai/"
+    },
+    {
+      "id": "tts/rime/coda",
+      "layer": "tts",
+      "provider": "rime",
+      "model": "coda",
+      "canonical_model": "rime/coda",
+      "protocol": "speech-synthesis",
+      "status": "experimental",
+      "capabilities": {
+        "languages": [
+          "en"
+        ],
+        "transports": [
+          "browser",
+          "phone",
+          "native",
+          "byo_twilio",
+          "byo_telnyx",
+          "byo_plivo",
+          "byo_sip"
+        ],
+        "tools": false,
+        "streaming": true,
+        "cancel": true,
+        "text_input": "segmented",
+        "voice_required": true,
+        "provider_generation_cancel": "unknown"
+      },
+      "evidence": {
+        "contract_verified": false,
+        "live_verified": false
+      },
+      "docs_url": "https://docs.rime.ai/docs/models"
+    },
+    {
+      "id": "tts/resemble/resemble-ultra",
+      "layer": "tts",
+      "provider": "resemble",
+      "model": "resemble-ultra",
+      "canonical_model": "resemble/resemble-ultra",
+      "protocol": "speech-synthesis",
+      "status": "experimental",
+      "capabilities": {
+        "languages": [
+          "en"
+        ],
+        "transports": [
+          "browser",
+          "phone",
+          "native",
+          "byo_twilio",
+          "byo_telnyx",
+          "byo_plivo",
+          "byo_sip"
+        ],
+        "tools": false,
+        "streaming": true,
+        "cancel": true,
+        "text_input": "segmented",
+        "voice_required": true,
+        "model_binding": "voice",
+        "provider_generation_cancel": "unknown"
+      },
+      "evidence": {
+        "contract_verified": false,
+        "live_verified": false
+      },
+      "docs_url": "https://docs.resemble.ai/getting-started/model-versions"
+    },
+    {
+      "id": "tts/hume/octave",
+      "layer": "tts",
+      "provider": "hume",
+      "model": "octave",
+      "canonical_model": "hume/octave",
+      "protocol": "speech-synthesis",
+      "status": "experimental",
+      "capabilities": {
+        "languages": [
+          "en"
+        ],
+        "transports": [
+          "browser",
+          "phone",
+          "native",
+          "byo_twilio",
+          "byo_telnyx",
+          "byo_plivo",
+          "byo_sip"
+        ],
+        "tools": false,
+        "streaming": true,
+        "cancel": true,
+        "text_input": "segmented",
+        "voice_required": true,
+        "provider_generation_cancel": "unknown"
+      },
+      "evidence": {
+        "contract_verified": false,
+        "live_verified": false
+      },
+      "docs_url": "https://dev.hume.ai/docs/text-to-speech-tts/overview"
+    },
+    {
+      "id": "tts/hume/octave-2",
+      "layer": "tts",
+      "provider": "hume",
+      "model": "octave-2",
+      "canonical_model": "hume/octave-2",
+      "protocol": "speech-synthesis",
+      "status": "experimental",
+      "capabilities": {
+        "languages": [
+          "en"
+        ],
+        "transports": [
+          "browser",
+          "phone",
+          "native",
+          "byo_twilio",
+          "byo_telnyx",
+          "byo_plivo",
+          "byo_sip"
+        ],
+        "tools": false,
+        "streaming": true,
+        "cancel": true,
+        "text_input": "segmented",
+        "voice_required": true,
+        "provider_generation_cancel": "unknown"
+      },
+      "evidence": {
+        "contract_verified": false,
+        "live_verified": false
+      },
+      "docs_url": "https://dev.hume.ai/docs/text-to-speech-tts/overview"
+    },
+    {
+      "id": "tts/minimax/speech-2.8-hd",
+      "layer": "tts",
+      "provider": "minimax",
+      "model": "speech-2.8-hd",
+      "canonical_model": "minimax/speech-2.8-hd",
+      "protocol": "speech-synthesis",
+      "status": "experimental",
+      "capabilities": {
+        "languages": [
+          "en"
+        ],
+        "transports": [
+          "browser",
+          "phone",
+          "native",
+          "byo_twilio",
+          "byo_telnyx",
+          "byo_plivo",
+          "byo_sip"
+        ],
+        "tools": false,
+        "streaming": true,
+        "cancel": true,
+        "text_input": "segmented",
+        "voice_required": true,
+        "provider_generation_cancel": "unknown"
+      },
+      "evidence": {
+        "contract_verified": false,
+        "live_verified": false
+      },
+      "docs_url": "https://platform.minimax.io/docs/api-reference/speech-t2a-websocket"
+    },
+    {
+      "id": "tts/minimax/speech-2.8-turbo",
+      "layer": "tts",
+      "provider": "minimax",
+      "model": "speech-2.8-turbo",
+      "canonical_model": "minimax/speech-2.8-turbo",
+      "protocol": "speech-synthesis",
+      "status": "experimental",
+      "capabilities": {
+        "languages": [
+          "en"
+        ],
+        "transports": [
+          "browser",
+          "phone",
+          "native",
+          "byo_twilio",
+          "byo_telnyx",
+          "byo_plivo",
+          "byo_sip"
+        ],
+        "tools": false,
+        "streaming": true,
+        "cancel": true,
+        "text_input": "segmented",
+        "voice_required": true,
+        "provider_generation_cancel": "unknown"
+      },
+      "evidence": {
+        "contract_verified": false,
+        "live_verified": false
+      },
+      "docs_url": "https://platform.minimax.io/docs/api-reference/speech-t2a-websocket"
+    },
+    {
+      "id": "tts/sarvam/bulbul:v3",
+      "layer": "tts",
+      "provider": "sarvam",
+      "model": "bulbul:v3",
+      "canonical_model": "sarvam/bulbul:v3",
+      "protocol": "speech-synthesis",
+      "status": "experimental",
+      "capabilities": {
+        "languages": [
+          "en"
+        ],
+        "transports": [
+          "browser",
+          "phone",
+          "native",
+          "byo_twilio",
+          "byo_telnyx",
+          "byo_plivo",
+          "byo_sip"
+        ],
+        "tools": false,
+        "streaming": true,
+        "cancel": true,
+        "text_input": "segmented",
+        "voice_required": true,
+        "provider_generation_cancel": "unknown"
+      },
+      "evidence": {
+        "contract_verified": false,
+        "live_verified": false
+      },
+      "docs_url": "https://docs.sarvam.ai/api-reference-docs/changelog"
+    },
+    {
+      "id": "hybrid/ultravox/ultravox-v0.7",
+      "layer": "hybrid",
+      "provider": "ultravox",
+      "model": "ultravox-v0.7",
+      "canonical_model": "ultravox/ultravox-v0.7",
+      "protocol": "ultravox",
+      "status": "experimental",
+      "capabilities": {
+        "languages": [
+          "en"
+        ],
+        "transports": [
+          "browser",
+          "phone",
+          "native",
+          "byo_twilio",
+          "byo_telnyx",
+          "byo_plivo",
+          "byo_sip"
+        ],
+        "tools": false,
+        "streaming": true,
+        "cancel": true,
+        "external_tts": true
+      },
+      "evidence": {
+        "contract_verified": false,
+        "live_verified": false
+      },
+      "docs_url": "https://docs.ultravox.ai/gettingstarted/how-ultravox-works"
+    },
+    {
+      "id": "s2s/openai/gpt-realtime-2.1",
+      "layer": "s2s",
+      "provider": "openai",
+      "model": "gpt-realtime-2.1",
+      "canonical_model": "openai/gpt-realtime-2.1",
+      "protocol": "native-s2s",
+      "status": "experimental",
+      "capabilities": {
+        "languages": [
+          "en"
+        ],
+        "transports": [
+          "browser",
+          "phone",
+          "native",
+          "byo_twilio",
+          "byo_telnyx",
+          "byo_plivo",
+          "byo_sip"
+        ],
+        "tools": false,
+        "streaming": true,
+        "cancel": true
+      },
+      "evidence": {
+        "contract_verified": false,
+        "live_verified": false
+      },
+      "docs_url": "https://labs.supafone.ai/docs/unified-s2s/"
+    },
+    {
+      "id": "s2s/openai/gpt-live-1",
+      "layer": "s2s",
+      "provider": "openai",
+      "model": "gpt-live-1",
+      "canonical_model": "openai/gpt-live-1",
+      "protocol": "native-s2s",
+      "status": "experimental",
+      "capabilities": {
+        "languages": [
+          "en"
+        ],
+        "transports": [
+          "browser",
+          "phone",
+          "native",
+          "byo_twilio",
+          "byo_telnyx",
+          "byo_plivo",
+          "byo_sip"
+        ],
+        "tools": false,
+        "streaming": true,
+        "cancel": true
+      },
+      "evidence": {
+        "contract_verified": false,
+        "live_verified": false
+      },
+      "docs_url": "https://labs.supafone.ai/docs/unified-s2s/"
+    },
+    {
+      "id": "s2s/google/gemini-3.1-flash-live-preview",
+      "layer": "s2s",
+      "provider": "google",
+      "model": "gemini-3.1-flash-live-preview",
+      "canonical_model": "google/gemini-3.1-flash-live-preview",
+      "protocol": "native-s2s",
+      "status": "experimental",
+      "capabilities": {
+        "languages": [
+          "en"
+        ],
+        "transports": [
+          "browser",
+          "phone",
+          "native",
+          "byo_twilio",
+          "byo_telnyx",
+          "byo_plivo",
+          "byo_sip"
+        ],
+        "tools": false,
+        "streaming": true,
+        "cancel": true
+      },
+      "evidence": {
+        "contract_verified": false,
+        "live_verified": false
+      },
+      "docs_url": "https://labs.supafone.ai/docs/unified-s2s/"
+    },
+    {
+      "id": "s2s/xai/grok-voice-latest",
+      "layer": "s2s",
+      "provider": "xai",
+      "model": "grok-voice-latest",
+      "canonical_model": "xai/grok-voice-latest",
+      "protocol": "native-s2s",
+      "status": "experimental",
+      "capabilities": {
+        "languages": [
+          "en"
+        ],
+        "transports": [
+          "browser",
+          "phone",
+          "native",
+          "byo_twilio",
+          "byo_telnyx",
+          "byo_plivo",
+          "byo_sip"
+        ],
+        "tools": false,
+        "streaming": true,
+        "cancel": true
+      },
+      "evidence": {
+        "contract_verified": false,
+        "live_verified": false
+      },
+      "docs_url": "https://labs.supafone.ai/docs/unified-s2s/"
+    },
+    {
+      "id": "s2s/smallest/hydra-v1.1",
+      "layer": "s2s",
+      "provider": "smallest",
+      "model": "hydra-v1.1",
+      "canonical_model": "smallest/hydra-v1.1",
+      "protocol": "native-s2s",
+      "status": "experimental",
+      "capabilities": {
+        "languages": [
+          "en"
+        ],
+        "transports": [
+          "browser",
+          "phone",
+          "native",
+          "byo_twilio",
+          "byo_telnyx",
+          "byo_plivo",
+          "byo_sip"
+        ],
+        "tools": false,
+        "streaming": true,
+        "cancel": true
+      },
+      "evidence": {
+        "contract_verified": false,
+        "live_verified": false
+      },
+      "docs_url": "https://labs.supafone.ai/docs/unified-s2s/"
+    },
+    {
+      "id": "s2s/smallest/hydra-v1.0",
+      "layer": "s2s",
+      "provider": "smallest",
+      "model": "hydra-v1.0",
+      "canonical_model": "smallest/hydra-v1.0",
+      "protocol": "native-s2s",
+      "status": "experimental",
+      "capabilities": {
+        "languages": [
+          "en"
+        ],
+        "transports": [
+          "browser",
+          "phone",
+          "native",
+          "byo_twilio",
+          "byo_telnyx",
+          "byo_plivo",
+          "byo_sip"
+        ],
+        "tools": false,
+        "streaming": true,
+        "cancel": true
+      },
+      "evidence": {
+        "contract_verified": false,
+        "live_verified": false
+      },
+      "docs_url": "https://labs.supafone.ai/docs/unified-s2s/"
+    },
+    {
+      "id": "tts/lmnt/retired",
+      "layer": "tts",
+      "provider": "lmnt",
+      "model": "retired",
+      "canonical_model": "lmnt/retired",
+      "protocol": "retired",
+      "status": "retired",
+      "capabilities": {
+        "languages": [
+          "en"
+        ],
+        "transports": [
+          "browser",
+          "phone",
+          "native",
+          "byo_twilio",
+          "byo_telnyx",
+          "byo_plivo",
+          "byo_sip"
+        ],
+        "tools": false,
+        "streaming": false,
+        "cancel": true,
+        "provider_generation_cancel": "unknown"
+      },
+      "evidence": {
+        "contract_verified": false,
+        "live_verified": false
+      },
+      "docs_url": "https://docs.lmnt.com/"
+    },
+    {
+      "id": "stt/smallest/pulse",
+      "layer": "stt",
+      "provider": "smallest",
+      "model": "pulse",
+      "canonical_model": "smallest/pulse",
+      "protocol": "speech-stream",
+      "status": "experimental",
+      "capabilities": {
+        "languages": [
+          "en"
+        ],
+        "transports": [
+          "browser",
+          "phone",
+          "native",
+          "byo_twilio",
+          "byo_telnyx",
+          "byo_plivo",
+          "byo_sip"
+        ],
+        "tools": false,
+        "streaming": true,
+        "cancel": true
+      },
+      "evidence": {
+        "contract_verified": false,
+        "live_verified": false
+      },
+      "docs_url": "https://docs.smallest.ai/models/speech-to-text/overview"
+    },
+    {
+      "id": "stt/smallest/pulse-2",
+      "layer": "stt",
+      "provider": "smallest",
+      "model": "pulse-2",
+      "canonical_model": "smallest/pulse-2",
+      "protocol": "speech-stream",
+      "status": "experimental",
+      "capabilities": {
+        "languages": [
+          "en"
+        ],
+        "transports": [
+          "browser",
+          "phone",
+          "native",
+          "byo_twilio",
+          "byo_telnyx",
+          "byo_plivo",
+          "byo_sip"
+        ],
+        "tools": false,
+        "streaming": true,
+        "cancel": true
+      },
+      "evidence": {
+        "contract_verified": false,
+        "live_verified": false
+      },
+      "docs_url": "https://docs.smallest.ai/models/speech-to-text/overview"
+    },
+    {
+      "id": "stt/nvidia/nemotron-asr-streaming",
+      "layer": "stt",
+      "provider": "nvidia",
+      "model": "nemotron-asr-streaming",
+      "canonical_model": "nvidia/nemotron-asr-streaming",
+      "protocol": "speech-stream",
+      "status": "experimental",
+      "capabilities": {
+        "languages": [
+          "en"
+        ],
+        "transports": [
+          "browser",
+          "phone",
+          "native",
+          "byo_twilio",
+          "byo_telnyx",
+          "byo_plivo",
+          "byo_sip"
+        ],
+        "tools": false,
+        "streaming": true,
+        "cancel": true
+      },
+      "evidence": {
+        "contract_verified": false,
+        "live_verified": false
+      },
+      "docs_url": "https://docs.nvidia.com/nim/speech/latest/about/index.html"
+    },
+    {
+      "id": "stt/openai/gpt-live-transcribe",
+      "layer": "stt",
+      "provider": "openai",
+      "model": "gpt-live-transcribe",
+      "canonical_model": "openai/gpt-live-transcribe",
+      "protocol": "speech-stream",
+      "status": "experimental",
+      "capabilities": {
+        "languages": [
+          "en"
+        ],
+        "transports": [
+          "browser",
+          "phone",
+          "native",
+          "byo_twilio",
+          "byo_telnyx",
+          "byo_plivo",
+          "byo_sip"
+        ],
+        "tools": false,
+        "streaming": true,
+        "cancel": true
+      },
+      "evidence": {
+        "contract_verified": false,
+        "live_verified": false
+      },
+      "docs_url": "https://developers.openai.com/api/docs/guides/realtime-transcription"
+    },
+    {
+      "id": "stt/assemblyai/universal-3-6-pro",
+      "layer": "stt",
+      "provider": "assemblyai",
+      "model": "universal-3-6-pro",
+      "canonical_model": "assemblyai/universal-3-6-pro",
+      "protocol": "speech-stream",
+      "status": "experimental",
+      "capabilities": {
+        "languages": [
+          "en"
+        ],
+        "transports": [
+          "browser",
+          "phone",
+          "native",
+          "byo_twilio",
+          "byo_telnyx",
+          "byo_plivo",
+          "byo_sip"
+        ],
+        "tools": false,
+        "streaming": true,
+        "cancel": true
+      },
+      "evidence": {
+        "contract_verified": false,
+        "live_verified": false
+      },
+      "docs_url": "https://www.assemblyai.com/docs/getting-started/models"
+    },
+    {
+      "id": "tts/mistral/voxtral-mini-tts-2603",
+      "layer": "tts",
+      "provider": "mistral",
+      "model": "voxtral-mini-tts-2603",
+      "canonical_model": "mistral/voxtral-mini-tts-2603",
+      "protocol": "speech-synthesis",
+      "status": "experimental",
+      "capabilities": {
+        "languages": [
+          "en"
+        ],
+        "transports": [
+          "browser",
+          "phone",
+          "native",
+          "byo_twilio",
+          "byo_telnyx",
+          "byo_plivo",
+          "byo_sip"
+        ],
+        "tools": false,
+        "streaming": true,
+        "cancel": true,
+        "text_input": "segmented",
+        "voice_required": true,
+        "provider_generation_cancel": "unknown"
+      },
+      "evidence": {
+        "contract_verified": false,
+        "live_verified": false
+      },
+      "docs_url": "https://docs.mistral.ai/studio/audio/overview"
+    },
+    {
+      "id": "tts/speechmatics/voice-bound",
+      "layer": "tts",
+      "provider": "speechmatics",
+      "model": "voice-bound",
+      "canonical_model": "speechmatics/voice-bound",
+      "protocol": "speech-synthesis",
+      "status": "experimental",
+      "capabilities": {
+        "languages": [
+          "en"
+        ],
+        "transports": [
+          "browser",
+          "phone",
+          "native",
+          "byo_twilio",
+          "byo_telnyx",
+          "byo_plivo",
+          "byo_sip"
+        ],
+        "tools": false,
+        "streaming": true,
+        "cancel": true,
+        "text_input": "segmented",
+        "voice_required": true,
+        "provider_generation_cancel": "unknown",
+        "model_binding": "voice"
+      },
+      "evidence": {
+        "contract_verified": false,
+        "live_verified": false
+      },
+      "docs_url": "https://docs.speechmatics.com/text-to-speech"
+    },
+    {
+      "id": "tts/rime/mistv3",
+      "layer": "tts",
+      "provider": "rime",
+      "model": "mistv3",
+      "canonical_model": "rime/mistv3",
+      "protocol": "speech-synthesis",
+      "status": "experimental",
+      "capabilities": {
+        "languages": [
+          "en"
+        ],
+        "transports": [
+          "browser",
+          "phone",
+          "native",
+          "byo_twilio",
+          "byo_telnyx",
+          "byo_plivo",
+          "byo_sip"
+        ],
+        "tools": false,
+        "streaming": true,
+        "cancel": true,
+        "text_input": "segmented",
+        "voice_required": true,
+        "provider_generation_cancel": "unknown"
+      },
+      "evidence": {
+        "contract_verified": false,
+        "live_verified": false
+      },
+      "docs_url": "https://docs.rime.ai/docs/models"
+    }
+  ]
+}

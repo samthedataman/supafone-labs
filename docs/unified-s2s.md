@@ -1,5 +1,8 @@
 # S2S Routing Hub
 
+For independent STT → LLM → TTS components, see the [voice router guide](voice-router.md). The existing S2S interface remains compatible.
+
+
 `SupafoneS2S` is the shared interface for Supafone's **S2S routing hub with
 Supervisor**. Choose **Ultravox, OpenAI, Gemini, Grok or Smallest AI Hydra**,
 then create an agent with coaching enabled. Switching models keeps the same

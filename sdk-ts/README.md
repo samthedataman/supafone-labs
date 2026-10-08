@@ -1,5 +1,15 @@
 # supafone-labs
 
+## Voice router and composable pipelines
+
+`SupafoneVoice` unifies the existing Ultravox and native S2S routes with
+`SupafonePipeline`: choose STT, LLM and TTS independently, keep one Supervisor
+and Agent Factory, and select managed or BYOK credentials per component.
+`SupafoneRouter` exposes the live catalog, exhaustive combinations and preflight.
+See the [voice router guide](https://labs.supafone.ai/docs/voice-router/).
+Catalog presence is not live certification; check readiness and evidence before calls.
+
+
 **The S2S routing hub with a Supervisor harness, for TypeScript and JavaScript.**
 
 Choose Ultravox, OpenAI, Gemini, Grok or Hydra through one client. Keep the

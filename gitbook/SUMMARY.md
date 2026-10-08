@@ -5,6 +5,7 @@
 ## Start Building
 
 * [Quickstart](quickstart.md)
+* [Voice Router and Pipelines](voice-router.md)
 * [S2S Routing Hub](unified-s2s.md)
 * [Ultravox + Custom TTS and Native S2S](voice-output-modes.md)
 * [SDK Installation](sdk-installation.md)

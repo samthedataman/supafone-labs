@@ -6,16 +6,18 @@ audio connections stay on the server; they are not local vendor SDK clients.
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any, Literal, Mapping
+from typing import TYPE_CHECKING, Any, Literal
 
 if TYPE_CHECKING:
     from supafone_labs.client import Supafone
+
+from supafone_labs.voice import SupafoneVoice
 
 S2SProviderName = Literal["ultravox", "openai", "google", "xai", "smallest"]
 _PROVIDERS = frozenset({"ultravox", "openai", "google", "xai", "smallest"})
 
 
-class SupafoneS2S:
+class SupafoneS2S(SupafoneVoice):
     """Shared parent for hosted S2S agent creation, selection, and preview.
 
     ``apply`` changes the saved model for subsequent calls. ``test_call`` uses
@@ -54,35 +56,12 @@ class SupafoneS2S:
         """A fresh wire selection; None explicitly restores default Ultravox."""
         return dict(self._selection) if self._selection is not None else None
 
-    def create(self, config: Mapping[str, Any] | None = None, **kwargs: Any) -> Any:
-        """Create through the normal agent factory using this provider."""
-        data = {**(config or {}), **kwargs}
-        if "realtime" in data:
-            raise ValueError(
-                "Set provider/model/voice on the S2S adapter, not create(realtime=...)"
-            )
-        if self.realtime is not None:
-            data["realtime"] = self.realtime
-        return self._client.labs.agents.create(data)
-
-    def apply(self, agent_key: str, *, agency_id: str | None = None) -> Any:
-        """Change only the saved S2S selection, keeping this agent and its number."""
-        self._check_agent_key(agent_key)
-        return self._client.labs.agents.update(
-            agent_key, realtime=self.realtime, agency_id=agency_id
-        )
-
-    def test_call(self, agent_key: str, *, agency_id: str | None = None) -> Any:
-        """Preview the saved agent; call apply first when switching providers."""
-        self._check_agent_key(agent_key)
-        return self._client.labs.agents.test_call(agent_key, agency_id=agency_id)
-
-    testCall = test_call
-
-    @staticmethod
-    def _check_agent_key(agent_key: str) -> None:
-        if not isinstance(agent_key, str) or not agent_key.strip():
-            raise ValueError("agent_key is required")
+    def _route_payload(self, *, creating: bool = False) -> dict[str, Any]:
+        # Keep the existing Ultravox omission/null semantics. The server clears
+        # pipeline when an update explicitly supplies realtime, including null.
+        if creating and self.realtime is None:
+            return {}
+        return {"realtime": self.realtime}
 
 
 class UltravoxS2S(SupafoneS2S):

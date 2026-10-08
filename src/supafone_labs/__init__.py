@@ -76,6 +76,9 @@ from supafone_labs.types import (
     directive_to_decision,
 )
 
+from supafone_labs.voice import SupafoneVoice
+from supafone_labs.pipeline import SupafonePipeline, SupafoneRouter, voice_catalog_snapshot
+
 from supafone_labs.s2s import (
     GeminiS2S,
     GrokS2S,
@@ -86,9 +89,10 @@ from supafone_labs.s2s import (
     UltravoxS2S,
 )
 
-__version__ = "0.7.2"
+__version__ = "0.8.0"
 
 __all__ = [
+    "SupafoneVoice", "SupafonePipeline", "SupafoneRouter", "voice_catalog_snapshot",
     "SupafoneS2S",
     "UltravoxS2S",
     "OpenAIS2S",

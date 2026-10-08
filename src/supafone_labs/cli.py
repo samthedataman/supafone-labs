@@ -68,6 +68,8 @@ SUPERVISOR_KEY_ENVS = {
 # while `token_count` does not.
 _SECRET_SUFFIXES = (
     "api_key",
+    "secret_access_key",
+    "service_account_json",
     "apikey",
     "access_token",
     "auth_token",
@@ -153,6 +155,8 @@ def _mask_email(value: str) -> str:
 
 def _is_secret_key(key: str) -> bool:
     normalized = str(key).strip().lower()
+    if normalized == "access_key_id" or normalized.endswith("_access_key_id"):
+        return True
     if normalized.endswith(_SECRET_EXEMPT_SUFFIXES):
         return False
     return any(
@@ -346,7 +350,12 @@ def _credential_values(value: Any) -> list[str]:
         found = []
         for key, item in value.items():
             if _is_secret_key(key) and isinstance(item, str):
-                found.extend((item, item.strip()))
+                found.extend((item, item.strip(), json.dumps(item)[1:-1]))
+                if str(key).strip().lower() == "service_account_json":
+                    try:
+                        found.extend(_credential_values(json.loads(item)))
+                    except json.JSONDecodeError:
+                        pass
             else:
                 found.extend(_credential_values(item))
         return found
@@ -372,11 +381,19 @@ def collect_secrets(api_key: str, args: argparse.Namespace | None = None) -> lis
     if supervisor in SUPERVISOR_KEY_ENVS:
         env_name = getattr(args, "supervisor_api_key_env", None) or SUPERVISOR_KEY_ENVS[supervisor]
         values.append(os.getenv(env_name, ""))
+    profile_env = getattr(args, "credentials_env", None)
+    if profile_env:
+        raw = os.getenv(profile_env, "")
+        values.append(raw)
+        try:
+            values.extend(_credential_values(json.loads(raw)))
+        except json.JSONDecodeError:
+            pass
     runtime_env = getattr(args, "runtime_api_key_env", None)
     if runtime_env:
         value = os.getenv(runtime_env, "")
         values.extend((value, value.strip()))
-    for attribute, label in (("credentials_file", "--credentials-file"), ("config_file", "--config-file")):
+    for attribute, label in (("credentials_file", "--credentials-file"), ("config_file", "--config-file"), ("pipeline_file", "--pipeline-file")):
         path = getattr(args, attribute, None)
         if path:
             values.extend(_credential_values(_read_json_file(str(path), label=label)))
@@ -505,6 +522,13 @@ def agent_config(args: argparse.Namespace, *, require_name: bool = True) -> dict
     }
     if voice:
         data["voice"] = {**dict(data.get("voice") or {}), **voice}
+    pipeline_file = getattr(args, "pipeline_file", None)
+    if pipeline_file:
+        from supafone_labs.pipeline import normalize_pipeline
+        if any(getattr(args, key, None) for key in ("s2s_provider", "s2s_model", "s2s_voice")) or data.get("realtime") is not None:
+            raise CliError("--pipeline-file and native S2S selection are mutually exclusive")
+        data["pipeline"] = normalize_pipeline(_read_json_file(pipeline_file, label="--pipeline-file"))
+        data["realtime"] = None
     provider = getattr(args, "s2s_provider", None)
     model = getattr(args, "s2s_model", None)
     native_voice = getattr(args, "s2s_voice", None)
@@ -650,6 +674,7 @@ def build_parser() -> argparse.ArgumentParser:
     _agent_commands(groups)
     _tool_commands(groups)
     _runtime_commands(groups)
+    _router_commands(groups)
     _telephony_commands(groups)
     _call_commands(groups)
     _recording_commands(groups)
@@ -688,6 +713,7 @@ def _capabilities_command(groups: Any) -> None:
 
 
 def _agent_runtime_arguments(parser: argparse.ArgumentParser, *, creation: bool = False) -> None:
+    parser.add_argument("--pipeline-file", help="Independent STT/LLM/TTS pipeline JSON; mutually exclusive with native S2S selection.")
     parser.add_argument(
         "--s2s-provider", choices=tuple(S2S_PROVIDERS),
         help="Speaking model family; Ultravox resets native S2S selection.",
@@ -860,6 +886,102 @@ def _runtime_commands(groups: Any) -> None:
     )
     update.add_argument("--config-file", help="Complete runtime JSON object.")
     update.add_argument("--set", action="append", metavar="KEY=VALUE")
+
+
+def _router_commands(groups: Any) -> None:
+    for group in ("router", "pipeline"):
+        root = groups.add_parser(group, help="Hybrid/S2S and every STT × LLM × TTS composition.")
+        commands = root.add_subparsers(dest="command", required=True)
+        commands.add_parser("schema", help="Print the machine-readable pipeline configuration schema without a network request.")
+        catalog = commands.add_parser("catalog", help="Live model endpoints with capability and evidence states.")
+        catalog.add_argument("--layer", choices=("stt", "llm", "tts", "s2s", "hybrid"))
+        catalog.add_argument("--json", action="store_true", help="JSON output (also the default).")
+        combinations = commands.add_parser("combinations", help="Enumerate the full filtered Cartesian product, including incompatible tuples.")
+        combinations.add_argument("--context-file", help="Language/region/transport/tool requirements JSON.")
+        for layer in ("stt", "llm", "tts"):
+            combinations.add_argument("--" + layer, action="append", help="Endpoint ID filter; repeat to include multiple endpoints.")
+        combinations.add_argument("--offset", type=int, default=0)
+        combinations.add_argument("--limit", type=int, default=100)
+        combinations.add_argument("--all", action="store_true", help="Fetch every page; no tuple presets or truncation.")
+        combinations.add_argument("--explain", action="store_true", help="Include compatibility/readiness reasons (always returned).")
+        combinations.add_argument("--json", action="store_true")
+        validate = commands.add_parser("validate", help="Check all layer capabilities and credential readiness without a call.")
+        validate.add_argument("--config-file", required=True, help="Tagged route JSON, or pipeline JSON for pipeline commands.")
+        validate.add_argument("--context-file")
+        validate.add_argument("--json", action="store_true")
+        apply = commands.add_parser("apply", help="Set the saved runtime for subsequent calls, preserving workflow.")
+        apply.add_argument("agent_key")
+        apply.add_argument("--config-file", required=True)
+        test = commands.add_parser("test-call", help="Start a browser preview of the saved agent; does not apply a route.")
+        test.add_argument("agent_key")
+        profiles = commands.add_parser("profile", help="Account-scoped encrypted credentials, independently per service.")
+        profile_commands = profiles.add_subparsers(dest="profile_command", required=True)
+        for command in ("get", "set"):
+            profile = profile_commands.add_parser(command)
+            profile.add_argument("--provider", required=True)
+            profile.add_argument("--service", choices=("stt", "llm", "tts"), required=True)
+            profile.add_argument("--profile", default="default")
+            if command == "set":
+                profile.add_argument("--mode", choices=("managed", "byok"), required=True)
+                keys = profile.add_mutually_exclusive_group()
+                keys.add_argument("--api-key-env", dest="runtime_api_key_env", help="Environment variable holding a provider API key.")
+                keys.add_argument("--credentials-env", help="Environment variable holding a cloud credential/profile JSON object.")
+
+
+def _router_dispatch(client: Supafone, args: argparse.Namespace) -> tuple[Any, list[str]]:
+    from supafone_labs import SupafoneRouter, UltravoxS2S
+
+    voice = client.labs.voice
+    context = None
+    if getattr(args, "context_file", None):
+        context = _read_json_file(args.context_file, label="--context-file")
+        if not isinstance(context, Mapping):
+            raise CliError("context must be a JSON object")
+    if args.command == "catalog":
+        return voice.catalog(layer=args.layer), []
+    if args.command == "combinations":
+        filters = {layer: getattr(args, layer) for layer in ("stt", "llm", "tts") if getattr(args, layer)}
+        page = voice.combinations(context=context, filters=filters, offset=args.offset, limit=args.limit, agency_id=args.agency_id)
+        if args.all:
+            seen = {args.offset}
+            while page.get("next_offset") is not None:
+                offset = page["next_offset"]
+                if type(offset) is not int or offset in seen:
+                    raise CliError("Server returned an invalid/repeated combination cursor")
+                seen.add(offset)
+                next_page = voice.combinations(context=context, filters=filters, offset=offset, limit=args.limit, agency_id=args.agency_id)
+                if next_page.get("registry_hash") != page.get("registry_hash"):
+                    raise CliError("Registry changed during enumeration; retry for one consistent manifest")
+                page["combinations"].extend(next_page.get("combinations", []))
+                page["next_offset"] = next_page.get("next_offset")
+        return page, []
+    if args.command == "test-call":
+        return UltravoxS2S(client).test_call(args.agent_key, agency_id=args.agency_id), []
+    if args.command == "profile":
+        if args.profile_command == "get":
+            return voice.get_profile(args.provider, args.service, profile=args.profile, agency_id=args.agency_id), []
+        credentials = {}
+        if args.runtime_api_key_env:
+            key = os.getenv(args.runtime_api_key_env, "").strip()
+            if not key:
+                raise CliError("The API key environment variable is empty")
+            credentials = {"api_key": key}
+        elif args.credentials_env:
+            try:
+                credentials = json.loads(os.getenv(args.credentials_env, ""))
+            except json.JSONDecodeError:
+                raise CliError("The credential environment variable must hold a JSON object") from None
+            if not isinstance(credentials, Mapping):
+                raise CliError("The credential environment variable must hold a JSON object")
+        return voice.configure_profile(args.provider, args.service, profile=args.profile,
+                                       mode=args.mode, credentials=credentials, agency_id=args.agency_id), []
+    route = _read_json_file(args.config_file, label="--config-file")
+    if args.group == "pipeline" and isinstance(route, Mapping) and "kind" not in route:
+        route = {"kind": "pipeline", "pipeline": route}
+    engine = SupafoneRouter(client).select(route)
+    if args.command == "validate":
+        return voice.validate(engine._route_payload(), context=context, agency_id=args.agency_id), []
+    return engine.apply(args.agent_key, agency_id=args.agency_id), []
 
 
 def _telephony_commands(groups: Any) -> None:
@@ -1389,6 +1511,9 @@ def dispatch(client: Supafone, args: argparse.Namespace) -> tuple[Any, list[str]
     group, command = args.group, args.command
     agency = args.agency_id
 
+    if group in ("router", "pipeline"):
+        return _router_dispatch(client, args)
+
     if group == "capabilities":
         return client.labs.capabilities(), []
 
@@ -1806,12 +1931,18 @@ def _emit(result: Mapping[str, Any], output: str, stream: Any) -> None:
 def main(argv: Sequence[str] | None = None) -> int:
     parser = build_parser()
     args = parser.parse_args(argv)
+    if getattr(args, "json", False):
+        args.output = "json"
     command_name = f"{args.group}.{getattr(args, 'command', 'show')}"
     secrets: list[str] = []
     warnings: list[str] = []
     client: Supafone | None = None
 
     try:
+        if args.group in ("router", "pipeline") and args.command == "schema":
+            from supafone_labs.pipeline import pipeline_schema
+            _emit(envelope(command_name, data=pipeline_schema()), args.output, sys.stdout)
+            return EXIT_OK
         api_key, source = resolve_api_key(args)
         secrets = collect_secrets(api_key, args)
         if source == "flag:--api-key":

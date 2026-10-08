@@ -1,3 +1,9 @@
+export { voiceCatalogSnapshot } from "./voice-catalog.js";
+import { LabsVoiceNamespace, normalizePipeline, validateVoiceSelection } from "./pipeline.js";
+import type { PipelineConfig } from "./pipeline.js";
+export { SupafoneVoice } from "./voice.js";
+export { SupafonePipeline, SupafoneRouter, normalizePipeline } from "./pipeline.js";
+export type { PipelineConfig, PipelineComponent, VoiceLayer, VoiceCredentialMode, VoiceRoute, VoiceContext, VoiceSelection, VoiceCombinationsOptions, VoiceCombinationsResponse } from "./pipeline.js";
 export { SupafoneS2S, UltravoxS2S, OpenAIS2S, GeminiS2S, GrokS2S, HydraS2S } from "./s2s.js";
 export type { S2SProviderName, S2SModelOptions, S2SOptions } from "./s2s.js";
 
@@ -1106,7 +1112,8 @@ export interface CreateLabsAgentRequest {
   direction?: string;
   presetKey?: string;
   preset_key?: string;
-  realtime?: LabsRealtimeSelection;
+  realtime?: LabsRealtimeSelection | null;
+  pipeline?: PipelineConfig | null;
   manager?: boolean | LabsManagerConfig;
   agentTeam?: LabsAgentTeam;
   agent_team?: LabsAgentTeam;
@@ -3326,6 +3333,7 @@ class LabsNamespace {
   readonly presets: LabsPresetsNamespace;
   readonly tools: LabsToolsNamespace;
   readonly voices: LabsVoicesNamespace;
+  readonly voice: LabsVoiceNamespace;
   readonly runtime: LabsRuntimeNamespace;
   readonly phoneNumbers: LabsPhoneNumbersNamespace;
   readonly telephony: LabsTelephonyNamespace;
@@ -3341,6 +3349,7 @@ class LabsNamespace {
     this.presets = new LabsPresetsNamespace(sm);
     this.tools = new LabsToolsNamespace(sm);
     this.voices = new LabsVoicesNamespace(sm);
+    this.voice = new LabsVoiceNamespace(sm);
     this.runtime = new LabsRuntimeNamespace(sm);
     this.phoneNumbers = new LabsPhoneNumbersNamespace(sm);
     this.telephony = new LabsTelephonyNamespace(sm);
@@ -4503,6 +4512,7 @@ function labsAgentMetadataPayload(input: CreateLabsAgentRequest): Record<string,
 function labsAgentUpdatePayload(input: UpdateLabsAgentRequest): Record<string, unknown> {
   const payload = labsAgentPayload(input as CreateLabsAgentRequest);
   if (input.realtime === null) payload.realtime = null;
+  if (input.pipeline === null) payload.pipeline = null;
   return payload;
 }
 
@@ -4516,6 +4526,7 @@ function campaignSettingsPayload(
 }
 
 function labsAgentPayload(input: CreateLabsAgentRequest): Record<string, unknown> {
+  validateVoiceSelection(input);
   const fixedLanguage = input.preferred_language ?? input.preferredLanguage ?? input.language;
   const supervisor = input.supervisor;
   return compact({
@@ -4537,6 +4548,7 @@ function labsAgentPayload(input: CreateLabsAgentRequest): Record<string, unknown
     preset_key: input.preset_key ?? input.presetKey,
     runtime_mode: input.runtime_mode ?? input.runtimeMode,
     realtime: input.realtime,
+    pipeline: input.pipeline != null ? normalizePipeline(input.pipeline) : undefined,
     manager: managerPayload(input.manager),
     agent_team: agentTeamPayload(input.agent_team ?? input.agentTeam),
     runtime_routing: runtimeRoutingPayload(input.runtime_routing ?? input.runtimeRouting),

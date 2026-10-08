@@ -1,5 +1,8 @@
 # `supafone` — the general CLI
 
+For independent STT → LLM → TTS components, see the [voice router guide](voice-router.md). The existing S2S interface remains compatible.
+
+
 `supafone` is a thin command-line wrapper over the public Python SDK
 (`supafone_labs.client.Supafone`) and the REST contracts it speaks. Every
 command is one SDK call, or — where a lifecycle genuinely needs more than one —
@@ -8,11 +11,11 @@ than hidden.
 
 ## Install and verify
 
-The public Python package installs the `supafone` command. Python **0.7.2**
+The public Python package installs the `supafone` command. Python **0.8.0**
 includes S2S, shared Agent Factory and managed/BYOK key controls:
 
 ```bash
-python -m pip install --upgrade supafone-labs==0.7.2
+python -m pip install --upgrade supafone-labs==0.8.0
 supafone --version
 supafone --help
 ```
@@ -21,7 +24,7 @@ supafone --help
 request. If the command is not on your shell's path, run
 `python -m supafone_labs.cli --version` using the same Python environment.
 
-The npm package is `supafone-labs@0.7.2` and provides the TypeScript/JavaScript
+The npm package is `supafone-labs@0.8.0` and provides the TypeScript/JavaScript
 SDK; it does not install a CLI executable. The public Python distribution does
 not ship the separate internal `supafone-campaign` or `supafone-studio` commands.
 

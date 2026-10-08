@@ -1,5 +1,8 @@
 # SDK Installation
 
+Version **0.8.0** adds the [voice router and independent STT/LLM/TTS pipeline](voice-router.md), with the same Supervisor, Manager and Agent Factory. Preflight exposes each layer’s credential readiness and certification evidence.
+
+
 Use Supafone as an **S2S routing hub with Supervisor**: choose the speaking
 model, then let a separate reasoning model guide the call. The supported
 families are **Ultravox, OpenAI, Gemini, Grok and Smallest AI Hydra**.
@@ -14,11 +17,11 @@ chooses the speaking provider; `create` saves the agent and its coaching setting
 
 ### Install
 
-The Python SDK, CLI and TypeScript SDK use **0.7.2**.
+The Python SDK, CLI and TypeScript SDK use **0.8.0**.
 
 ```bash
-python -m pip install --upgrade supafone-labs==0.7.2
-npm install supafone-labs@0.7.2
+python -m pip install --upgrade supafone-labs==0.8.0
+npm install supafone-labs@0.8.0
 ```
 
 Set your Supafone account key as `SUPAFONE_API_KEY` in your server environment.

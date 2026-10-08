@@ -1,5 +1,15 @@
 <div align="center">
 
+## Voice router and composable pipelines
+
+`SupafoneVoice` unifies the existing Ultravox and native S2S routes with
+`SupafonePipeline`: choose STT, LLM and TTS independently, keep one Supervisor
+and Agent Factory, and select managed or BYOK credentials per component.
+`SupafoneRouter` exposes the live catalog, exhaustive combinations and preflight.
+See the [voice router guide](https://labs.supafone.ai/docs/voice-router/).
+Catalog presence is not live certification; check readiness and evidence before calls.
+
+
 <img src="gitbook/.gitbook/assets/supafone-logo.png" alt="Supafone" width="112" height="112" />
 
 # Supafone Labs
@@ -125,11 +135,11 @@ shows each provider and setup requirements.
 
 ## Command-line Agent Factory
 
-The Python package includes the `supafone` CLI. Upgrade to **0.7.2** for S2S
+The Python package includes the `supafone` CLI. Upgrade to **0.8.0** for S2S
 selection, shared workflow controls, and hosted planning:
 
 ```bash
-python -m pip install --upgrade supafone-labs==0.7.2
+python -m pip install --upgrade supafone-labs==0.8.0
 supafone --version
 export SUPAFONE_API_KEY=sl_live_...
 supafone capabilities
@@ -144,7 +154,7 @@ supafone agents plan --description "Capture details, book a slot, then confirm."
 Use `--config-file` for reviewed stages, tool gates, teams and routing policies.
 Switch back with `--s2s-provider ultravox` to keep compatible custom TTS.
 [CLI reference and complete workflow example](docs/cli.md) covers all commands.
-The npm SDK is **0.7.2** and does not install a CLI executable. Hosted
+The npm SDK is **0.8.0** and does not install a CLI executable. Hosted
 workflow features require the corresponding backend deployment and configured
 server-side provider keys.
 

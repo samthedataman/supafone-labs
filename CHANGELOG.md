@@ -1,5 +1,17 @@
 # Changelog
 
+## 0.8.0 — 2026-10-08
+
+- Add `SupafoneVoice` as the common hosted Agent Factory superclass. Existing `SupafoneS2S` classes and Ultravox omission/null wire behavior stay compatible.
+- Add `SupafonePipeline` for independent STT, LLM and TTS components and `SupafoneRouter` for explicit hybrid, S2S or pipeline selection.
+- Add live catalog, exhaustive Cartesian combination paging, compatibility/readiness preflight, per-service credential profiles and a generated public catalog snapshot.
+- Support per-layer `auto`, `managed` and `byok` modes. Agent configuration contains profile references, never provider secrets. Supervisor and Manager choices stay independent.
+- Add `supafone router` / `supafone pipeline` catalog, combinations, validate, apply, test-call, profile and schema commands, plus `agents create/update --pipeline-file`. Provider credentials come from named environment variables.
+- Reject ambiguous routes and malformed/secret-bearing pipeline selections before requests. Applying a pipeline clears the native runtime; applying S2S clears the pipeline on the matching backend. Test calls never apply configuration implicitly.
+- Add Python/TypeScript full-catalog selection coverage, all eight managed/BYOK component vectors, API/CLI payload and redaction tests, plus compatibility tests for old S2S clients.
+- Catalog entries distinguish planned/experimental/certified/retired and contract/live evidence. This package does not certify vendor access or prove every tuple through live calls; the corresponding hosted backend and configured provider profiles are required.
+
+
 ## 0.7.2 — 2026-09-28
 
 - Select BYOK or Supafone-managed speaking credentials independently for Ultravox, OpenAI, Gemini, Grok and Hydra. Returning to managed removes only that provider's saved account override and applies to future calls.

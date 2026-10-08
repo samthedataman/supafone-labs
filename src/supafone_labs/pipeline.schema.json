@@ -1,0 +1,415 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Supafone Pipeline Selection",
+  "description": "Secret-free hosted configuration. Live catalog/preflight determine compatibility, readiness and certification.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "stt",
+    "llm",
+    "tts"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": 1,
+      "default": 1
+    },
+    "stt": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "provider",
+        "model"
+      ],
+      "properties": {
+        "provider": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9_]{0,39}$"
+        },
+        "model": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 256
+        },
+        "profile": {
+          "type": "string",
+          "pattern": "^[a-zA-Z0-9][a-zA-Z0-9_-]{0,63}$"
+        },
+        "options": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "temperature": {
+              "type": [
+                "string",
+                "number",
+                "boolean"
+              ]
+            },
+            "max_tokens": {
+              "type": [
+                "string",
+                "number",
+                "boolean"
+              ]
+            },
+            "speed": {
+              "type": [
+                "string",
+                "number",
+                "boolean"
+              ]
+            },
+            "stability": {
+              "type": [
+                "string",
+                "number",
+                "boolean"
+              ]
+            },
+            "pitch": {
+              "type": [
+                "string",
+                "number",
+                "boolean"
+              ]
+            },
+            "style": {
+              "type": [
+                "string",
+                "number",
+                "boolean"
+              ]
+            },
+            "endpointing_ms": {
+              "type": [
+                "string",
+                "number",
+                "boolean"
+              ]
+            },
+            "region": {
+              "type": [
+                "string",
+                "number",
+                "boolean"
+              ]
+            },
+            "deployment": {
+              "type": [
+                "string",
+                "number",
+                "boolean"
+              ]
+            },
+            "language": {
+              "type": [
+                "string",
+                "number",
+                "boolean"
+              ]
+            },
+            "punctuate": {
+              "type": [
+                "string",
+                "number",
+                "boolean"
+              ]
+            },
+            "interim_results": {
+              "type": [
+                "string",
+                "number",
+                "boolean"
+              ]
+            }
+          }
+        }
+      }
+    },
+    "llm": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "provider",
+        "model"
+      ],
+      "properties": {
+        "provider": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9_]{0,39}$"
+        },
+        "model": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 256
+        },
+        "profile": {
+          "type": "string",
+          "pattern": "^[a-zA-Z0-9][a-zA-Z0-9_-]{0,63}$"
+        },
+        "options": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "temperature": {
+              "type": [
+                "string",
+                "number",
+                "boolean"
+              ]
+            },
+            "max_tokens": {
+              "type": [
+                "string",
+                "number",
+                "boolean"
+              ]
+            },
+            "speed": {
+              "type": [
+                "string",
+                "number",
+                "boolean"
+              ]
+            },
+            "stability": {
+              "type": [
+                "string",
+                "number",
+                "boolean"
+              ]
+            },
+            "pitch": {
+              "type": [
+                "string",
+                "number",
+                "boolean"
+              ]
+            },
+            "style": {
+              "type": [
+                "string",
+                "number",
+                "boolean"
+              ]
+            },
+            "endpointing_ms": {
+              "type": [
+                "string",
+                "number",
+                "boolean"
+              ]
+            },
+            "region": {
+              "type": [
+                "string",
+                "number",
+                "boolean"
+              ]
+            },
+            "deployment": {
+              "type": [
+                "string",
+                "number",
+                "boolean"
+              ]
+            },
+            "language": {
+              "type": [
+                "string",
+                "number",
+                "boolean"
+              ]
+            },
+            "punctuate": {
+              "type": [
+                "string",
+                "number",
+                "boolean"
+              ]
+            },
+            "interim_results": {
+              "type": [
+                "string",
+                "number",
+                "boolean"
+              ]
+            }
+          }
+        }
+      }
+    },
+    "tts": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "provider",
+        "model"
+      ],
+      "properties": {
+        "provider": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9_]{0,39}$"
+        },
+        "model": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 256
+        },
+        "profile": {
+          "type": "string",
+          "pattern": "^[a-zA-Z0-9][a-zA-Z0-9_-]{0,63}$"
+        },
+        "options": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "temperature": {
+              "type": [
+                "string",
+                "number",
+                "boolean"
+              ]
+            },
+            "max_tokens": {
+              "type": [
+                "string",
+                "number",
+                "boolean"
+              ]
+            },
+            "speed": {
+              "type": [
+                "string",
+                "number",
+                "boolean"
+              ]
+            },
+            "stability": {
+              "type": [
+                "string",
+                "number",
+                "boolean"
+              ]
+            },
+            "pitch": {
+              "type": [
+                "string",
+                "number",
+                "boolean"
+              ]
+            },
+            "style": {
+              "type": [
+                "string",
+                "number",
+                "boolean"
+              ]
+            },
+            "endpointing_ms": {
+              "type": [
+                "string",
+                "number",
+                "boolean"
+              ]
+            },
+            "region": {
+              "type": [
+                "string",
+                "number",
+                "boolean"
+              ]
+            },
+            "deployment": {
+              "type": [
+                "string",
+                "number",
+                "boolean"
+              ]
+            },
+            "language": {
+              "type": [
+                "string",
+                "number",
+                "boolean"
+              ]
+            },
+            "punctuate": {
+              "type": [
+                "string",
+                "number",
+                "boolean"
+              ]
+            },
+            "interim_results": {
+              "type": [
+                "string",
+                "number",
+                "boolean"
+              ]
+            }
+          }
+        },
+        "voice": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 256
+        }
+      }
+    },
+    "credentials": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "default": {
+          "enum": [
+            "auto",
+            "managed",
+            "byok"
+          ]
+        },
+        "stt": {
+          "enum": [
+            "auto",
+            "managed",
+            "byok"
+          ]
+        },
+        "llm": {
+          "enum": [
+            "auto",
+            "managed",
+            "byok"
+          ]
+        },
+        "tts": {
+          "enum": [
+            "auto",
+            "managed",
+            "byok"
+          ]
+        }
+      }
+    },
+    "language": {
+      "type": "string",
+      "maxLength": 80
+    },
+    "region": {
+      "type": "string",
+      "maxLength": 80
+    },
+    "transport": {
+      "enum": [
+        "browser",
+        "phone",
+        "native",
+        "byo_twilio",
+        "byo_telnyx",
+        "byo_plivo",
+        "byo_sip"
+      ]
+    }
+  }
+}

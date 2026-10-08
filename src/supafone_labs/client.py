@@ -15,6 +15,8 @@ from dataclasses import dataclass
 from typing import AsyncIterator, Any, Callable, Iterator, Literal, Mapping, Optional, TypedDict
 from urllib import error, parse, request
 
+from supafone_labs.pipeline import LabsVoiceNamespace, normalize_pipeline, validate_voice_selection
+
 DEFAULT_SUPAFONE_API_BASE = "https://api.supafone.ai"
 DEFAULT_LABS_API_BASE = "https://api.labs.supafone.ai"
 
@@ -1102,6 +1104,7 @@ class LabsNamespace:
         self.presets = LabsPresetsNamespace(client)
         self.tools = LabsToolsNamespace(client)
         self.voices = LabsVoicesNamespace(client)
+        self.voice = LabsVoiceNamespace(client)
         self.runtime = LabsRuntimeNamespace(client)
         self.phone_numbers = LabsPhoneNumbersNamespace(client)
         self.phoneNumbers = self.phone_numbers
@@ -1669,7 +1672,7 @@ class LabsAgentsNamespace:
             f"/api/v1/labs/agents/{parse.quote(agent_key, safe='')}{suffix}",
             _labs_agent_update_payload({
                 **_merge(config, kwargs),
-                **({"realtime": kwargs["realtime"]} if "realtime" in kwargs else {}),
+                **({key: kwargs[key] for key in ("realtime", "pipeline") if key in kwargs}),
             }),
         )
 
@@ -2533,6 +2536,7 @@ def _language_profiles_payload(value: Any) -> list[dict[str, Any]] | None:
 
 
 def _labs_agent_payload(data: Mapping[str, Any]) -> dict[str, Any]:
+    validate_voice_selection(data)
     fixed_language = _pick(
         data, "preferred_language", "preferredLanguage", "language"
     )
@@ -2565,6 +2569,7 @@ def _labs_agent_payload(data: Mapping[str, Any]) -> dict[str, Any]:
             "preset_key": _pick(data, "preset_key", "presetKey"),
             "runtime_mode": _pick(data, "runtime_mode", "runtimeMode"),
             "realtime": data.get("realtime"),
+            "pipeline": normalize_pipeline(data["pipeline"]) if data.get("pipeline") is not None else None,
             "manager": _manager_payload(data.get("manager")),
             "agent_team": _agent_team_payload(_pick(data, "agent_team", "agentTeam")),
             "runtime_routing": _runtime_routing_payload(_pick(data, "runtime_routing", "runtimeRouting")),
@@ -2667,6 +2672,8 @@ def _labs_agent_update_payload(data: Mapping[str, Any]) -> dict[str, Any]:
         payload["website_url"] = _pick(data, "website_url", "websiteUrl")
     if "realtime" in data:
         payload["realtime"] = data["realtime"]
+    if "pipeline" in data and data["pipeline"] is None:
+        payload["pipeline"] = None
     return payload
 
 
